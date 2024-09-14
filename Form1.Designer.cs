@@ -2,15 +2,8 @@
 {
     partial class Form1
     {
-        /// <summary>
-        ///  Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        ///  Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -22,47 +15,43 @@
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        ///  Required method for Designer support - do not modify
-        ///  the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
-            button1 = new Button();
-            dataGridView1 = new DataGridView();
+            buttonLoadData = new Button();
+            dataGridViewResults = new DataGridView();
             splitContainer1 = new SplitContainer();
-            richTextBox1 = new RichTextBox();
-            richTextBox2 = new RichTextBox();
-            numericUpDown1 = new NumericUpDown();
-            textBox1 = new TextBox();
+            richTextBoxSelectedCell = new RichTextBox();
+            richTextBoxQuery = new RichTextBox();
+            numericUpDownMaxCount = new NumericUpDown();
+            textBoxConnectionString = new TextBox();
             label1 = new Label();
             label2 = new Label();
-            textBox2 = new TextBox();
-            textBox3 = new TextBox();
+            textBoxDatabaseName = new TextBox();
+            textBoxContainerName = new TextBox();
             label3 = new Label();
             label4 = new Label();
-            ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).BeginInit();
             SuspendLayout();
             // 
-            // button1
+            // buttonLoadData
             // 
-            button1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            button1.Location = new Point(1199, 15);
-            button1.Name = "button1";
-            button1.Size = new Size(75, 23);
-            button1.TabIndex = 0;
-            button1.Text = "Exec";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
+            buttonLoadData.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            buttonLoadData.Location = new Point(1199, 15);
+            buttonLoadData.Name = "buttonLoadData";
+            buttonLoadData.Size = new Size(75, 23);
+            buttonLoadData.TabIndex = 0;
+            buttonLoadData.Text = "Exec";
+            buttonLoadData.UseVisualStyleBackColor = true;
+            buttonLoadData.Click += buttonLoadData_Click;
             // 
-            // dataGridView1
+            // dataGridViewResults
             // 
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
@@ -71,11 +60,11 @@
             dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
             dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            dataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView1.Dock = DockStyle.Fill;
-            dataGridView1.Location = new Point(0, 0);
-            dataGridView1.Name = "dataGridView1";
+            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewResults.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewResults.Dock = DockStyle.Fill;
+            dataGridViewResults.Location = new Point(0, 0);
+            dataGridViewResults.Name = "dataGridViewResults";
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
             dataGridViewCellStyle2.Font = new Font("Yu Gothic UI", 9F);
@@ -83,11 +72,11 @@
             dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
             dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
-            dataGridView1.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridView1.Size = new Size(1262, 517);
-            dataGridView1.TabIndex = 1;
-            dataGridView1.CellClick += dataGridView1_CellClick;
-            dataGridView1.RowPostPaint += dataGridView1_RowPostPaint;
+            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewResults.Size = new Size(1262, 613);
+            dataGridViewResults.TabIndex = 1;
+            dataGridViewResults.CellClick += dataGridViewResults_CellClick;
+            dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
             // 
             // splitContainer1
             // 
@@ -98,55 +87,55 @@
             // 
             // splitContainer1.Panel1
             // 
-            splitContainer1.Panel1.Controls.Add(dataGridView1);
+            splitContainer1.Panel1.Controls.Add(dataGridViewResults);
             // 
             // splitContainer1.Panel2
             // 
-            splitContainer1.Panel2.Controls.Add(richTextBox1);
-            splitContainer1.Size = new Size(1262, 552);
-            splitContainer1.SplitterDistance = 517;
+            splitContainer1.Panel2.Controls.Add(richTextBoxSelectedCell);
+            splitContainer1.Size = new Size(1262, 655);
+            splitContainer1.SplitterDistance = 613;
             splitContainer1.TabIndex = 2;
             // 
-            // richTextBox1
+            // richTextBoxSelectedCell
             // 
-            richTextBox1.BackColor = SystemColors.ButtonFace;
-            richTextBox1.Dock = DockStyle.Fill;
-            richTextBox1.Location = new Point(0, 0);
-            richTextBox1.Name = "richTextBox1";
-            richTextBox1.ReadOnly = true;
-            richTextBox1.Size = new Size(1262, 31);
-            richTextBox1.TabIndex = 0;
-            richTextBox1.Text = "";
+            richTextBoxSelectedCell.BackColor = SystemColors.ButtonFace;
+            richTextBoxSelectedCell.Dock = DockStyle.Fill;
+            richTextBoxSelectedCell.Location = new Point(0, 0);
+            richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
+            richTextBoxSelectedCell.ReadOnly = true;
+            richTextBoxSelectedCell.Size = new Size(1262, 38);
+            richTextBoxSelectedCell.TabIndex = 0;
+            richTextBoxSelectedCell.Text = "";
             // 
-            // richTextBox2
+            // richTextBoxQuery
             // 
-            richTextBox2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            richTextBox2.Font = new Font("Yu Gothic UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 128);
-            richTextBox2.Location = new Point(12, 12);
-            richTextBox2.Name = "richTextBox2";
-            richTextBox2.ScrollBars = RichTextBoxScrollBars.Vertical;
-            richTextBox2.Size = new Size(803, 111);
-            richTextBox2.TabIndex = 4;
-            richTextBox2.Text = "SELECT\n    c.* \nFROM\n    c \nWHERE\n    1 = 1\nORDER BY\n    c.id\n";
+            richTextBoxQuery.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            richTextBoxQuery.Font = new Font("Yu Gothic UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 128);
+            richTextBoxQuery.Location = new Point(12, 12);
+            richTextBoxQuery.Name = "richTextBoxQuery";
+            richTextBoxQuery.ScrollBars = RichTextBoxScrollBars.Vertical;
+            richTextBoxQuery.Size = new Size(803, 111);
+            richTextBoxQuery.TabIndex = 4;
+            richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1\nORDER BY\n    c.id\n";
             // 
-            // numericUpDown1
+            // numericUpDownMaxCount
             // 
-            numericUpDown1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            numericUpDown1.Location = new Point(926, 100);
-            numericUpDown1.Maximum = new decimal(new int[] { 1569325056, 23283064, 0, 0 });
-            numericUpDown1.Name = "numericUpDown1";
-            numericUpDown1.Size = new Size(75, 23);
-            numericUpDown1.TabIndex = 5;
-            numericUpDown1.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            numericUpDownMaxCount.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            numericUpDownMaxCount.Location = new Point(926, 100);
+            numericUpDownMaxCount.Maximum = new decimal(new int[] { 1569325056, 23283064, 0, 0 });
+            numericUpDownMaxCount.Name = "numericUpDownMaxCount";
+            numericUpDownMaxCount.Size = new Size(75, 23);
+            numericUpDownMaxCount.TabIndex = 5;
+            numericUpDownMaxCount.Value = new decimal(new int[] { 100, 0, 0, 0 });
             // 
-            // textBox1
+            // textBoxConnectionString
             // 
-            textBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBox1.Location = new Point(926, 12);
-            textBox1.Name = "textBox1";
-            textBox1.Size = new Size(267, 23);
-            textBox1.TabIndex = 6;
-            textBox1.UseSystemPasswordChar = true;
+            textBoxConnectionString.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            textBoxConnectionString.Location = new Point(926, 12);
+            textBoxConnectionString.Name = "textBoxConnectionString";
+            textBoxConnectionString.Size = new Size(267, 23);
+            textBoxConnectionString.TabIndex = 6;
+            textBoxConnectionString.UseSystemPasswordChar = true;
             // 
             // label1
             // 
@@ -168,21 +157,21 @@
             label2.TabIndex = 8;
             label2.Text = "Database";
             // 
-            // textBox2
+            // textBoxDatabaseName
             // 
-            textBox2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBox2.Location = new Point(926, 42);
-            textBox2.Name = "textBox2";
-            textBox2.Size = new Size(267, 23);
-            textBox2.TabIndex = 9;
+            textBoxDatabaseName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            textBoxDatabaseName.Location = new Point(926, 42);
+            textBoxDatabaseName.Name = "textBoxDatabaseName";
+            textBoxDatabaseName.Size = new Size(267, 23);
+            textBoxDatabaseName.TabIndex = 9;
             // 
-            // textBox3
+            // textBoxContainerName
             // 
-            textBox3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBox3.Location = new Point(926, 71);
-            textBox3.Name = "textBox3";
-            textBox3.Size = new Size(267, 23);
-            textBox3.TabIndex = 11;
+            textBoxContainerName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            textBoxContainerName.Location = new Point(926, 71);
+            textBoxContainerName.Name = "textBoxContainerName";
+            textBoxContainerName.Size = new Size(267, 23);
+            textBoxContainerName.TabIndex = 11;
             // 
             // label3
             // 
@@ -209,43 +198,43 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1286, 693);
+            ClientSize = new Size(1286, 796);
             Controls.Add(label4);
-            Controls.Add(textBox3);
+            Controls.Add(textBoxContainerName);
             Controls.Add(label3);
-            Controls.Add(textBox2);
+            Controls.Add(textBoxDatabaseName);
             Controls.Add(label2);
             Controls.Add(label1);
-            Controls.Add(textBox1);
-            Controls.Add(numericUpDown1);
-            Controls.Add(richTextBox2);
+            Controls.Add(textBoxConnectionString);
+            Controls.Add(numericUpDownMaxCount);
+            Controls.Add(richTextBoxQuery);
             Controls.Add(splitContainer1);
-            Controls.Add(button1);
+            Controls.Add(buttonLoadData);
             Name = "Form1";
             Text = "Form1";
-            ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
 
-        private Button button1;
-        private DataGridView dataGridView1;
+        private Button buttonLoadData;
+        private DataGridView dataGridViewResults;
         private SplitContainer splitContainer1;
-        private RichTextBox richTextBox1;
-        private RichTextBox richTextBox2;
-        private NumericUpDown numericUpDown1;
-        private TextBox textBox1;
+        private RichTextBox richTextBoxSelectedCell;
+        private RichTextBox richTextBoxQuery;
+        private NumericUpDown numericUpDownMaxCount;
+        private TextBox textBoxConnectionString;
         private Label label1;
         private Label label2;
-        private TextBox textBox2;
-        private TextBox textBox3;
+        private TextBox textBoxDatabaseName;
+        private TextBox textBoxContainerName;
         private Label label3;
         private Label label4;
     }
