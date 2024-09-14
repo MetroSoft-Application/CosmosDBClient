@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -31,6 +32,19 @@ namespace CosmosDBClient
         {
             InitializeCosmosClient();
             var dataTable = await FetchDataFromCosmosDBAsync();
+
+            // DataGridViewにデータをバインドする前に隠し列を追加
+            if (!dataGridViewResults.Columns.Contains("JsonData"))
+            {
+                DataGridViewTextBoxColumn jsonColumn = new DataGridViewTextBoxColumn
+                {
+                    Name = "JsonData",
+                    HeaderText = "JsonData",
+                    Visible = false
+                };
+                dataGridViewResults.Columns.Add(jsonColumn);
+            }
+
             dataGridViewResults.DataSource = dataTable;
         }
 
@@ -43,20 +57,49 @@ namespace CosmosDBClient
         private async Task<DataTable> FetchDataFromCosmosDBAsync()
         {
             var dataTable = new DataTable();
+            var totalRequestCharge = 0d; // クエリの総RUを格納する変数
+            var documentCount = 0; // ドキュメントの総数を格納する変数
+            var pageCount = 0; // ページング数を格納する変数
+
             try
             {
                 var maxCount = (int)Math.Max(numericUpDownMaxCount.Value, MaxItemCount);
                 var query = BuildQuery(maxCount);
 
+                // データテーブルの列を初期化
+                dataTable.Columns.Add("JsonData", typeof(string));
+
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 var queryDefinition = new QueryDefinition(query);
                 using var queryResultSetIterator = cosmosContainer.GetItemQueryIterator<dynamic>(
                     queryDefinition, requestOptions: new QueryRequestOptions { MaxItemCount = maxCount });
-
                 while (queryResultSetIterator.HasMoreResults)
                 {
                     var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    pageCount++; // ページ数をカウント
+
+                    // 現在のリクエストにかかったRUを加算
+                    totalRequestCharge += currentResultSet.RequestCharge;
+
+                    // 取得したドキュメントの数を加算
+                    documentCount += currentResultSet.Count;
+
+                    // Diagnosticsからクエリメトリクスを取得
+                    var diagnostics = currentResultSet.Diagnostics.ToString();
+
                     ProcessQueryResults(currentResultSet, dataTable, maxCount);
                 }
+
+                stopwatch.Stop(); // 実行時間の計測を停止
+                var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+                // StatusStripに情報を表示
+                toolStripStatusLabel1.Text = $"Total RU:{totalRequestCharge:F2}";
+                toolStripStatusLabel2.Text = $"Documents:{documentCount}";
+                toolStripStatusLabel3.Text = $"Pages:{pageCount}";
+                toolStripStatusLabel4.Text = $"Elapsed Time:{elapsedMilliseconds} ms";
             }
             catch (Exception ex)
             {
@@ -92,12 +135,21 @@ namespace CosmosDBClient
             {
                 var jsonObject = JObject.Parse(item.ToString());
 
-                if (dataTable.Columns.Count == 0)
+                if (dataTable.Columns.Count == 1)
                 {
                     AddColumnsToDataTable(jsonObject, dataTable);
                 }
 
-                AddRowToDataTable(jsonObject, dataTable);
+                var row = dataTable.NewRow();
+                foreach (var property in jsonObject.Properties())
+                {
+                    row[property.Name] = property.Value?.ToString() ?? string.Empty;
+                }
+
+                // JSONデータを隠し列に格納
+                row["JsonData"] = jsonObject.ToString();
+
+                dataTable.Rows.Add(row);
 
                 if (dataTable.Rows.Count >= maxCount)
                 {
@@ -136,11 +188,18 @@ namespace CosmosDBClient
 
         private void dataGridViewResults_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0 || e.ColumnIndex < 0)
+            if (e.RowIndex < 0 || e.ColumnIndex < 1)
                 return;
 
-            var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
-            richTextBoxSelectedCell.Text = cellValue;
+            // JSONデータの取得
+            var jsonData = dataGridViewResults.Rows[e.RowIndex].Cells[1].Value?.ToString();
+            JsonData.Text = jsonData;
+
+            if (e.ColumnIndex > 1)
+            {
+                var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
+                richTextBoxSelectedCell.Text = cellValue;
+            }
         }
     }
 }
