@@ -1,9 +1,6 @@
-using System;
 using System.Data;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 
