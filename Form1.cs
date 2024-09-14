@@ -1,7 +1,6 @@
 using System.Data;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Configuration;
@@ -18,9 +17,9 @@ namespace CosmosDBClient
         private readonly int maxItemCount;
         private HyperlinkHandler hyperlinkHandler;
         private readonly bool useHyperlinkHandler;
-        private readonly string connectionString;
-        private readonly string databaseName;
-        private readonly string containerName;
+        private readonly string? connectionString;
+        private readonly string? databaseName;
+        private readonly string? containerName;
 
         /// <summary>
         /// 新しい <see cref="Form1"/> クラスのインスタンスを初期化する
@@ -157,9 +156,9 @@ namespace CosmosDBClient
         /// <returns>クエリ実行後の統計情報 (リクエストチャージ、ドキュメント数、ページ数)</returns>
         private async Task<(double totalRequestCharge, int documentCount, int pageCount)> ExecuteCosmosDbQuery(string query, int maxCount, DataTable dataTable)
         {
-            double totalRequestCharge = 0;
-            int documentCount = 0;
-            int pageCount = 0;
+            var totalRequestCharge = 0d;
+            var documentCount = 0;
+            var pageCount = 0;
 
             var queryDefinition = new QueryDefinition(query);
             using var queryResultSetIterator = cosmosContainer.GetItemQueryIterator<dynamic>(
@@ -186,7 +185,7 @@ namespace CosmosDBClient
         /// <returns>構築されたクエリ文字列</returns>
         private string BuildQuery(int maxCount)
         {
-            string query = $"SELECT TOP {maxCount} * FROM c";
+            var query = $"SELECT TOP {maxCount} * FROM c";
 
             if (!string.IsNullOrWhiteSpace(richTextBoxQuery.Text))
             {
