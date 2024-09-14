@@ -54,9 +54,9 @@ namespace CosmosDBClient
         private async Task<DataTable> FetchDataFromCosmosDBAsync()
         {
             var dataTable = new DataTable();
-            var totalRequestCharge = 0d; // クエリの総RUを格納する変数
-            var documentCount = 0; // ドキュメントの総数を格納する変数
-            var pageCount = 0; // ページング数を格納する変数
+            var totalRequestCharge = 0d;
+            var documentCount = 0;
+            var pageCount = 0;
 
             try
             {
@@ -75,7 +75,7 @@ namespace CosmosDBClient
                 while (queryResultSetIterator.HasMoreResults)
                 {
                     var currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                    pageCount++; // ページ数をカウント
+                    pageCount++;
 
                     // 現在のリクエストにかかったRUを加算
                     totalRequestCharge += currentResultSet.RequestCharge;
@@ -89,7 +89,7 @@ namespace CosmosDBClient
                     ProcessQueryResults(currentResultSet, dataTable, maxCount);
                 }
 
-                stopwatch.Stop(); // 実行時間の計測を停止
+                stopwatch.Stop();
                 var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
 
                 // StatusStripに情報を表示

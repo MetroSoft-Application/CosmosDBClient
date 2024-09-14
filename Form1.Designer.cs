@@ -17,8 +17,8 @@
 
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
             buttonLoadData = new Button();
             dataGridViewResults = new DataGridView();
             splitContainer1 = new SplitContainer();
@@ -47,6 +47,7 @@
             toolStripStatusLabel10 = new ToolStripStatusLabel();
             toolStripStatusLabel11 = new ToolStripStatusLabel();
             toolStripStatusLabel12 = new ToolStripStatusLabel();
+            toolStripStatusLabel13 = new ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -63,7 +64,7 @@
             // buttonLoadData
             // 
             buttonLoadData.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            buttonLoadData.Location = new Point(1527, 15);
+            buttonLoadData.Location = new Point(1527, 12);
             buttonLoadData.Name = "buttonLoadData";
             buttonLoadData.Size = new Size(75, 23);
             buttonLoadData.TabIndex = 0;
@@ -73,28 +74,28 @@
             // 
             // dataGridViewResults
             // 
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
-            dataGridViewCellStyle1.Font = new Font("Yu Gothic UI", 9F);
-            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = SystemColors.ActiveCaption;
+            dataGridViewCellStyle3.Font = new Font("Yu Gothic UI", 9F);
+            dataGridViewCellStyle3.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.True;
+            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
             dataGridViewResults.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridViewResults.Dock = DockStyle.Fill;
             dataGridViewResults.Location = new Point(0, 0);
             dataGridViewResults.Name = "dataGridViewResults";
             dataGridViewResults.ReadOnly = true;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle2.Font = new Font("Yu Gothic UI", 9F);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
-            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridViewResults.Size = new Size(1267, 760);
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle4.Font = new Font("Yu Gothic UI", 9F);
+            dataGridViewCellStyle4.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle4.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle4.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
+            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewResults.Size = new Size(1267, 742);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
@@ -102,7 +103,7 @@
             // splitContainer1
             // 
             splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            splitContainer1.Location = new Point(12, 129);
+            splitContainer1.Location = new Point(12, 146);
             splitContainer1.Name = "splitContainer1";
             splitContainer1.Orientation = Orientation.Horizontal;
             // 
@@ -113,8 +114,8 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(richTextBoxSelectedCell);
-            splitContainer1.Size = new Size(1590, 814);
-            splitContainer1.SplitterDistance = 760;
+            splitContainer1.Size = new Size(1590, 797);
+            splitContainer1.SplitterDistance = 742;
             splitContainer1.TabIndex = 2;
             // 
             // splitContainer2
@@ -130,7 +131,7 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(JsonData);
-            splitContainer2.Size = new Size(1590, 760);
+            splitContainer2.Size = new Size(1590, 742);
             splitContainer2.SplitterDistance = 1267;
             splitContainer2.TabIndex = 3;
             // 
@@ -141,7 +142,7 @@
             JsonData.Location = new Point(0, 0);
             JsonData.Name = "JsonData";
             JsonData.ReadOnly = true;
-            JsonData.Size = new Size(319, 760);
+            JsonData.Size = new Size(319, 742);
             JsonData.TabIndex = 2;
             JsonData.Text = "";
             // 
@@ -152,7 +153,7 @@
             richTextBoxSelectedCell.Location = new Point(0, 0);
             richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
             richTextBoxSelectedCell.ReadOnly = true;
-            richTextBoxSelectedCell.Size = new Size(1590, 50);
+            richTextBoxSelectedCell.Size = new Size(1590, 51);
             richTextBoxSelectedCell.TabIndex = 0;
             richTextBoxSelectedCell.Text = "";
             // 
@@ -163,14 +164,14 @@
             richTextBoxQuery.Location = new Point(12, 12);
             richTextBoxQuery.Name = "richTextBoxQuery";
             richTextBoxQuery.ScrollBars = RichTextBoxScrollBars.Vertical;
-            richTextBoxQuery.Size = new Size(1131, 111);
+            richTextBoxQuery.Size = new Size(1267, 119);
             richTextBoxQuery.TabIndex = 4;
             richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1\nORDER BY\n    c.id\n";
             // 
             // numericUpDownMaxCount
             // 
             numericUpDownMaxCount.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            numericUpDownMaxCount.Location = new Point(1254, 100);
+            numericUpDownMaxCount.Location = new Point(1396, 101);
             numericUpDownMaxCount.Maximum = new decimal(new int[] { 1569325056, 23283064, 0, 0 });
             numericUpDownMaxCount.Name = "numericUpDownMaxCount";
             numericUpDownMaxCount.Size = new Size(75, 23);
@@ -180,9 +181,9 @@
             // textBoxConnectionString
             // 
             textBoxConnectionString.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxConnectionString.Location = new Point(1254, 12);
+            textBoxConnectionString.Location = new Point(1396, 12);
             textBoxConnectionString.Name = "textBoxConnectionString";
-            textBoxConnectionString.Size = new Size(267, 23);
+            textBoxConnectionString.Size = new Size(125, 23);
             textBoxConnectionString.TabIndex = 6;
             textBoxConnectionString.UseSystemPasswordChar = true;
             // 
@@ -190,7 +191,7 @@
             // 
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label1.AutoSize = true;
-            label1.Location = new Point(1149, 15);
+            label1.Location = new Point(1287, 20);
             label1.Name = "label1";
             label1.Size = new Size(99, 15);
             label1.TabIndex = 7;
@@ -200,7 +201,7 @@
             // 
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label2.AutoSize = true;
-            label2.Location = new Point(1149, 45);
+            label2.Location = new Point(1288, 48);
             label2.Name = "label2";
             label2.Size = new Size(55, 15);
             label2.TabIndex = 8;
@@ -209,24 +210,24 @@
             // textBoxDatabaseName
             // 
             textBoxDatabaseName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxDatabaseName.Location = new Point(1254, 42);
+            textBoxDatabaseName.Location = new Point(1396, 42);
             textBoxDatabaseName.Name = "textBoxDatabaseName";
-            textBoxDatabaseName.Size = new Size(267, 23);
+            textBoxDatabaseName.Size = new Size(125, 23);
             textBoxDatabaseName.TabIndex = 9;
             // 
             // textBoxContainerName
             // 
             textBoxContainerName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxContainerName.Location = new Point(1254, 71);
+            textBoxContainerName.Location = new Point(1396, 71);
             textBoxContainerName.Name = "textBoxContainerName";
-            textBoxContainerName.Size = new Size(267, 23);
+            textBoxContainerName.Size = new Size(125, 23);
             textBoxContainerName.TabIndex = 11;
             // 
             // label3
             // 
             label3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label3.AutoSize = true;
-            label3.Location = new Point(1149, 75);
+            label3.Location = new Point(1288, 75);
             label3.Name = "label3";
             label3.Size = new Size(58, 15);
             label3.TabIndex = 10;
@@ -236,7 +237,7 @@
             // 
             label4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label4.AutoSize = true;
-            label4.Location = new Point(1149, 103);
+            label4.Location = new Point(1289, 103);
             label4.Name = "label4";
             label4.Size = new Size(53, 15);
             label4.TabIndex = 12;
@@ -245,7 +246,7 @@
             // 
             // statusStrip1
             // 
-            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2, toolStripStatusLabel3, toolStripStatusLabel4, toolStripStatusLabel5, toolStripStatusLabel6, toolStripStatusLabel7, toolStripStatusLabel8, toolStripStatusLabel9, toolStripStatusLabel10, toolStripStatusLabel11, toolStripStatusLabel12 });
+            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2, toolStripStatusLabel3, toolStripStatusLabel4 });
             statusStrip1.Location = new Point(0, 933);
             statusStrip1.Name = "statusStrip1";
             statusStrip1.Size = new Size(1614, 22);
@@ -275,42 +276,47 @@
             // toolStripStatusLabel5
             // 
             toolStripStatusLabel5.Name = "toolStripStatusLabel5";
-            toolStripStatusLabel5.Size = new Size(0, 17);
+            toolStripStatusLabel5.Size = new Size(23, 23);
             // 
             // toolStripStatusLabel6
             // 
             toolStripStatusLabel6.Name = "toolStripStatusLabel6";
-            toolStripStatusLabel6.Size = new Size(0, 17);
+            toolStripStatusLabel6.Size = new Size(23, 23);
             // 
             // toolStripStatusLabel7
             // 
             toolStripStatusLabel7.Name = "toolStripStatusLabel7";
-            toolStripStatusLabel7.Size = new Size(0, 17);
+            toolStripStatusLabel7.Size = new Size(23, 23);
             // 
             // toolStripStatusLabel8
             // 
             toolStripStatusLabel8.Name = "toolStripStatusLabel8";
-            toolStripStatusLabel8.Size = new Size(0, 17);
+            toolStripStatusLabel8.Size = new Size(23, 23);
             // 
             // toolStripStatusLabel9
             // 
             toolStripStatusLabel9.Name = "toolStripStatusLabel9";
-            toolStripStatusLabel9.Size = new Size(0, 17);
+            toolStripStatusLabel9.Size = new Size(23, 23);
             // 
             // toolStripStatusLabel10
             // 
             toolStripStatusLabel10.Name = "toolStripStatusLabel10";
-            toolStripStatusLabel10.Size = new Size(0, 17);
+            toolStripStatusLabel10.Size = new Size(23, 23);
             // 
             // toolStripStatusLabel11
             // 
             toolStripStatusLabel11.Name = "toolStripStatusLabel11";
-            toolStripStatusLabel11.Size = new Size(0, 17);
+            toolStripStatusLabel11.Size = new Size(23, 23);
             // 
             // toolStripStatusLabel12
             // 
             toolStripStatusLabel12.Name = "toolStripStatusLabel12";
-            toolStripStatusLabel12.Size = new Size(0, 17);
+            toolStripStatusLabel12.Size = new Size(23, 23);
+            // 
+            // toolStripStatusLabel13
+            // 
+            toolStripStatusLabel13.Name = "toolStripStatusLabel13";
+            toolStripStatusLabel13.Size = new Size(23, 23);
             // 
             // Form1
             // 
@@ -377,5 +383,6 @@
         private ToolStripStatusLabel toolStripStatusLabel10;
         private ToolStripStatusLabel toolStripStatusLabel11;
         private ToolStripStatusLabel toolStripStatusLabel12;
+        private ToolStripStatusLabel toolStripStatusLabel13;
     }
 }
