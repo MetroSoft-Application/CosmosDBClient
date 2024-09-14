@@ -1,6 +1,7 @@
 using System.Data;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 
@@ -191,11 +192,123 @@ namespace CosmosDBClient
             // JSONデータの取得
             var jsonData = dataGridViewResults.Rows[e.RowIndex].Cells[1].Value?.ToString();
             JsonData.Text = jsonData;
+            MarkLinkTextFromJson(JsonData, JsonData.Text);
 
             if (e.ColumnIndex > 1)
             {
                 var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
                 richTextBoxSelectedCell.Text = cellValue;
+            }
+        }
+
+        private void MarkLinkTextFromJson(RichTextBox richTextBox, string jsonText)
+        {
+            try
+            {
+                // JSONデータをパース
+                var jsonObject = JObject.Parse(jsonText);
+
+                // リンク情報を取得
+                var filePath = jsonObject["fullPath"]?.ToString();
+                var folderPath = jsonObject["folderName"]?.ToString();
+
+                // リンクのスタイルを設定
+                SetLinkStyle(richTextBox, filePath);
+                SetLinkStyle(richTextBox, folderPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error parsing JSON: " + ex.Message);
+            }
+        }
+
+        private void SetLinkStyle(RichTextBox richTextBox, string linkText)
+        {
+            if (!string.IsNullOrEmpty(linkText))
+            {
+                var startIndex = richTextBox.Text.IndexOf(linkText);
+                if (startIndex >= 0)
+                {
+                    richTextBox.Select(startIndex, linkText.Length);
+                    richTextBox.SelectionColor = Color.Blue; // リンクの色
+                    richTextBox.SelectionFont = new Font(richTextBox.Font, FontStyle.Underline); // リンクスタイル
+                    richTextBox.Select(0, 0); // 選択をクリア
+                }
+            }
+        }
+
+        private void JsonData_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (string.IsNullOrEmpty(JsonData.Text))
+            {
+                return;
+            }
+
+            // クリックされた位置のテキストインデックスを取得
+            int charIndex = JsonData.GetCharIndexFromPosition(e.Location);
+
+            // クリックされたテキストのリンク情報を取得
+            string clickedLink = GetLinkAtPosition(JsonData.Text, charIndex);
+
+            if (!string.IsNullOrEmpty(clickedLink))
+            {
+                // リンクがクリックされた場合の処理
+                HandleLinkClick(clickedLink);
+            }
+        }
+
+        private string GetLinkAtPosition(string jsonText, int charIndex)
+        {
+            try
+            {
+                // JSONデータをパース
+                var jsonObject = JObject.Parse(jsonText);
+
+                // リンク情報を取得
+                var filePath = jsonObject["fullPath"]?.ToString();
+                var folderPath = jsonObject["folderName"]?.ToString();
+
+                // クリック位置がリンクかどうかをチェック
+                if (IsLinkAtPosition(charIndex, filePath))
+                {
+                    return filePath;
+                }
+                else if (IsLinkAtPosition(charIndex, folderPath))
+                {
+                    return folderPath;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error parsing JSON: " + ex.Message);
+            }
+
+            return string.Empty;
+        }
+
+        private bool IsLinkAtPosition(int charIndex, string linkText)
+        {
+            if (!string.IsNullOrEmpty(linkText))
+            {
+                var startIndex = JsonData.Text.Replace(@"\\", @"\").IndexOf(linkText.Substring(2));
+                return charIndex >= startIndex && charIndex < startIndex + linkText.Length;
+            }
+            return false;
+        }
+
+        private void HandleLinkClick(string link)
+        {
+            if (System.IO.File.Exists(link))
+            {
+                Process.Start(new ProcessStartInfo(link) { UseShellExecute = true });
+            }
+            else if (System.IO.Directory.Exists(link))
+            {
+                Process.Start(new ProcessStartInfo("explorer.exe", link) { UseShellExecute = true });
+            }
+            else
+            {
+                MessageBox.Show("Path does not exist: " + link);
             }
         }
     }
