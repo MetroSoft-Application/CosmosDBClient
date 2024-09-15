@@ -43,9 +43,8 @@ namespace CosmosDBClient
 
             if (useHyperlinkHandler)
             {
-                hyperlinkHandler = new HyperlinkHandler(JsonData);
+                hyperlinkHandler = new HyperlinkHandler();
             }
-
         }
 
         /// <summary>
@@ -74,7 +73,7 @@ namespace CosmosDBClient
             var dataTable = await FetchDataFromCosmosDBAsync();
             AddHiddenJsonColumnIfNeeded();
             dataGridViewResults.DataSource = dataTable;
-            dataGridViewResults.Columns["JsonData"].Visible = false;
+            dataGridViewResults.Columns[1].Visible = false;
         }
 
         /// <summary>
@@ -97,6 +96,7 @@ namespace CosmosDBClient
                 {
                     Name = "JsonData",
                     HeaderText = "JsonData",
+                    Visible = false,
                 };
                 dataGridViewResults.Columns.Add(jsonColumn);
             }
@@ -305,13 +305,20 @@ namespace CosmosDBClient
 
             if (useHyperlinkHandler)
             {
-                hyperlinkHandler.MarkLinkTextFromJson(JsonData.Text);
+                hyperlinkHandler.MarkLinkTextFromJson(JsonData);
             }
 
             if (e.ColumnIndex > 1)
             {
                 var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
                 richTextBoxSelectedCell.Text = cellValue;
+
+                if (useHyperlinkHandler && (
+                    dataGridViewResults.Columns[e.ColumnIndex].HeaderText == "folderName" || dataGridViewResults.Columns[e.ColumnIndex].HeaderText == "fullPath"
+                    ))
+                {
+                    hyperlinkHandler.MarkLinkTextFromText(richTextBoxSelectedCell);
+                }
             }
         }
 
@@ -324,7 +331,20 @@ namespace CosmosDBClient
         {
             if (useHyperlinkHandler)
             {
-                hyperlinkHandler.HandleMouseUp(e);
+                hyperlinkHandler.HandleMouseUpJson(e, JsonData);
+            }
+        }
+
+        /// <summary>
+        /// RichTextBox のマウスアップイベントを処理する
+        /// </summary>
+        /// <param name="sender">イベントの送信者</param>
+        /// <param name="e">マウスイベントデータ</param>
+        private void richTextBoxSelectedCell_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (useHyperlinkHandler)
+            {
+                hyperlinkHandler.HandleMouseUpText(e, richTextBoxSelectedCell);
             }
         }
     }

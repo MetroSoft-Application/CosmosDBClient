@@ -159,6 +159,7 @@
             richTextBoxSelectedCell.Size = new Size(1310, 34);
             richTextBoxSelectedCell.TabIndex = 0;
             richTextBoxSelectedCell.Text = "";
+            richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
             // 
             // richTextBoxQuery
             // 

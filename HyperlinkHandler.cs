@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
+using System.Drawing;
 
 namespace CosmosDBClient
 {
@@ -9,32 +11,48 @@ namespace CosmosDBClient
     /// </summary>
     public class HyperlinkHandler
     {
-        private readonly RichTextBox richTextBox;
-
-        /// <summary>
-        /// 指定された <see cref="RichTextBox"/> コントロールを使用して、新しいインスタンスを初期化する
-        /// </summary>
-        /// <param name="richTextBox">ハイパーリンクを処理するための <see cref="RichTextBox"/> コントロール</param>
-        public HyperlinkHandler(RichTextBox richTextBox)
-        {
-            this.richTextBox = richTextBox;
-        }
-
         /// <summary>
         /// 指定されたJSONテキストからリンク情報を抽出し、RichTextBox内のテキストをハイパーリンクとしてマークする
         /// </summary>
-        /// <param name="jsonText">リンク情報を含むJSON形式の文字列</param>
-        public void MarkLinkTextFromJson(string jsonText)
+        /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
+        public void MarkLinkTextFromJson(RichTextBox richTextBox)
         {
+            if (string.IsNullOrEmpty(richTextBox.Text))
+            {
+                return;
+            }
+
             try
             {
-                var jsonObject = JObject.Parse(jsonText);
-
+                var jsonObject = JObject.Parse(richTextBox.Text);
                 var filePath = jsonObject["fullPath"]?.ToString();
                 var folderPath = jsonObject["folderName"]?.ToString();
 
-                SetLinkStyle(filePath);
-                SetLinkStyle(folderPath);
+                // リンクのスタイルを設定
+                SetLinkStyle(filePath, richTextBox);
+                SetLinkStyle(folderPath, richTextBox);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error parsing JSON: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 指定されたテキストからリンク情報を抽出し、RichTextBox内のテキストをハイパーリンクとしてマークする
+        /// </summary>
+        /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
+        public void MarkLinkTextFromText(RichTextBox richTextBox)
+        {
+            if (string.IsNullOrEmpty(richTextBox.Text))
+            {
+                return;
+            }
+
+            try
+            {
+                // リンクのスタイルを設定
+                SetLinkStyle(richTextBox.Text, richTextBox);
             }
             catch (Exception ex)
             {
@@ -46,7 +64,8 @@ namespace CosmosDBClient
         /// 指定されたリンクテキストをRichTextBox内でハイパーリンクとして設定する
         /// </summary>
         /// <param name="linkText">ハイパーリンクとして表示するリンクテキスト</param>
-        private void SetLinkStyle(string linkText)
+        /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
+        private void SetLinkStyle(string linkText, RichTextBox richTextBox)
         {
             if (!string.IsNullOrEmpty(linkText))
             {
@@ -65,12 +84,31 @@ namespace CosmosDBClient
         /// RichTextBox内のクリックイベントを処理し、クリックされた位置にリンクが存在するかを確認する
         /// </summary>
         /// <param name="e">マウスイベントデータ</param>
-        public void HandleMouseUp(MouseEventArgs e)
+        /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
+        public void HandleMouseUpJson(MouseEventArgs e, RichTextBox richTextBox)
         {
             if (string.IsNullOrEmpty(richTextBox.Text)) return;
 
-            int charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
-            string clickedLink = GetLinkAtPosition(richTextBox.Text, charIndex);
+            var charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
+            var clickedLink = GetLinkAtPositionFromJson(richTextBox.Text, charIndex, richTextBox);
+
+            if (!string.IsNullOrEmpty(clickedLink))
+            {
+                HandleLinkClick(clickedLink);
+            }
+        }
+
+        /// <summary>
+        /// RichTextBox内のクリックイベントを処理し、クリックされた位置にリンクが存在するかを確認する
+        /// </summary>
+        /// <param name="e">マウスイベントデータ</param>
+        /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
+        public void HandleMouseUpText(MouseEventArgs e, RichTextBox richTextBox)
+        {
+            if (string.IsNullOrEmpty(richTextBox.Text)) return;
+
+            var charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
+            var clickedLink = GetLinkAtPositionFromText(richTextBox.Text, charIndex, richTextBox);
 
             if (!string.IsNullOrEmpty(clickedLink))
             {
@@ -83,8 +121,9 @@ namespace CosmosDBClient
         /// </summary>
         /// <param name="jsonText">JSON形式の文字列</param>
         /// <param name="charIndex">文字のインデックス</param>
+        /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
         /// <returns>リンクの文字列リンクが存在しない場合は空文字列</returns>
-        private string GetLinkAtPosition(string jsonText, int charIndex)
+        private string GetLinkAtPositionFromJson(string jsonText, int charIndex, RichTextBox richTextBox)
         {
             try
             {
@@ -92,11 +131,11 @@ namespace CosmosDBClient
                 var filePath = jsonObject["fullPath"]?.ToString();
                 var folderPath = jsonObject["folderName"]?.ToString();
 
-                if (IsLinkAtPosition(charIndex, filePath))
+                if (IsLinkAtPosition(charIndex, filePath, richTextBox))
                 {
                     return filePath;
                 }
-                else if (IsLinkAtPosition(charIndex, folderPath))
+                else if (IsLinkAtPosition(charIndex, folderPath, richTextBox))
                 {
                     return folderPath;
                 }
@@ -110,12 +149,37 @@ namespace CosmosDBClient
         }
 
         /// <summary>
+        /// 指定された位置にあるリンクを取得する
+        /// </summary>
+        /// <param name="jsonText">JSON形式の文字列</param>
+        /// <param name="charIndex">文字のインデックス</param>
+        /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
+        /// <returns>リンクの文字列リンクが存在しない場合は空文字列</returns>
+        private string GetLinkAtPositionFromText(string text, int charIndex, RichTextBox richTextBox)
+        {
+            try
+            {
+                if (IsLinkAtPosition(charIndex, text, richTextBox))
+                {
+                    return text;
+                }
+            }
+            catch (Exception)
+            {
+                //MessageBox.Show("Error parsing JSON: " + ex.Message);
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
         /// 指定された位置にリンクが存在するかどうかを判定する
         /// </summary>
         /// <param name="charIndex">文字のインデックス</param>
         /// <param name="linkText">リンクテキスト</param>
+        /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
         /// <returns>リンクが存在する場合は trueそれ以外の場合は false</returns>
-        private bool IsLinkAtPosition(int charIndex, string linkText)
+        private bool IsLinkAtPosition(int charIndex, string linkText, RichTextBox richTextBox)
         {
             if (!string.IsNullOrEmpty(linkText))
             {
