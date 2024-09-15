@@ -74,6 +74,7 @@ namespace CosmosDBClient
             var dataTable = await FetchDataFromCosmosDBAsync();
             AddHiddenJsonColumnIfNeeded();
             dataGridViewResults.DataSource = dataTable;
+            dataGridViewResults.Columns["JsonData"].Visible = false;
         }
 
         /// <summary>
@@ -96,7 +97,6 @@ namespace CosmosDBClient
                 {
                     Name = "JsonData",
                     HeaderText = "JsonData",
-                    Visible = false
                 };
                 dataGridViewResults.Columns.Add(jsonColumn);
             }
@@ -295,7 +295,10 @@ namespace CosmosDBClient
         /// <param name="e">セルクリックイベントデータ</param>
         private void dataGridViewResults_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0 || e.ColumnIndex < 1) return;
+            if (e.RowIndex < 0 || e.ColumnIndex < 1)
+            {
+                return;
+            }
 
             var jsonData = dataGridViewResults.Rows[e.RowIndex].Cells[1].Value?.ToString();
             JsonData.Text = jsonData;

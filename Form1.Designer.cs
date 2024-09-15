@@ -64,7 +64,7 @@
             // buttonLoadData
             // 
             buttonLoadData.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            buttonLoadData.Location = new Point(1527, 12);
+            buttonLoadData.Location = new Point(1247, 12);
             buttonLoadData.Name = "buttonLoadData";
             buttonLoadData.Size = new Size(75, 23);
             buttonLoadData.TabIndex = 0;
@@ -74,6 +74,8 @@
             // 
             // dataGridViewResults
             // 
+            dataGridViewResults.AllowUserToAddRows = false;
+            dataGridViewResults.AllowUserToDeleteRows = false;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
             dataGridViewCellStyle1.Font = new Font("Yu Gothic UI", 9F);
@@ -95,7 +97,7 @@
             dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridViewResults.Size = new Size(1267, 742);
+            dataGridViewResults.Size = new Size(983, 485);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
@@ -114,8 +116,8 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(richTextBoxSelectedCell);
-            splitContainer1.Size = new Size(1590, 797);
-            splitContainer1.SplitterDistance = 742;
+            splitContainer1.Size = new Size(1310, 523);
+            splitContainer1.SplitterDistance = 485;
             splitContainer1.TabIndex = 2;
             // 
             // splitContainer2
@@ -131,8 +133,8 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(JsonData);
-            splitContainer2.Size = new Size(1590, 742);
-            splitContainer2.SplitterDistance = 1267;
+            splitContainer2.Size = new Size(1310, 485);
+            splitContainer2.SplitterDistance = 983;
             splitContainer2.TabIndex = 3;
             // 
             // JsonData
@@ -142,7 +144,7 @@
             JsonData.Location = new Point(0, 0);
             JsonData.Name = "JsonData";
             JsonData.ReadOnly = true;
-            JsonData.Size = new Size(319, 742);
+            JsonData.Size = new Size(323, 485);
             JsonData.TabIndex = 2;
             JsonData.Text = "";
             JsonData.MouseUp += JsonData_MouseUp;
@@ -154,25 +156,25 @@
             richTextBoxSelectedCell.Location = new Point(0, 0);
             richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
             richTextBoxSelectedCell.ReadOnly = true;
-            richTextBoxSelectedCell.Size = new Size(1590, 51);
+            richTextBoxSelectedCell.Size = new Size(1310, 34);
             richTextBoxSelectedCell.TabIndex = 0;
             richTextBoxSelectedCell.Text = "";
             // 
             // richTextBoxQuery
             // 
             richTextBoxQuery.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            richTextBoxQuery.Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            richTextBoxQuery.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             richTextBoxQuery.Location = new Point(12, 12);
             richTextBoxQuery.Name = "richTextBoxQuery";
             richTextBoxQuery.ScrollBars = RichTextBoxScrollBars.Vertical;
-            richTextBoxQuery.Size = new Size(1267, 119);
+            richTextBoxQuery.Size = new Size(987, 119);
             richTextBoxQuery.TabIndex = 4;
-            richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1\nORDER BY\n    c.id\n";
+            richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
             // 
             // numericUpDownMaxCount
             // 
             numericUpDownMaxCount.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            numericUpDownMaxCount.Location = new Point(1396, 101);
+            numericUpDownMaxCount.Location = new Point(1116, 101);
             numericUpDownMaxCount.Maximum = new decimal(new int[] { 1569325056, 23283064, 0, 0 });
             numericUpDownMaxCount.Name = "numericUpDownMaxCount";
             numericUpDownMaxCount.Size = new Size(75, 23);
@@ -182,7 +184,7 @@
             // textBoxConnectionString
             // 
             textBoxConnectionString.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxConnectionString.Location = new Point(1396, 12);
+            textBoxConnectionString.Location = new Point(1116, 12);
             textBoxConnectionString.Name = "textBoxConnectionString";
             textBoxConnectionString.Size = new Size(125, 23);
             textBoxConnectionString.TabIndex = 6;
@@ -192,7 +194,7 @@
             // 
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label1.AutoSize = true;
-            label1.Location = new Point(1287, 20);
+            label1.Location = new Point(1007, 20);
             label1.Name = "label1";
             label1.Size = new Size(99, 15);
             label1.TabIndex = 7;
@@ -202,7 +204,7 @@
             // 
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label2.AutoSize = true;
-            label2.Location = new Point(1288, 48);
+            label2.Location = new Point(1008, 48);
             label2.Name = "label2";
             label2.Size = new Size(55, 15);
             label2.TabIndex = 8;
@@ -211,7 +213,7 @@
             // textBoxDatabaseName
             // 
             textBoxDatabaseName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxDatabaseName.Location = new Point(1396, 42);
+            textBoxDatabaseName.Location = new Point(1116, 42);
             textBoxDatabaseName.Name = "textBoxDatabaseName";
             textBoxDatabaseName.Size = new Size(125, 23);
             textBoxDatabaseName.TabIndex = 9;
@@ -219,7 +221,7 @@
             // textBoxContainerName
             // 
             textBoxContainerName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxContainerName.Location = new Point(1396, 71);
+            textBoxContainerName.Location = new Point(1116, 71);
             textBoxContainerName.Name = "textBoxContainerName";
             textBoxContainerName.Size = new Size(125, 23);
             textBoxContainerName.TabIndex = 11;
@@ -228,7 +230,7 @@
             // 
             label3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label3.AutoSize = true;
-            label3.Location = new Point(1288, 75);
+            label3.Location = new Point(1008, 75);
             label3.Name = "label3";
             label3.Size = new Size(58, 15);
             label3.TabIndex = 10;
@@ -238,7 +240,7 @@
             // 
             label4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label4.AutoSize = true;
-            label4.Location = new Point(1289, 103);
+            label4.Location = new Point(1009, 103);
             label4.Name = "label4";
             label4.Size = new Size(53, 15);
             label4.TabIndex = 12;
@@ -248,9 +250,9 @@
             // statusStrip1
             // 
             statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2, toolStripStatusLabel3, toolStripStatusLabel4 });
-            statusStrip1.Location = new Point(0, 933);
+            statusStrip1.Location = new Point(0, 659);
             statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(1614, 22);
+            statusStrip1.Size = new Size(1334, 22);
             statusStrip1.TabIndex = 13;
             statusStrip1.Text = "statusStrip1";
             // 
@@ -323,7 +325,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1614, 955);
+            ClientSize = new Size(1334, 681);
             Controls.Add(statusStrip1);
             Controls.Add(label4);
             Controls.Add(textBoxContainerName);
