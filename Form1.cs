@@ -56,7 +56,7 @@ namespace CosmosDBClient
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddEnvironmentVariables() // 環境変数を追加で読み込む
+                .AddEnvironmentVariables()
                 .Build();
 
             return configuration;
@@ -69,7 +69,7 @@ namespace CosmosDBClient
         /// <param name="e">イベントのデータ</param>
         private async void buttonLoadData_Click(object sender, EventArgs e)
         {
-            InitializeCosmosClient();
+            InitializeCosmosClient(textBoxConnectionString.Text,textBoxDatabaseName.Text,textBoxDatabaseName.Text);
             var dataTable = await FetchDataFromCosmosDBAsync();
             AddHiddenJsonColumnIfNeeded();
             dataGridViewResults.DataSource = dataTable;
@@ -79,7 +79,10 @@ namespace CosmosDBClient
         /// <summary>
         /// Cosmos DB クライアントを初期化する
         /// </summary>
-        private void InitializeCosmosClient()
+        /// <param name="connectionString">接続文字列</param>
+        /// <param name="databaseName">DB名</param>
+        /// <param name="containerName">コンテナ名</param>
+        private void InitializeCosmosClient(string connectionString,string databaseName,string containerName)
         {
             cosmosClient = new CosmosClient(connectionString);
             cosmosContainer = cosmosClient.GetContainer(databaseName, containerName);
