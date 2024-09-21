@@ -27,6 +27,8 @@ namespace CosmosDBClient
         public Form1()
         {
             InitializeComponent();
+            // フォームのスケーリングモードを設定
+            this.AutoScaleMode = AutoScaleMode.Dpi;
 
             var configuration = LoadConfiguration();
 
@@ -69,11 +71,27 @@ namespace CosmosDBClient
         /// <param name="e">イベントのデータ</param>
         private async void buttonLoadData_Click(object sender, EventArgs e)
         {
-            InitializeCosmosClient(textBoxConnectionString.Text,textBoxDatabaseName.Text,textBoxContainerName.Text);
-            var dataTable = await FetchDataFromCosmosDBAsync();
-            AddHiddenJsonColumnIfNeeded();
-            dataGridViewResults.DataSource = dataTable;
-            dataGridViewResults.Columns[1].Visible = false;
+            try
+            {
+                // マウスカーソルを待機中に変更
+                Cursor.Current = Cursors.WaitCursor;
+
+                // Cosmos DB クライアントを初期化
+                InitializeCosmosClient(textBoxConnectionString.Text, textBoxDatabaseName.Text, textBoxContainerName.Text);
+
+                // データの取得
+                var dataTable = await FetchDataFromCosmosDBAsync();
+
+                // DataGridView にデータを設定
+                AddHiddenJsonColumnIfNeeded();
+                dataGridViewResults.DataSource = dataTable;
+                dataGridViewResults.Columns[1].Visible = false;
+            }
+            finally
+            {
+                // 処理が完了したらマウスカーソルを元に戻す
+                Cursor.Current = Cursors.Default;
+            }
         }
 
         /// <summary>

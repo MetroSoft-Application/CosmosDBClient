@@ -97,6 +97,7 @@
             dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewResults.RowHeadersWidth = 50;
             dataGridViewResults.Size = new Size(983, 485);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
