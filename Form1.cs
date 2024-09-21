@@ -69,7 +69,7 @@ namespace CosmosDBClient
         /// <param name="e">イベントのデータ</param>
         private async void buttonLoadData_Click(object sender, EventArgs e)
         {
-            InitializeCosmosClient(textBoxConnectionString.Text,textBoxDatabaseName.Text,textBoxDatabaseName.Text);
+            InitializeCosmosClient(textBoxConnectionString.Text,textBoxDatabaseName.Text,textBoxContainerName.Text);
             var dataTable = await FetchDataFromCosmosDBAsync();
             AddHiddenJsonColumnIfNeeded();
             dataGridViewResults.DataSource = dataTable;
