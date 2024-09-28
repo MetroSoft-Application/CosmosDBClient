@@ -100,7 +100,7 @@ namespace CosmosDBClient
         /// <param name="connectionString">接続文字列</param>
         /// <param name="databaseName">DB名</param>
         /// <param name="containerName">コンテナ名</param>
-        private void InitializeCosmosClient(string connectionString,string databaseName,string containerName)
+        private void InitializeCosmosClient(string connectionString, string databaseName, string containerName)
         {
             cosmosClient = new CosmosClient(connectionString);
             cosmosContainer = cosmosClient.GetContainer(databaseName, containerName);
@@ -367,6 +367,97 @@ namespace CosmosDBClient
             {
                 hyperlinkHandler.HandleMouseUpText(e, richTextBoxSelectedCell);
             }
+        }
+
+        /// <summary>
+        /// レコードを更新する
+        /// </summary>
+        /// <param name="sender">イベントの送信者</param>
+        /// <param name="e">イベントデータ</param>
+        private async void buttonUpdate_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // JSONデータをパース
+                JObject jsonObject = JObject.Parse(JsonData.Text);
+
+                // PartitionKeyを自動的に解決して取得
+                var partitionKey = await ResolvePartitionKeyAsync(jsonObject);
+
+                // PartitionKeyに対応するキー項目を取得
+                string partitionKeyInfo = GetPartitionKeyValues(jsonObject);
+
+                // Cosmos DBにUpsert処理を実行
+                var response = await cosmosContainer.UpsertItemAsync(jsonObject, partitionKey);
+
+                // 成功メッセージを表示
+                var id = jsonObject["id"].ToString();
+                var message = $"Upsert successful!\n\nId: {id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge: {response.RequestCharge}";
+                MessageBox.Show(message);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// コンテナとjsonの情報に基づいてPartitionKeyを解決し、CosmosDBに使用するPartitionKeyを構築する
+        /// </summary>
+        /// <param name="jsonObject">パースされたJSONオブジェクト</param>
+        /// <returns>解決されたPartitionKeyオブジェクト</returns>
+        private async System.Threading.Tasks.Task<PartitionKey> ResolvePartitionKeyAsync(JObject jsonObject)
+        {
+            // コンテナのプロパティからPartitionKeyPathsを取得
+            var containerProperties = await cosmosContainer.ReadContainerAsync();
+            var partitionKeyPaths = containerProperties.Resource.PartitionKeyPaths;
+
+            // PartitionKeyBuilderを使用して階層的なPartitionKeyを構築
+            var partitionKeyBuilder = new PartitionKeyBuilder();
+
+            // 各PartitionKeyPathに対して、JSONオブジェクトから値を取得し、PartitionKeyBuilderに追加
+            foreach (var path in partitionKeyPaths)
+            {
+                var key = jsonObject.SelectToken(path.Trim('/'))?.ToString();
+                if (key == null)
+                {
+                    return default(PartitionKey);
+                }
+
+                partitionKeyBuilder.Add(key);
+            }
+
+            // PartitionKeyを構築して返す
+            return partitionKeyBuilder.Build();
+        }
+
+        /// <summary>
+        /// PartitionKeyに対応するフィールド名と値を取得し、改行して表示するための文字列を構築する
+        /// </summary>
+        /// <param name="jsonObject">パースされたJSONオブジェクト</param>
+        /// <returns>PartitionKeyに対応するフィールド名と値を改行で連結した文字列</returns>
+        private string GetPartitionKeyValues(JObject jsonObject)
+        {
+            var containerProperties = cosmosContainer.ReadContainerAsync().Result;
+            var partitionKeyPaths = containerProperties.Resource.PartitionKeyPaths;
+
+            // フィールド名と値を改行で結合して表示
+            return string.Join("\n", partitionKeyPaths.Select(path =>
+            {
+                var key = jsonObject.SelectToken(path.Trim('/'))?.ToString();
+                return $"{path.Trim('/')}: {key}";
+            }));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void JsonData_TextChanged(object sender, EventArgs e)
+        {
+            var jsonData = (RichTextBox)sender;
+            buttonUpdate.Enabled = jsonData.Text != null;
         }
     }
 }

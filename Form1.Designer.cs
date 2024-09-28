@@ -23,7 +23,9 @@
             dataGridViewResults = new DataGridView();
             splitContainer1 = new SplitContainer();
             splitContainer2 = new SplitContainer();
+            splitContainer3 = new SplitContainer();
             JsonData = new RichTextBox();
+            buttonUpdate = new Button();
             richTextBoxSelectedCell = new RichTextBox();
             richTextBoxQuery = new RichTextBox();
             numericUpDownMaxCount = new NumericUpDown();
@@ -57,6 +59,10 @@
             splitContainer2.Panel1.SuspendLayout();
             splitContainer2.Panel2.SuspendLayout();
             splitContainer2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
+            splitContainer3.Panel1.SuspendLayout();
+            splitContainer3.Panel2.SuspendLayout();
+            splitContainer3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).BeginInit();
             statusStrip1.SuspendLayout();
             SuspendLayout();
@@ -133,10 +139,28 @@
             // 
             // splitContainer2.Panel2
             // 
-            splitContainer2.Panel2.Controls.Add(JsonData);
+            splitContainer2.Panel2.Controls.Add(splitContainer3);
             splitContainer2.Size = new Size(1310, 485);
             splitContainer2.SplitterDistance = 983;
             splitContainer2.TabIndex = 3;
+            // 
+            // splitContainer3
+            // 
+            splitContainer3.Dock = DockStyle.Fill;
+            splitContainer3.Location = new Point(0, 0);
+            splitContainer3.Name = "splitContainer3";
+            splitContainer3.Orientation = Orientation.Horizontal;
+            // 
+            // splitContainer3.Panel1
+            // 
+            splitContainer3.Panel1.Controls.Add(JsonData);
+            // 
+            // splitContainer3.Panel2
+            // 
+            splitContainer3.Panel2.Controls.Add(buttonUpdate);
+            splitContainer3.Size = new Size(323, 485);
+            splitContainer3.SplitterDistance = 452;
+            splitContainer3.TabIndex = 4;
             // 
             // JsonData
             // 
@@ -144,11 +168,22 @@
             JsonData.Dock = DockStyle.Fill;
             JsonData.Location = new Point(0, 0);
             JsonData.Name = "JsonData";
-            JsonData.ReadOnly = true;
-            JsonData.Size = new Size(323, 485);
-            JsonData.TabIndex = 2;
+            JsonData.Size = new Size(323, 452);
+            JsonData.TabIndex = 3;
             JsonData.Text = "";
-            JsonData.MouseUp += JsonData_MouseUp;
+            JsonData.TextChanged += JsonData_TextChanged;
+            // 
+            // buttonUpdate
+            // 
+            buttonUpdate.Dock = DockStyle.Fill;
+            buttonUpdate.Enabled = false;
+            buttonUpdate.Location = new Point(0, 0);
+            buttonUpdate.Name = "buttonUpdate";
+            buttonUpdate.Size = new Size(323, 29);
+            buttonUpdate.TabIndex = 0;
+            buttonUpdate.Text = "Update";
+            buttonUpdate.UseVisualStyleBackColor = true;
+            buttonUpdate.Click += buttonUpdate_Click;
             // 
             // richTextBoxSelectedCell
             // 
@@ -351,6 +386,10 @@
             splitContainer2.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
             splitContainer2.ResumeLayout(false);
+            splitContainer3.Panel1.ResumeLayout(false);
+            splitContainer3.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer3).EndInit();
+            splitContainer3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).EndInit();
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();
@@ -374,7 +413,6 @@
         private Label label3;
         private Label label4;
         private SplitContainer splitContainer2;
-        private RichTextBox JsonData;
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel toolStripStatusLabel1;
         private ToolStripStatusLabel toolStripStatusLabel2;
@@ -389,5 +427,8 @@
         private ToolStripStatusLabel toolStripStatusLabel11;
         private ToolStripStatusLabel toolStripStatusLabel12;
         private ToolStripStatusLabel toolStripStatusLabel13;
+        private SplitContainer splitContainer3;
+        private RichTextBox JsonData;
+        private Button buttonUpdate;
     }
 }
