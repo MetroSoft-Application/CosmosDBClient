@@ -40,8 +40,20 @@ namespace CosmosDBClient
 
             textBoxConnectionString.Text = connectionString;
             textBoxDatabaseName.Text = databaseName;
-            textBoxContainerName.Text = containerName;
+            cmbBoxContainerName.Text = containerName;
             numericUpDownMaxCount.Value = maxItemCount;
+
+            try
+            {
+                cosmosClient = new CosmosClient(connectionString);
+                if (cosmosClient != null && !string.IsNullOrWhiteSpace(databaseName))
+                {
+                    LoadContainersIntoComboBox(databaseName);
+                }
+            }
+            catch (Exception)
+            {
+            }
 
             if (useHyperlinkHandler)
             {
@@ -77,21 +89,30 @@ namespace CosmosDBClient
                 Cursor.Current = Cursors.WaitCursor;
 
                 // Cosmos DB クライアントを初期化
-                InitializeCosmosClient(textBoxConnectionString.Text, textBoxDatabaseName.Text, textBoxContainerName.Text);
+                InitializeCosmosClient(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
 
-                // データの取得
-                var dataTable = await FetchDataFromCosmosDBAsync();
-
-                // DataGridView にデータを設定
-                AddHiddenJsonColumnIfNeeded();
-                dataGridViewResults.DataSource = dataTable;
-                dataGridViewResults.Columns[1].Visible = false;
+                await UpdateDatagridView();
             }
             finally
             {
                 // 処理が完了したらマウスカーソルを元に戻す
                 Cursor.Current = Cursors.Default;
             }
+        }
+
+        /// <summary>
+        /// DatagridViewを更新する
+        /// </summary>
+        /// <returns>Task</returns>
+        private async Task UpdateDatagridView()
+        {
+            // データの取得
+            var dataTable = await FetchDataFromCosmosDBAsync();
+
+            // DataGridView にデータを設定
+            AddHiddenJsonColumnIfNeeded();
+            dataGridViewResults.DataSource = dataTable;
+            dataGridViewResults.Columns[1].Visible = false;
         }
 
         /// <summary>
@@ -104,6 +125,35 @@ namespace CosmosDBClient
         {
             cosmosClient = new CosmosClient(connectionString);
             cosmosContainer = cosmosClient.GetContainer(databaseName, containerName);
+        }
+
+        /// <summary>
+        /// 指定されたデータベースにあるコンテナの一覧をComboBoxに格納する
+        /// </summary>
+        /// <param name="databaseId">データベースID</param>
+        private async void LoadContainersIntoComboBox(string databaseId)
+        {
+            try
+            {
+                var databaseReference = cosmosClient.GetDatabase(databaseId);
+
+                // コンテナ一覧を取得
+                using (var containerIterator = databaseReference.GetContainerQueryIterator<ContainerProperties>())
+                {
+                    while (containerIterator.HasMoreResults)
+                    {
+                        foreach (var container in await containerIterator.ReadNextAsync())
+                        {
+                            // ComboBoxにコンテナ名を追加
+                            cmbBoxContainerName.Items.Add(container.Id);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"エラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -376,6 +426,18 @@ namespace CosmosDBClient
         /// <param name="e">イベントデータ</param>
         private async void buttonUpdate_Click(object sender, EventArgs e)
         {
+            DialogResult result = MessageBox.Show(
+                "Do you want to update your records?",
+                "Info",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result != DialogResult.Yes)
+            {
+                return;
+            }
+
             try
             {
                 // JSONデータをパース
@@ -394,6 +456,57 @@ namespace CosmosDBClient
                 var id = jsonObject["id"].ToString();
                 var message = $"Upsert successful!\n\nId: {id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge: {response.RequestCharge}";
                 MessageBox.Show(message);
+                await UpdateDatagridView();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// レコードを削除する
+        /// </summary>
+        /// <param name="sender">イベントの送信者</param>
+        /// <param name="e">イベントデータ</param>
+        private async void buttonDelete_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show(
+                "Do you want to delete your records?",
+                "Info",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result != DialogResult.Yes)
+            {
+                return;
+            }
+
+            if (result != DialogResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                // JSONデータをパース
+                JObject jsonObject = JObject.Parse(JsonData.Text);
+                var id = jsonObject["id"].ToString();
+
+                // PartitionKeyを自動的に解決して取得
+                var partitionKey = await ResolvePartitionKeyAsync(jsonObject);
+
+                // PartitionKeyに対応するキー項目を取得
+                string partitionKeyInfo = GetPartitionKeyValues(jsonObject);
+
+                // Cosmos DBにDelete処理を実行
+                var response = await cosmosContainer.DeleteItemAsync<object>(id, partitionKey);
+
+                // 成功メッセージを表示
+                var message = $"Delete successful!\n\nId: {id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge: {response.RequestCharge}";
+                MessageBox.Show(message);
+                await UpdateDatagridView();
             }
             catch (Exception ex)
             {
@@ -458,6 +571,7 @@ namespace CosmosDBClient
         {
             var jsonData = (RichTextBox)sender;
             buttonUpdate.Enabled = jsonData.Text != null;
+            buttonDelete.Enabled = jsonData.Text != null;
         }
     }
 }
