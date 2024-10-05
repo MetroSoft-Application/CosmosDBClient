@@ -100,7 +100,6 @@
             dataGridViewResults.Dock = DockStyle.Fill;
             dataGridViewResults.Location = new Point(0, 0);
             dataGridViewResults.Name = "dataGridViewResults";
-            dataGridViewResults.ReadOnly = true;
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
             dataGridViewCellStyle2.Font = new Font("Yu Gothic UI", 9F);
@@ -113,6 +112,7 @@
             dataGridViewResults.Size = new Size(983, 485);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
+            dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
             // 
             // splitContainer1
@@ -176,6 +176,7 @@
             JsonData.Dock = DockStyle.Fill;
             JsonData.Location = new Point(0, 0);
             JsonData.Name = "JsonData";
+            JsonData.ReadOnly = true;
             JsonData.Size = new Size(323, 452);
             JsonData.TabIndex = 3;
             JsonData.Text = "";

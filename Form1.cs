@@ -20,6 +20,7 @@ namespace CosmosDBClient
         private readonly string? connectionString;
         private readonly string? databaseName;
         private readonly string? containerName;
+        private readonly string[] systemColumns = { "id", "_etag", "_rid", "_self", "_attachments", "_ts" };
 
         /// <summary>
         /// 新しい <see cref="Form1"/> クラスのインスタンスを初期化する
@@ -91,6 +92,7 @@ namespace CosmosDBClient
                 // Cosmos DB クライアントを初期化
                 InitializeCosmosClient(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
 
+                // DatagridViewを更新
                 await UpdateDatagridView();
             }
             finally
@@ -108,11 +110,8 @@ namespace CosmosDBClient
         {
             // データの取得
             var dataTable = await FetchDataFromCosmosDBAsync();
-
-            // DataGridView にデータを設定
-            AddHiddenJsonColumnIfNeeded();
+            SetReadOnlyColumns(dataTable);
             dataGridViewResults.DataSource = dataTable;
-            dataGridViewResults.Columns[1].Visible = false;
         }
 
         /// <summary>
@@ -152,24 +151,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"エラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        /// <summary>
-        /// DataGridView に隠し列を追加する
-        /// </summary>
-        private void AddHiddenJsonColumnIfNeeded()
-        {
-            if (!dataGridViewResults.Columns.Contains("JsonData"))
-            {
-                var jsonColumn = new DataGridViewTextBoxColumn
-                {
-                    Name = "JsonData",
-                    HeaderText = "JsonData",
-                    Visible = false,
-                };
-                dataGridViewResults.Columns.Add(jsonColumn);
+                MessageBox.Show(ex.Message, "Error");
             }
         }
 
@@ -179,33 +161,20 @@ namespace CosmosDBClient
         /// <returns>Cosmos DB から取得したデータを含む <see cref="DataTable"/></returns>
         private async Task<DataTable> FetchDataFromCosmosDBAsync()
         {
-            var dataTable = CreateDataTable();
+            var dataTable = new DataTable();
             var maxCount = GetMaxItemCount();
             var query = BuildQuery(maxCount);
 
             try
             {
                 var stopwatch = Stopwatch.StartNew();
-                var (totalRequestCharge, documentCount, pageCount) = await ExecuteCosmosDbQuery(query, maxCount, dataTable);
-                stopwatch.Stop();
-                UpdateStatusStrip(totalRequestCharge, documentCount, pageCount, stopwatch.ElapsedMilliseconds);
+                await ExecuteCosmosDbQuery(query, maxCount, dataTable);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
 
-            return dataTable;
-        }
-
-        /// <summary>
-        /// DataTable を作成し、初期設定を行う
-        /// </summary>
-        /// <returns>初期化された <see cref="DataTable"/></returns>
-        private DataTable CreateDataTable()
-        {
-            var dataTable = new DataTable();
-            dataTable.Columns.Add("JsonData", typeof(string));
             return dataTable;
         }
 
@@ -224,9 +193,10 @@ namespace CosmosDBClient
         /// <param name="query">実行するクエリ</param>
         /// <param name="maxCount">取得する最大アイテム数</param>
         /// <param name="dataTable">データを格納する DataTable</param>
-        /// <returns>クエリ実行後の統計情報 (リクエストチャージ、ドキュメント数、ページ数)</returns>
-        private async Task<(double totalRequestCharge, int documentCount, int pageCount)> ExecuteCosmosDbQuery(string query, int maxCount, DataTable dataTable)
+        /// <returns>Task</returns>
+        private async Task ExecuteCosmosDbQuery(string query, int maxCount, DataTable dataTable)
         {
+            var stopwatch = Stopwatch.StartNew();
             var totalRequestCharge = 0d;
             var documentCount = 0;
             var pageCount = 0;
@@ -245,8 +215,8 @@ namespace CosmosDBClient
 
                 ProcessQueryResults(currentResultSet, dataTable, maxCount);
             }
-
-            return (totalRequestCharge, documentCount, pageCount);
+            UpdateStatusStrip(totalRequestCharge, documentCount, pageCount, stopwatch.ElapsedMilliseconds);
+            stopwatch.Stop();
         }
 
         /// <summary>
@@ -285,8 +255,7 @@ namespace CosmosDBClient
             foreach (var item in resultSet)
             {
                 var jsonObject = JObject.Parse(item.ToString());
-
-                if (dataTable.Columns.Count == 1)
+                if (dataTable.Columns.Count == 0)
                 {
                     AddColumnsToDataTable(jsonObject, dataTable);
                 }
@@ -325,7 +294,6 @@ namespace CosmosDBClient
             {
                 row[property.Name] = property.Value?.ToString() ?? string.Empty;
             }
-            row["JsonData"] = jsonObject.ToString();
             dataTable.Rows.Add(row);
         }
 
@@ -342,6 +310,33 @@ namespace CosmosDBClient
             toolStripStatusLabel2.Text = $"Documents: {documentCount}";
             toolStripStatusLabel3.Text = $"Pages: {pageCount}";
             toolStripStatusLabel4.Text = $"Elapsed Time: {elapsedMilliseconds} ms";
+        }
+
+        /// <summary>
+        /// 読み取り専用にする列を設定する
+        /// </summary>
+        /// <param name="dataTable">データを格納する DataTable</param>
+        private async void SetReadOnlyColumns(DataTable dataTable)
+        {
+            try
+            {
+                var containerProperties = await cosmosContainer.ReadContainerAsync();
+                var partitionKeyPaths = containerProperties.Resource.PartitionKeyPaths.Select(p => p.Trim('/')).ToArray();
+
+                var readOnlyColumns = systemColumns.Concat(partitionKeyPaths).ToArray();
+
+                foreach (DataColumn column in dataTable.Columns)
+                {
+                    if (readOnlyColumns.Contains(column.ColumnName))
+                    {
+                        dataGridViewResults.Columns[column.ColumnName].ReadOnly = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
         }
 
         /// <summary>
@@ -371,7 +366,16 @@ namespace CosmosDBClient
                 return;
             }
 
-            var jsonData = dataGridViewResults.Rows[e.RowIndex].Cells[1].Value?.ToString();
+            // 選択された行の全てのカラムのデータをJObjectに変換する
+            var jsonObject = new JObject();
+            foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+            {
+                var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Value?.ToString() ?? string.Empty;
+                jsonObject[column.HeaderText] = cellValue;
+            }
+
+            // JSON形式で保持する
+            var jsonData = jsonObject.ToString();
             JsonData.Text = jsonData;
 
             if (useHyperlinkHandler)
@@ -460,7 +464,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "Error");
             }
         }
 
@@ -510,7 +514,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "Error");
             }
         }
 
@@ -572,6 +576,24 @@ namespace CosmosDBClient
             var jsonData = (RichTextBox)sender;
             buttonUpdate.Enabled = jsonData.Text != null;
             buttonDelete.Enabled = jsonData.Text != null;
+        }
+
+        /// <summary>
+        /// DataGridView のセルフォーマット時に呼び出されるイベントハンドラ。読み取り専用のカラムに対して背景色と文字色を設定する。
+        /// </summary>
+        /// <param name="sender">イベントの送信者</param>
+        /// <param name="e">セルフォーマットに関するイベントデータ</param>
+        private void dataGridViewResults_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+            {
+                // ReadOnlyプロパティがtrueのカラムの色を変更
+                if (column.ReadOnly)
+                {
+                    dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.BackColor = Color.DarkGray;
+                    dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.ForeColor = Color.White;
+                }
+            }
         }
     }
 }
