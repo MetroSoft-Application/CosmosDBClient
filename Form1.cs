@@ -29,7 +29,7 @@ namespace CosmosDBClient
         {
             InitializeComponent();
             // フォームのスケーリングモードを設定
-            this.AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleMode = AutoScaleMode.Dpi;
 
             var configuration = LoadConfiguration();
 
@@ -162,12 +162,11 @@ namespace CosmosDBClient
         private async Task<DataTable> FetchDataFromCosmosDBAsync()
         {
             var dataTable = new DataTable();
-            var maxCount = GetMaxItemCount();
-            var query = BuildQuery(maxCount);
 
             try
             {
-                var stopwatch = Stopwatch.StartNew();
+                var maxCount = GetMaxItemCount();
+                var query = BuildQuery(maxCount);
                 await ExecuteCosmosDbQuery(query, maxCount, dataTable);
             }
             catch (Exception ex)
@@ -233,7 +232,7 @@ namespace CosmosDBClient
                 query = richTextBoxQuery.Text;
                 if (!Regex.IsMatch(query, @"\bSELECT\s+TOP\b", RegexOptions.IgnoreCase))
                 {
-                    int selectIndex = Regex.Match(query, @"\bSELECT\b", RegexOptions.IgnoreCase).Index;
+                    var selectIndex = Regex.Match(query, @"\bSELECT\b", RegexOptions.IgnoreCase).Index;
                     if (selectIndex != -1)
                     {
                         query = query.Insert(selectIndex + 6, $" TOP {maxCount}");
@@ -322,7 +321,6 @@ namespace CosmosDBClient
             {
                 var containerProperties = await cosmosContainer.ReadContainerAsync();
                 var partitionKeyPaths = containerProperties.Resource.PartitionKeyPaths.Select(p => p.Trim('/')).ToArray();
-
                 var readOnlyColumns = systemColumns.Concat(partitionKeyPaths).ToArray();
 
                 foreach (DataColumn column in dataTable.Columns)
@@ -445,7 +443,7 @@ namespace CosmosDBClient
             try
             {
                 // JSONデータをパース
-                JObject jsonObject = JObject.Parse(JsonData.Text);
+                var jsonObject = JObject.Parse(JsonData.Text);
 
                 // PartitionKeyを自動的に解決して取得
                 var partitionKey = await ResolvePartitionKeyAsync(jsonObject);
@@ -495,14 +493,14 @@ namespace CosmosDBClient
             try
             {
                 // JSONデータをパース
-                JObject jsonObject = JObject.Parse(JsonData.Text);
+                var jsonObject = JObject.Parse(JsonData.Text);
                 var id = jsonObject["id"].ToString();
 
                 // PartitionKeyを自動的に解決して取得
                 var partitionKey = await ResolvePartitionKeyAsync(jsonObject);
 
                 // PartitionKeyに対応するキー項目を取得
-                string partitionKeyInfo = GetPartitionKeyValues(jsonObject);
+                var partitionKeyInfo = GetPartitionKeyValues(jsonObject);
 
                 // Cosmos DBにDelete処理を実行
                 var response = await cosmosContainer.DeleteItemAsync<object>(id, partitionKey);

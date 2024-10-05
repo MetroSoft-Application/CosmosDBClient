@@ -69,7 +69,7 @@ namespace CosmosDBClient
         {
             if (!string.IsNullOrEmpty(linkText))
             {
-                int startIndex = richTextBox.Text.IndexOf(linkText);
+                var startIndex = richTextBox.Text.IndexOf(linkText);
                 if (startIndex >= 0)
                 {
                     richTextBox.Select(startIndex, linkText.Length);
@@ -87,7 +87,10 @@ namespace CosmosDBClient
         /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
         public void HandleMouseUpJson(MouseEventArgs e, RichTextBox richTextBox)
         {
-            if (string.IsNullOrEmpty(richTextBox.Text)) return;
+            if (string.IsNullOrEmpty(richTextBox.Text))
+            {
+                return;
+            }
 
             var charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
             var clickedLink = GetLinkAtPositionFromJson(richTextBox.Text, charIndex, richTextBox);
@@ -105,7 +108,10 @@ namespace CosmosDBClient
         /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
         public void HandleMouseUpText(MouseEventArgs e, RichTextBox richTextBox)
         {
-            if (string.IsNullOrEmpty(richTextBox.Text)) return;
+            if (string.IsNullOrEmpty(richTextBox.Text))
+            {
+                return;
+            }
 
             var charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
             var clickedLink = GetLinkAtPositionFromText(richTextBox.Text, charIndex, richTextBox);
@@ -164,9 +170,9 @@ namespace CosmosDBClient
                     return text;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //MessageBox.Show("Error parsing JSON: " + ex.Message);
+                MessageBox.Show("Error parsing JSON: " + ex.Message);
             }
 
             return string.Empty;
