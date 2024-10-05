@@ -359,17 +359,16 @@ namespace CosmosDBClient
         /// <param name="e">セルクリックイベントデータ</param>
         private void dataGridViewResults_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0 || e.ColumnIndex < 1)
+            if (e.RowIndex < 0)
             {
                 return;
             }
-
             // 選択された行の全てのカラムのデータをJObjectに変換する
             var jsonObject = new JObject();
             foreach (DataGridViewColumn column in dataGridViewResults.Columns)
             {
-                var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Value?.ToString() ?? string.Empty;
-                jsonObject[column.HeaderText] = cellValue;
+                var item = dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Value?.ToString() ?? string.Empty;
+                jsonObject[column.HeaderText] = item;
             }
 
             // JSON形式で保持する
@@ -381,7 +380,7 @@ namespace CosmosDBClient
                 hyperlinkHandler.MarkLinkTextFromJson(JsonData);
             }
 
-            if (e.ColumnIndex > 1)
+            if (e.ColumnIndex > -1)
             {
                 var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
                 richTextBoxSelectedCell.Text = cellValue;
