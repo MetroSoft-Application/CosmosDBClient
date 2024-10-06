@@ -34,7 +34,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error parsing JSON: " + ex.Message);
+                MessageBox.Show("Error parsing JSON: " + ex.Message, "Error");
             }
         }
 
@@ -56,7 +56,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error parsing JSON: " + ex.Message);
+                MessageBox.Show("Error parsing JSON: " + ex.Message, "Error");
             }
         }
 
@@ -148,7 +148,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error parsing JSON: " + ex.Message);
+                MessageBox.Show("Error parsing JSON: " + ex.Message, "Error");
             }
 
             return string.Empty;
@@ -157,7 +157,7 @@ namespace CosmosDBClient
         /// <summary>
         /// 指定された位置にあるリンクを取得する
         /// </summary>
-        /// <param name="jsonText">JSON形式の文字列</param>
+        /// <param name="text">JSON形式の文字列</param>
         /// <param name="charIndex">文字のインデックス</param>
         /// <param name="richTextBox">ハイパーリンクを処理する対象の <see cref="RichTextBox"/> コントロール</param>
         /// <returns>リンクの文字列リンクが存在しない場合は空文字列</returns>
@@ -172,7 +172,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error parsing JSON: " + ex.Message);
+                MessageBox.Show("Error parsing JSON: " + ex.Message, "Error");
             }
 
             return string.Empty;
@@ -211,7 +211,7 @@ namespace CosmosDBClient
             }
             else
             {
-                MessageBox.Show("Path does not exist: " + link);
+                MessageBox.Show("Path does not exist: " + link, "Error");
             }
         }
     }

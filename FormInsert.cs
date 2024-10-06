@@ -52,10 +52,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// 
+        /// レコードを挿入する
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
         private async void buttonJsonInsert_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show(
@@ -98,7 +98,7 @@ namespace CosmosDBClient
                 var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
 
                 var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
-                MessageBox.Show(message);
+                MessageBox.Show(message, "Info");
             }
             catch (Exception ex)
             {

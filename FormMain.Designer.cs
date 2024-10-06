@@ -101,7 +101,7 @@
             dataGridViewResults.Dock = DockStyle.Fill;
             dataGridViewResults.Location = new Point(0, 0);
             dataGridViewResults.Name = "dataGridViewResults";
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
             dataGridViewCellStyle2.Font = new Font("Yu Gothic UI", 9F);
             dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
@@ -109,7 +109,6 @@
             dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridViewResults.RowHeadersWidth = 50;
             dataGridViewResults.Size = new Size(983, 485);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
@@ -119,6 +118,7 @@
             // splitContainer1
             // 
             splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            splitContainer1.IsSplitterFixed = true;
             splitContainer1.Location = new Point(12, 146);
             splitContainer1.Name = "splitContainer1";
             splitContainer1.Orientation = Orientation.Horizontal;

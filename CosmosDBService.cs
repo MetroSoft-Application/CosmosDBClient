@@ -12,7 +12,11 @@ namespace CosmosDBClient
     /// </summary>
     public class CosmosDBService
     {
+        /// <summary>
+        /// ドキュメントのシステム項目一覧
+        /// </summary>
         public readonly string[] systemColumns = { "id", "_etag", "_rid", "_self", "_attachments", "_ts" };
+        
         private readonly CosmosClient _cosmosClient;
         private readonly Container _cosmosContainer;
 

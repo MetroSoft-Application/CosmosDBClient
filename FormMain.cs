@@ -19,7 +19,7 @@ namespace CosmosDBClient
         private HyperlinkHandler _hyperlinkHandler;
 
         /// <summary>
-        /// FormMain クラスのコンストラクタ。設定を読み込み、CosmosDBServiceのインスタンスを初期化します。
+        /// FormMain クラスのコンストラクタ設定を読み込み、CosmosDBServiceのインスタンスを初期化する
         /// </summary>
         public FormMain()
         {
@@ -59,7 +59,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// 設定ファイルと環境変数からアプリケーション設定を読み込むメソッド。
+        /// 設定ファイルと環境変数からアプリケーション設定を読み込む
         /// </summary>
         /// <returns>設定情報を含む IConfigurationRoot オブジェクト</returns>
         private IConfigurationRoot LoadConfiguration()
@@ -74,7 +74,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ボタンクリック時にデータをロードし、DataGridView に表示します。
+        /// ボタンクリック時にデータをロードし、DataGridView に表示する
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
@@ -85,6 +85,9 @@ namespace CosmosDBClient
                 Cursor.Current = Cursors.WaitCursor;
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
                 await UpdateDatagridView();
+
+                ResizeRowHeader();
+
                 buttonInsert.Enabled = true;
             }
             finally
@@ -94,7 +97,25 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// Cosmos DB からデータを取得し、DataGridView に表示するメソッド。
+        /// 行ヘッダーのサイズを調整
+        /// </summary>
+        private void ResizeRowHeader()
+        {
+            using (Graphics g = dataGridViewResults.CreateGraphics())
+            {
+                // テキストの幅を計算
+                var size = g.MeasureString(cmbBoxContainerName.Text, dataGridViewResults.Font);
+
+                // 最大幅を保持
+                var maxRowHeaderWidth = (int)size.Width - 20;
+
+                // 計算した最大幅を RowHeadersWidth に設定
+                dataGridViewResults.RowHeadersWidth = maxRowHeaderWidth;
+            }
+        }
+
+        /// <summary>
+        /// Cosmos DB からデータを取得し、DataGridView に表示する
         /// </summary>
         /// <returns>非同期の Task</returns>
         private async Task UpdateDatagridView()
@@ -110,7 +131,8 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// クエリ文字列を構築します。指定された最大件数に基づいて、TOP 句を挿入します。
+        /// クエリ文字列を構築
+        /// 指定された最大件数に基づいて、TOP句を挿入
         /// </summary>
         /// <param name="queryText">クエリ文字列</param>
         /// <param name="maxCount">取得する最大アイテム数</param>
@@ -136,7 +158,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// 最大アイテム数を取得するメソッド。
+        /// 最大アイテム数を取得する
         /// </summary>
         /// <returns>最大アイテム数</returns>
         private int GetMaxItemCount()
@@ -145,7 +167,8 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// 読み取り専用の列を設定します。パーティションキーの列も読み取り専用に設定されます。
+        /// 読み取り専用の列を設定
+        /// パーティションキーの列も読み取り専用に設定
         /// </summary>
         /// <param name="dataTable">表示するデータを格納したDataTable</param>
         private async void SetReadOnlyColumns(DataTable dataTable)
@@ -171,7 +194,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// コンボボックスにデータベースのコンテナ一覧を読み込みます。
+        /// コンボボックスにデータベースのコンテナ一覧を読み込む
         /// </summary>
         /// <param name="databaseId">対象のデータベースID</param>
         private async void LoadContainersIntoComboBox(string databaseId)
@@ -188,7 +211,8 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ステータスバーを更新します。リクエストチャージ、ドキュメント数、ページ数、経過時間が表示されます。
+        /// ステータスバーを更新する
+        /// リクエストチャージ、ドキュメント数、ページ数、経過時間が表示される
         /// </summary>
         /// <param name="totalRequestCharge">総リクエストチャージ (RU)</param>
         /// <param name="documentCount">取得したドキュメント数</param>
@@ -203,7 +227,8 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// レコードを更新します。ユーザー確認後に、Cosmos DB へアップサート（更新または挿入）されます。
+        /// レコードを更新する
+        /// ユーザー確認後に、Cosmos DB へアップサート（更新または挿入）される
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
@@ -249,7 +274,7 @@ namespace CosmosDBClient
                 var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
 
                 var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
-                MessageBox.Show(message);
+                MessageBox.Show(message, "Info");
                 await UpdateDatagridView();
             }
             catch (Exception ex)
@@ -259,7 +284,8 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// レコードを削除します。ユーザー確認後、Cosmos DB から該当レコードが削除されます。
+        /// レコードを削除する
+        /// ユーザー確認後、Cosmos DB から該当レコードが削除される
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
@@ -298,9 +324,13 @@ namespace CosmosDBClient
                 // PartitionKeyを自動的に解決して取得
                 var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
 
-                await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
+                // PartitionKeyに対応するキー項目を取得
+                string partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
-                MessageBox.Show("Delete successful!");
+                var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
+
+                var message = $"Delete successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
+                MessageBox.Show(message, "Info");
                 await UpdateDatagridView();
             }
             catch (Exception ex)
@@ -310,7 +340,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// レコードを挿入します。ユーザーがデータを入力し、新しいレコードが Cosmos DB に追加されます。
+        /// レコードを挿入するユーザーがデータを入力し、新しいレコードが Cosmos DB に追加される
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
@@ -325,7 +355,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// DataGridView の行描画後に行番号を表示するための処理。
+        /// DataGridView の行描画後に行番号を表示するための処理
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">行描画イベントデータ</param>
@@ -340,7 +370,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// DataGridView のセルがクリックされた際に、そのセルのデータを表示します。
+        /// DataGridView のセルがクリックされた際に、そのセルのデータを表示する
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">セルクリックイベントデータ</param>
@@ -380,7 +410,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// RichTextBox でマウスアップイベントが発生した際の処理。ハイパーリンクを処理します。
+        /// RichTextBox でマウスアップイベントが発生した際の処理ハイパーリンクを処理する
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">マウスイベントデータ</param>
@@ -393,7 +423,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// RichTextBox でのマウスアップイベントを処理します。リンクが含まれている場合、リンクを処理します。
+        /// RichTextBox でのマウスアップイベントを処理するリンクが含まれている場合、リンクを処理する
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">マウスイベントデータ</param>
@@ -406,7 +436,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// DataGridView のセルフォーマット時に、読み取り専用のカラムに背景色と文字色を設定する処理。
+        /// DataGridView のセルフォーマット時に、読み取り専用のカラムに背景色と文字色を設定する処理
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">セルフォーマットイベントデータ</param>
@@ -423,7 +453,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// RichTextBox の内容が変更された際に、ボタンの有効状態を更新します。
+        /// RichTextBox の内容が変更された際に、ボタンの有効状態を更新する
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
