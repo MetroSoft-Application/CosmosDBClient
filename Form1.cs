@@ -90,10 +90,12 @@ namespace CosmosDBClient
                 Cursor.Current = Cursors.WaitCursor;
 
                 // Cosmos DB クライアントを初期化
-                InitializeCosmosClient(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
+                cosmosContainer = InitializeCosmosContainer(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
 
                 // DatagridViewを更新
                 await UpdateDatagridView();
+
+                buttonInsert.Enabled = true;
             }
             finally
             {
@@ -115,15 +117,16 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// Cosmos DB クライアントを初期化する
+        /// Cosmos DB コンテナを初期化する
         /// </summary>
         /// <param name="connectionString">接続文字列</param>
         /// <param name="databaseName">DB名</param>
         /// <param name="containerName">コンテナ名</param>
-        private void InitializeCosmosClient(string connectionString, string databaseName, string containerName)
+        /// <returns>Containerインスタンス</returns>
+        private Container InitializeCosmosContainer(string connectionString, string databaseName, string containerName)
         {
             cosmosClient = new CosmosClient(connectionString);
-            cosmosContainer = cosmosClient.GetContainer(databaseName, containerName);
+            return cosmosClient.GetContainer(databaseName, containerName);
         }
 
         /// <summary>
@@ -166,12 +169,12 @@ namespace CosmosDBClient
             try
             {
                 var maxCount = GetMaxItemCount();
-                var query = BuildQuery(maxCount);
+                var query = BuildQuery(richTextBoxQuery.Text, maxCount);
                 await ExecuteCosmosDbQuery(query, maxCount, dataTable);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "Error");
             }
 
             return dataTable;
@@ -221,15 +224,16 @@ namespace CosmosDBClient
         /// <summary>
         /// クエリ文字列を構築する
         /// </summary>
+        /// <param name="queryText">クエリテキスト</param>
         /// <param name="maxCount">取得する最大アイテム数</param>
         /// <returns>構築されたクエリ文字列</returns>
-        private string BuildQuery(int maxCount)
+        private string BuildQuery(string queryText, int maxCount)
         {
             var query = $"SELECT TOP {maxCount} * FROM c";
 
-            if (!string.IsNullOrWhiteSpace(richTextBoxQuery.Text))
+            if (!string.IsNullOrWhiteSpace(queryText))
             {
-                query = richTextBoxQuery.Text;
+                query = queryText;
                 if (!Regex.IsMatch(query, @"\bSELECT\s+TOP\b", RegexOptions.IgnoreCase))
                 {
                     var selectIndex = Regex.Match(query, @"\bSELECT\b", RegexOptions.IgnoreCase).Index;
@@ -484,11 +488,6 @@ namespace CosmosDBClient
                 return;
             }
 
-            if (result != DialogResult.Yes)
-            {
-                return;
-            }
-
             try
             {
                 // JSONデータをパース
@@ -591,6 +590,21 @@ namespace CosmosDBClient
                     dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.ForeColor = Color.White;
                 }
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void buttonInsert_Click(object sender, EventArgs e)
+        {
+            using (var formInsert = new FormInsert(this.cosmosContainer, JsonData.Text))
+            {
+                formInsert.ShowDialog();
+            }
+
+            await UpdateDatagridView();
         }
     }
 }

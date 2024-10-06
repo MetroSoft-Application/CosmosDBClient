@@ -52,6 +52,7 @@
             toolStripStatusLabel12 = new ToolStripStatusLabel();
             toolStripStatusLabel13 = new ToolStripStatusLabel();
             cmbBoxContainerName = new ComboBox();
+            buttonInsert = new Button();
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -109,7 +110,7 @@
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dataGridViewResults.RowHeadersWidth = 50;
-            dataGridViewResults.Size = new Size(983, 485);
+            dataGridViewResults.Size = new Size(1267, 401);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
@@ -130,7 +131,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(richTextBoxSelectedCell);
             splitContainer1.Size = new Size(1310, 523);
-            splitContainer1.SplitterDistance = 485;
+            splitContainer1.SplitterDistance = 401;
             splitContainer1.TabIndex = 2;
             // 
             // splitContainer2
@@ -146,8 +147,8 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(splitContainer3);
-            splitContainer2.Size = new Size(1310, 485);
-            splitContainer2.SplitterDistance = 983;
+            splitContainer2.Size = new Size(1310, 401);
+            splitContainer2.SplitterDistance = 1267;
             splitContainer2.TabIndex = 3;
             // 
             // splitContainer3
@@ -166,8 +167,8 @@
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(splitContainer4);
-            splitContainer3.Size = new Size(323, 485);
-            splitContainer3.SplitterDistance = 452;
+            splitContainer3.Size = new Size(39, 401);
+            splitContainer3.SplitterDistance = 267;
             splitContainer3.TabIndex = 4;
             // 
             // JsonData
@@ -177,7 +178,7 @@
             JsonData.Location = new Point(0, 0);
             JsonData.Name = "JsonData";
             JsonData.ReadOnly = true;
-            JsonData.Size = new Size(323, 452);
+            JsonData.Size = new Size(39, 267);
             JsonData.TabIndex = 3;
             JsonData.Text = "";
             JsonData.TextChanged += JsonData_TextChanged;
@@ -196,8 +197,8 @@
             // splitContainer4.Panel2
             // 
             splitContainer4.Panel2.Controls.Add(buttonDelete);
-            splitContainer4.Size = new Size(323, 29);
-            splitContainer4.SplitterDistance = 160;
+            splitContainer4.Size = new Size(39, 130);
+            splitContainer4.SplitterDistance = 165;
             splitContainer4.TabIndex = 0;
             // 
             // buttonUpdate
@@ -206,7 +207,7 @@
             buttonUpdate.Enabled = false;
             buttonUpdate.Location = new Point(0, 0);
             buttonUpdate.Name = "buttonUpdate";
-            buttonUpdate.Size = new Size(160, 29);
+            buttonUpdate.Size = new Size(165, 130);
             buttonUpdate.TabIndex = 15;
             buttonUpdate.Text = "Update";
             buttonUpdate.UseVisualStyleBackColor = true;
@@ -218,7 +219,7 @@
             buttonDelete.Enabled = false;
             buttonDelete.Location = new Point(0, 0);
             buttonDelete.Name = "buttonDelete";
-            buttonDelete.Size = new Size(159, 29);
+            buttonDelete.Size = new Size(132, 130);
             buttonDelete.TabIndex = 16;
             buttonDelete.Text = "Delete";
             buttonDelete.UseVisualStyleBackColor = true;
@@ -231,7 +232,7 @@
             richTextBoxSelectedCell.Location = new Point(0, 0);
             richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
             richTextBoxSelectedCell.ReadOnly = true;
-            richTextBoxSelectedCell.Size = new Size(1310, 34);
+            richTextBoxSelectedCell.Size = new Size(1310, 118);
             richTextBoxSelectedCell.TabIndex = 0;
             richTextBoxSelectedCell.Text = "";
             richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
@@ -398,11 +399,24 @@
             cmbBoxContainerName.Size = new Size(148, 23);
             cmbBoxContainerName.TabIndex = 14;
             // 
+            // buttonInsert
+            // 
+            buttonInsert.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            buttonInsert.Enabled = false;
+            buttonInsert.Location = new Point(1261, 44);
+            buttonInsert.Name = "buttonInsert";
+            buttonInsert.Size = new Size(61, 23);
+            buttonInsert.TabIndex = 15;
+            buttonInsert.Text = "Insert";
+            buttonInsert.UseVisualStyleBackColor = true;
+            buttonInsert.Click += buttonInsert_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1334, 681);
+            Controls.Add(buttonInsert);
             Controls.Add(cmbBoxContainerName);
             Controls.Add(statusStrip1);
             Controls.Add(label4);
@@ -476,5 +490,6 @@
         private Button buttonUpdate;
         private Button buttonDelete;
         private ComboBox cmbBoxContainerName;
+        private Button buttonInsert;
     }
 }
