@@ -217,6 +217,7 @@ namespace CosmosDBClient
 
                 ProcessQueryResults(currentResultSet, dataTable, maxCount);
             }
+
             UpdateStatusStrip(totalRequestCharge, documentCount, pageCount, stopwatch.ElapsedMilliseconds);
             stopwatch.Stop();
         }
@@ -443,10 +444,22 @@ namespace CosmosDBClient
                 return;
             }
 
+            var jsonObject = default(JObject);
+
             try
             {
                 // JSONデータをパース
-                var jsonObject = JObject.Parse(JsonData.Text);
+                jsonObject = JObject.Parse(JsonData.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+                return;
+            }
+
+            try
+            {
+                var id = jsonObject["id"].ToString();
 
                 // PartitionKeyを自動的に解決して取得
                 var partitionKey = await ResolvePartitionKeyAsync(jsonObject);
@@ -458,8 +471,7 @@ namespace CosmosDBClient
                 var response = await cosmosContainer.UpsertItemAsync(jsonObject, partitionKey);
 
                 // 成功メッセージを表示
-                var id = jsonObject["id"].ToString();
-                var message = $"Upsert successful!\n\nId: {id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge: {response.RequestCharge}";
+                var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
                 MessageBox.Show(message);
                 await UpdateDatagridView();
             }
@@ -488,10 +500,21 @@ namespace CosmosDBClient
                 return;
             }
 
+            var jsonObject = default(JObject);
+
             try
             {
                 // JSONデータをパース
-                var jsonObject = JObject.Parse(JsonData.Text);
+                jsonObject = JObject.Parse(JsonData.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+                return;
+            }
+
+            try
+            {
                 var id = jsonObject["id"].ToString();
 
                 // PartitionKeyを自動的に解決して取得
@@ -504,7 +527,7 @@ namespace CosmosDBClient
                 var response = await cosmosContainer.DeleteItemAsync<object>(id, partitionKey);
 
                 // 成功メッセージを表示
-                var message = $"Delete successful!\n\nId: {id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge: {response.RequestCharge}";
+                var message = $"Delete successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
                 MessageBox.Show(message);
                 await UpdateDatagridView();
             }

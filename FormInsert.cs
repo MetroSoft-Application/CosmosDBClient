@@ -15,6 +15,11 @@ namespace CosmosDBClient
         private Container _cosmosContainer;
         private readonly string[] systemColumns = { "id", "_etag", "_rid", "_self", "_attachments", "_ts" };
 
+        /// <summary>
+        /// 新しい <see cref="FormInsert"/> クラスのインスタンスを初期化する
+        /// </summary>
+        /// <param name="cosmosContainer">コンテナインスタンス</param>
+        /// <param name="json">jsonテキスト</param>
         public FormInsert(Container cosmosContainer, string json)
         {
             InitializeComponent();
@@ -92,7 +97,7 @@ namespace CosmosDBClient
 
                 // 成功メッセージを表示
                 var id = jsonObject["id"].ToString();
-                var message = $"Upsert successful!\n\nId: {id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge: {response.RequestCharge}";
+                var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
                 MessageBox.Show(message);
             }
             catch (Exception ex)
