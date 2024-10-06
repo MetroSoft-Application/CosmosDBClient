@@ -38,7 +38,6 @@ namespace CosmosDBClient
             cmbBoxContainerName.Text = containerName;
             numericUpDownMaxCount.Value = _maxItemCount;
 
-            _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
 
             if (_useHyperlinkHandler)
             {
@@ -47,14 +46,14 @@ namespace CosmosDBClient
 
             try
             {
+                _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
                 if (!string.IsNullOrWhiteSpace(databaseName))
                 {
                     LoadContainersIntoComboBox(databaseName);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                MessageBox.Show(ex.Message, "Error");
             }
         }
 
@@ -89,6 +88,10 @@ namespace CosmosDBClient
                 ResizeRowHeader();
 
                 buttonInsert.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
             }
             finally
             {
