@@ -403,7 +403,7 @@
             // 
             buttonInsert.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             buttonInsert.Enabled = false;
-            buttonInsert.Location = new Point(1261, 44);
+            buttonInsert.Location = new Point(1261, 41);
             buttonInsert.Name = "buttonInsert";
             buttonInsert.Size = new Size(61, 23);
             buttonInsert.TabIndex = 15;
