@@ -1,6 +1,6 @@
 ﻿namespace CosmosDBClient
 {
-    partial class Form1
+    partial class FormMain
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -110,7 +110,7 @@
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dataGridViewResults.RowHeadersWidth = 50;
-            dataGridViewResults.Size = new Size(1267, 401);
+            dataGridViewResults.Size = new Size(983, 485);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
@@ -131,7 +131,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(richTextBoxSelectedCell);
             splitContainer1.Size = new Size(1310, 523);
-            splitContainer1.SplitterDistance = 401;
+            splitContainer1.SplitterDistance = 485;
             splitContainer1.TabIndex = 2;
             // 
             // splitContainer2
@@ -147,8 +147,8 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(splitContainer3);
-            splitContainer2.Size = new Size(1310, 401);
-            splitContainer2.SplitterDistance = 1267;
+            splitContainer2.Size = new Size(1310, 485);
+            splitContainer2.SplitterDistance = 983;
             splitContainer2.TabIndex = 3;
             // 
             // splitContainer3
@@ -167,8 +167,8 @@
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(splitContainer4);
-            splitContainer3.Size = new Size(39, 401);
-            splitContainer3.SplitterDistance = 267;
+            splitContainer3.Size = new Size(323, 485);
+            splitContainer3.SplitterDistance = 452;
             splitContainer3.TabIndex = 4;
             // 
             // JsonData
@@ -178,7 +178,7 @@
             JsonData.Location = new Point(0, 0);
             JsonData.Name = "JsonData";
             JsonData.ReadOnly = true;
-            JsonData.Size = new Size(39, 267);
+            JsonData.Size = new Size(323, 452);
             JsonData.TabIndex = 3;
             JsonData.Text = "";
             JsonData.TextChanged += JsonData_TextChanged;
@@ -197,8 +197,8 @@
             // splitContainer4.Panel2
             // 
             splitContainer4.Panel2.Controls.Add(buttonDelete);
-            splitContainer4.Size = new Size(39, 130);
-            splitContainer4.SplitterDistance = 165;
+            splitContainer4.Size = new Size(323, 29);
+            splitContainer4.SplitterDistance = 160;
             splitContainer4.TabIndex = 0;
             // 
             // buttonUpdate
@@ -207,7 +207,7 @@
             buttonUpdate.Enabled = false;
             buttonUpdate.Location = new Point(0, 0);
             buttonUpdate.Name = "buttonUpdate";
-            buttonUpdate.Size = new Size(165, 130);
+            buttonUpdate.Size = new Size(160, 29);
             buttonUpdate.TabIndex = 15;
             buttonUpdate.Text = "Update";
             buttonUpdate.UseVisualStyleBackColor = true;
@@ -219,7 +219,7 @@
             buttonDelete.Enabled = false;
             buttonDelete.Location = new Point(0, 0);
             buttonDelete.Name = "buttonDelete";
-            buttonDelete.Size = new Size(132, 130);
+            buttonDelete.Size = new Size(159, 29);
             buttonDelete.TabIndex = 16;
             buttonDelete.Text = "Delete";
             buttonDelete.UseVisualStyleBackColor = true;
@@ -232,7 +232,7 @@
             richTextBoxSelectedCell.Location = new Point(0, 0);
             richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
             richTextBoxSelectedCell.ReadOnly = true;
-            richTextBoxSelectedCell.Size = new Size(1310, 118);
+            richTextBoxSelectedCell.Size = new Size(1310, 34);
             richTextBoxSelectedCell.TabIndex = 0;
             richTextBoxSelectedCell.Text = "";
             richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
@@ -411,7 +411,7 @@
             buttonInsert.UseVisualStyleBackColor = true;
             buttonInsert.Click += buttonInsert_Click;
             // 
-            // Form1
+            // FormMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -429,7 +429,7 @@
             Controls.Add(richTextBoxQuery);
             Controls.Add(splitContainer1);
             Controls.Add(buttonLoadData);
-            Name = "Form1";
+            Name = "FormMain";
             Text = "CosmosDB Client Tool";
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
             splitContainer1.Panel1.ResumeLayout(false);
