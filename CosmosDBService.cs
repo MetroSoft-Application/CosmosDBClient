@@ -16,7 +16,7 @@ namespace CosmosDBClient
         /// ドキュメントのシステム項目一覧
         /// </summary>
         public readonly string[] systemColumns = { "id", "_etag", "_rid", "_self", "_attachments", "_ts" };
-        
+
         private readonly CosmosClient _cosmosClient;
         private readonly Container _cosmosContainer;
 
@@ -61,29 +61,12 @@ namespace CosmosDBClient
                 foreach (var item in currentResultSet)
                 {
                     var jsonObject = JObject.Parse(item.ToString());
-                    if (dataTable.Columns.Count == 0)
-                    {
-                        AddColumnsToDataTable(jsonObject, dataTable);
-                    }
                     AddRowToDataTable(jsonObject, dataTable);
                 }
             }
 
             stopwatch.Stop();
             return (dataTable, totalRequestCharge, documentCount, pageCount, stopwatch.ElapsedMilliseconds);
-        }
-
-        /// <summary>
-        /// JSONオブジェクトからデータテーブルに列を追加する
-        /// </summary>
-        /// <param name="jsonObject">JSONオブジェクト</param>
-        /// <param name="dataTable">データテーブル</param>
-        private void AddColumnsToDataTable(JObject jsonObject, DataTable dataTable)
-        {
-            foreach (var property in jsonObject.Properties())
-            {
-                dataTable.Columns.Add(property.Name);
-            }
         }
 
         /// <summary>
@@ -94,10 +77,21 @@ namespace CosmosDBClient
         private void AddRowToDataTable(JObject jsonObject, DataTable dataTable)
         {
             var row = dataTable.NewRow();
+
             foreach (var property in jsonObject.Properties())
             {
+                // カラムが存在するか確認
+                if (!dataTable.Columns.Contains(property.Name))
+                {
+                    // 存在しないカラムは動的に追加
+                    dataTable.Columns.Add(property.Name, typeof(string));
+                }
+
+                // 新しいカラムに値を設定
                 row[property.Name] = property.Value?.ToString() ?? string.Empty;
             }
+
+            // 行をDataTableに追加
             dataTable.Rows.Add(row);
         }
 
