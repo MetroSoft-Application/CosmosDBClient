@@ -65,8 +65,36 @@ namespace CosmosDBClient
                 }
             }
 
+            // カラムの並び替えを実施する
+            MoveSystemColumnsToEnd(dataTable);
+
             stopwatch.Stop();
             return (dataTable, totalRequestCharge, documentCount, pageCount, stopwatch.ElapsedMilliseconds);
+        }
+
+        /// <summary>
+        /// DataTableのカラムを並び替え、システムカラムを最後に移動する
+        /// </summary>
+        /// <param name="dataTable">並び替え対象のDataTable</param>
+        private void MoveSystemColumnsToEnd(DataTable dataTable)
+        {
+            // システムカラムをリスト化（データテーブルに存在するカラムだけを取得）
+            var systemColumnsList = systemColumns.Where(c => c != "id" && dataTable.Columns.Contains(c)).ToList();
+
+            // システムカラム以外のカラムをリスト化
+            var nonSystemColumns = dataTable.Columns.Cast<DataColumn>()
+                .Where(col => !systemColumnsList.Contains(col.ColumnName))
+                .Select(col => col.ColumnName)
+                .ToList();
+
+            // 並び替え用のカラム順序リストを作成
+            var columnOrder = nonSystemColumns.Concat(systemColumnsList).ToList();
+
+            // 新しい順序でDataTableを構築
+            for (int i = 0; i < columnOrder.Count; i++)
+            {
+                dataTable.Columns[columnOrder[i]].SetOrdinal(i);
+            }
         }
 
         /// <summary>
