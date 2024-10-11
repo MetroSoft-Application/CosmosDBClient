@@ -28,7 +28,12 @@ namespace CosmosDBClient
         /// <param name="containerName">コンテナ名</param>
         public CosmosDBService(string connectionString, string databaseName, string containerName)
         {
-            _cosmosClient = new CosmosClient(connectionString);
+            var cosmosClientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway
+            };
+
+            _cosmosClient = new CosmosClient(connectionString, cosmosClientOptions);
             _cosmosContainer = _cosmosClient.GetContainer(databaseName, containerName);
         }
 

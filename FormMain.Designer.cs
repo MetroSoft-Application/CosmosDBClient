@@ -109,7 +109,7 @@
             dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridViewResults.Size = new Size(1028, 485);
+            dataGridViewResults.Size = new Size(1031, 485);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
@@ -148,7 +148,7 @@
             // 
             splitContainer2.Panel2.Controls.Add(splitContainer3);
             splitContainer2.Size = new Size(1370, 485);
-            splitContainer2.SplitterDistance = 1028;
+            splitContainer2.SplitterDistance = 1031;
             splitContainer2.TabIndex = 3;
             // 
             // splitContainer3
@@ -167,7 +167,7 @@
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(splitContainer4);
-            splitContainer3.Size = new Size(338, 485);
+            splitContainer3.Size = new Size(335, 485);
             splitContainer3.SplitterDistance = 452;
             splitContainer3.TabIndex = 4;
             // 
@@ -178,7 +178,7 @@
             JsonData.Location = new Point(0, 0);
             JsonData.Name = "JsonData";
             JsonData.ReadOnly = true;
-            JsonData.Size = new Size(338, 452);
+            JsonData.Size = new Size(335, 452);
             JsonData.TabIndex = 3;
             JsonData.Text = "";
             JsonData.TextChanged += JsonData_TextChanged;
@@ -197,8 +197,8 @@
             // splitContainer4.Panel2
             // 
             splitContainer4.Panel2.Controls.Add(buttonDelete);
-            splitContainer4.Size = new Size(338, 29);
-            splitContainer4.SplitterDistance = 167;
+            splitContainer4.Size = new Size(335, 29);
+            splitContainer4.SplitterDistance = 165;
             splitContainer4.TabIndex = 0;
             // 
             // buttonUpdate
@@ -207,7 +207,7 @@
             buttonUpdate.Enabled = false;
             buttonUpdate.Location = new Point(0, 0);
             buttonUpdate.Name = "buttonUpdate";
-            buttonUpdate.Size = new Size(167, 29);
+            buttonUpdate.Size = new Size(165, 29);
             buttonUpdate.TabIndex = 15;
             buttonUpdate.Text = "Update";
             buttonUpdate.UseVisualStyleBackColor = true;
@@ -219,7 +219,7 @@
             buttonDelete.Enabled = false;
             buttonDelete.Location = new Point(0, 0);
             buttonDelete.Name = "buttonDelete";
-            buttonDelete.Size = new Size(167, 29);
+            buttonDelete.Size = new Size(166, 29);
             buttonDelete.TabIndex = 16;
             buttonDelete.Text = "Delete";
             buttonDelete.UseVisualStyleBackColor = true;
@@ -244,7 +244,7 @@
             richTextBoxQuery.Location = new Point(12, 12);
             richTextBoxQuery.Name = "richTextBoxQuery";
             richTextBoxQuery.ScrollBars = RichTextBoxScrollBars.Vertical;
-            richTextBoxQuery.Size = new Size(1028, 119);
+            richTextBoxQuery.Size = new Size(1033, 119);
             richTextBoxQuery.TabIndex = 4;
             richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
             // 
@@ -271,7 +271,7 @@
             // 
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label1.AutoSize = true;
-            label1.Location = new Point(1062, 20);
+            label1.Location = new Point(1051, 20);
             label1.Name = "label1";
             label1.Size = new Size(99, 15);
             label1.TabIndex = 7;
@@ -281,7 +281,7 @@
             // 
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label2.AutoSize = true;
-            label2.Location = new Point(1063, 48);
+            label2.Location = new Point(1052, 48);
             label2.Name = "label2";
             label2.Size = new Size(55, 15);
             label2.TabIndex = 8;
@@ -299,7 +299,7 @@
             // 
             label3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label3.AutoSize = true;
-            label3.Location = new Point(1063, 75);
+            label3.Location = new Point(1052, 75);
             label3.Name = "label3";
             label3.Size = new Size(58, 15);
             label3.TabIndex = 10;
@@ -309,7 +309,7 @@
             // 
             label4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label4.AutoSize = true;
-            label4.Location = new Point(1064, 103);
+            label4.Location = new Point(1053, 103);
             label4.Name = "label4";
             label4.Size = new Size(53, 15);
             label4.TabIndex = 12;
