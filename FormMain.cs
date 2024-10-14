@@ -84,6 +84,7 @@ namespace CosmosDBClient
                 Cursor.Current = Cursors.WaitCursor;
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
                 await UpdateDatagridView();
+                JsonData.Text = string.Empty;
 
                 ResizeRowHeader();
 
@@ -127,6 +128,7 @@ namespace CosmosDBClient
             var (dataTable, totalRequestCharge, documentCount, pageCount, elapsedMilliseconds) =
                 await _cosmosDBService.FetchDataWithStatusAsync(query, GetMaxItemCount());
 
+            dataGridViewResults.DataSource = null;
             SetReadOnlyColumns(dataTable);
             dataGridViewResults.DataSource = dataTable;
 
@@ -166,7 +168,7 @@ namespace CosmosDBClient
         /// <returns>ç≈ëÂÉAÉCÉeÉÄêî</returns>
         private int GetMaxItemCount()
         {
-            return Math.Max((int)numericUpDownMaxCount.Value, _maxItemCount);
+            return (int)numericUpDownMaxCount.Value;
         }
 
         /// <summary>

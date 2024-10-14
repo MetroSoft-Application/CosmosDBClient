@@ -53,6 +53,7 @@
             toolStripStatusLabel13 = new ToolStripStatusLabel();
             cmbBoxContainerName = new ComboBox();
             buttonInsert = new Button();
+            groupBox1 = new GroupBox();
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -72,12 +73,13 @@
             splitContainer4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).BeginInit();
             statusStrip1.SuspendLayout();
+            groupBox1.SuspendLayout();
             SuspendLayout();
             // 
             // buttonLoadData
             // 
             buttonLoadData.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            buttonLoadData.Location = new Point(1321, 12);
+            buttonLoadData.Location = new Point(273, 12);
             buttonLoadData.Name = "buttonLoadData";
             buttonLoadData.Size = new Size(61, 23);
             buttonLoadData.TabIndex = 0;
@@ -89,6 +91,7 @@
             // 
             dataGridViewResults.AllowUserToAddRows = false;
             dataGridViewResults.AllowUserToDeleteRows = false;
+            dataGridViewResults.AllowUserToOrderColumns = true;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
             dataGridViewCellStyle1.Font = new Font("Yu Gothic UI", 9F);
@@ -227,12 +230,12 @@
             // 
             // richTextBoxSelectedCell
             // 
+            richTextBoxSelectedCell.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             richTextBoxSelectedCell.BackColor = SystemColors.ButtonFace;
-            richTextBoxSelectedCell.Dock = DockStyle.Fill;
             richTextBoxSelectedCell.Location = new Point(0, 0);
             richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
             richTextBoxSelectedCell.ReadOnly = true;
-            richTextBoxSelectedCell.Size = new Size(1370, 34);
+            richTextBoxSelectedCell.Size = new Size(1369, 25);
             richTextBoxSelectedCell.TabIndex = 0;
             richTextBoxSelectedCell.Text = "";
             richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
@@ -244,24 +247,24 @@
             richTextBoxQuery.Location = new Point(12, 12);
             richTextBoxQuery.Name = "richTextBoxQuery";
             richTextBoxQuery.ScrollBars = RichTextBoxScrollBars.Vertical;
-            richTextBoxQuery.Size = new Size(1033, 119);
+            richTextBoxQuery.Size = new Size(1029, 128);
             richTextBoxQuery.TabIndex = 4;
             richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
             // 
             // numericUpDownMaxCount
             // 
             numericUpDownMaxCount.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            numericUpDownMaxCount.Location = new Point(1167, 101);
+            numericUpDownMaxCount.Location = new Point(119, 102);
             numericUpDownMaxCount.Maximum = new decimal(new int[] { 1569325056, 23283064, 0, 0 });
             numericUpDownMaxCount.Name = "numericUpDownMaxCount";
-            numericUpDownMaxCount.Size = new Size(84, 23);
+            numericUpDownMaxCount.Size = new Size(148, 23);
             numericUpDownMaxCount.TabIndex = 5;
             numericUpDownMaxCount.Value = new decimal(new int[] { 100, 0, 0, 0 });
             // 
             // textBoxConnectionString
             // 
             textBoxConnectionString.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxConnectionString.Location = new Point(1167, 12);
+            textBoxConnectionString.Location = new Point(119, 12);
             textBoxConnectionString.Name = "textBoxConnectionString";
             textBoxConnectionString.Size = new Size(148, 23);
             textBoxConnectionString.TabIndex = 6;
@@ -271,7 +274,7 @@
             // 
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label1.AutoSize = true;
-            label1.Location = new Point(1051, 20);
+            label1.Location = new Point(13, 15);
             label1.Name = "label1";
             label1.Size = new Size(99, 15);
             label1.TabIndex = 7;
@@ -281,7 +284,7 @@
             // 
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label2.AutoSize = true;
-            label2.Location = new Point(1052, 48);
+            label2.Location = new Point(13, 45);
             label2.Name = "label2";
             label2.Size = new Size(55, 15);
             label2.TabIndex = 8;
@@ -290,7 +293,7 @@
             // textBoxDatabaseName
             // 
             textBoxDatabaseName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxDatabaseName.Location = new Point(1167, 42);
+            textBoxDatabaseName.Location = new Point(119, 42);
             textBoxDatabaseName.Name = "textBoxDatabaseName";
             textBoxDatabaseName.Size = new Size(148, 23);
             textBoxDatabaseName.TabIndex = 9;
@@ -299,7 +302,7 @@
             // 
             label3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label3.AutoSize = true;
-            label3.Location = new Point(1052, 75);
+            label3.Location = new Point(13, 75);
             label3.Name = "label3";
             label3.Size = new Size(58, 15);
             label3.TabIndex = 10;
@@ -309,7 +312,7 @@
             // 
             label4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label4.AutoSize = true;
-            label4.Location = new Point(1053, 103);
+            label4.Location = new Point(13, 104);
             label4.Name = "label4";
             label4.Size = new Size(53, 15);
             label4.TabIndex = 12;
@@ -394,7 +397,7 @@
             // 
             cmbBoxContainerName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             cmbBoxContainerName.FormattingEnabled = true;
-            cmbBoxContainerName.Location = new Point(1167, 72);
+            cmbBoxContainerName.Location = new Point(119, 72);
             cmbBoxContainerName.Name = "cmbBoxContainerName";
             cmbBoxContainerName.Size = new Size(148, 23);
             cmbBoxContainerName.TabIndex = 14;
@@ -403,7 +406,7 @@
             // 
             buttonInsert.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             buttonInsert.Enabled = false;
-            buttonInsert.Location = new Point(1321, 41);
+            buttonInsert.Location = new Point(273, 41);
             buttonInsert.Name = "buttonInsert";
             buttonInsert.Size = new Size(61, 23);
             buttonInsert.TabIndex = 15;
@@ -411,24 +414,34 @@
             buttonInsert.UseVisualStyleBackColor = true;
             buttonInsert.Click += buttonInsert_Click;
             // 
+            // groupBox1
+            // 
+            groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            groupBox1.Controls.Add(label2);
+            groupBox1.Controls.Add(buttonInsert);
+            groupBox1.Controls.Add(buttonLoadData);
+            groupBox1.Controls.Add(cmbBoxContainerName);
+            groupBox1.Controls.Add(numericUpDownMaxCount);
+            groupBox1.Controls.Add(textBoxConnectionString);
+            groupBox1.Controls.Add(label4);
+            groupBox1.Controls.Add(label1);
+            groupBox1.Controls.Add(label3);
+            groupBox1.Controls.Add(textBoxDatabaseName);
+            groupBox1.Location = new Point(1047, 3);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Size = new Size(339, 137);
+            groupBox1.TabIndex = 16;
+            groupBox1.TabStop = false;
+            // 
             // FormMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1394, 681);
-            Controls.Add(buttonInsert);
-            Controls.Add(cmbBoxContainerName);
+            Controls.Add(groupBox1);
             Controls.Add(statusStrip1);
-            Controls.Add(label4);
-            Controls.Add(label3);
-            Controls.Add(textBoxDatabaseName);
-            Controls.Add(label2);
-            Controls.Add(label1);
-            Controls.Add(textBoxConnectionString);
-            Controls.Add(numericUpDownMaxCount);
             Controls.Add(richTextBoxQuery);
             Controls.Add(splitContainer1);
-            Controls.Add(buttonLoadData);
             Name = "FormMain";
             Text = "CosmosDB Client Tool";
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
@@ -451,6 +464,8 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).EndInit();
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();
+            groupBox1.ResumeLayout(false);
+            groupBox1.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -491,5 +506,6 @@
         private Button buttonDelete;
         private ComboBox cmbBoxContainerName;
         private Button buttonInsert;
+        private GroupBox groupBox1;
     }
 }
