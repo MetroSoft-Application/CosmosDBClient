@@ -54,6 +54,20 @@
             cmbBoxContainerName = new ComboBox();
             buttonInsert = new Button();
             groupBox1 = new GroupBox();
+            tabControl1 = new TabControl();
+            tabPage1 = new TabPage();
+            txtUniqueKey = new TextBox();
+            label8 = new Label();
+            txtPartitionKey = new TextBox();
+            label7 = new Label();
+            label6 = new Label();
+            nupTimeToLiveSeconds = new NumericUpDown();
+            radioTimeToLiveOn = new RadioButton();
+            radioTimeToLiveOff = new RadioButton();
+            label5 = new Label();
+            tabPage2 = new TabPage();
+            txtIndexingPolicy = new RichTextBox();
+            groupBox2 = new GroupBox();
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -74,12 +88,17 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).BeginInit();
             statusStrip1.SuspendLayout();
             groupBox1.SuspendLayout();
+            tabControl1.SuspendLayout();
+            tabPage1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)nupTimeToLiveSeconds).BeginInit();
+            tabPage2.SuspendLayout();
+            groupBox2.SuspendLayout();
             SuspendLayout();
             // 
             // buttonLoadData
             // 
             buttonLoadData.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            buttonLoadData.Location = new Point(273, 12);
+            buttonLoadData.Location = new Point(273, 18);
             buttonLoadData.Name = "buttonLoadData";
             buttonLoadData.Size = new Size(61, 23);
             buttonLoadData.TabIndex = 0;
@@ -247,14 +266,14 @@
             richTextBoxQuery.Location = new Point(12, 12);
             richTextBoxQuery.Name = "richTextBoxQuery";
             richTextBoxQuery.ScrollBars = RichTextBoxScrollBars.Vertical;
-            richTextBoxQuery.Size = new Size(1029, 128);
+            richTextBoxQuery.Size = new Size(631, 128);
             richTextBoxQuery.TabIndex = 4;
             richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
             // 
             // numericUpDownMaxCount
             // 
             numericUpDownMaxCount.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            numericUpDownMaxCount.Location = new Point(119, 102);
+            numericUpDownMaxCount.Location = new Point(119, 108);
             numericUpDownMaxCount.Maximum = new decimal(new int[] { 1569325056, 23283064, 0, 0 });
             numericUpDownMaxCount.Name = "numericUpDownMaxCount";
             numericUpDownMaxCount.Size = new Size(148, 23);
@@ -264,7 +283,7 @@
             // textBoxConnectionString
             // 
             textBoxConnectionString.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxConnectionString.Location = new Point(119, 12);
+            textBoxConnectionString.Location = new Point(119, 18);
             textBoxConnectionString.Name = "textBoxConnectionString";
             textBoxConnectionString.Size = new Size(148, 23);
             textBoxConnectionString.TabIndex = 6;
@@ -274,7 +293,7 @@
             // 
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label1.AutoSize = true;
-            label1.Location = new Point(13, 15);
+            label1.Location = new Point(13, 21);
             label1.Name = "label1";
             label1.Size = new Size(99, 15);
             label1.TabIndex = 7;
@@ -284,7 +303,7 @@
             // 
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label2.AutoSize = true;
-            label2.Location = new Point(13, 45);
+            label2.Location = new Point(13, 51);
             label2.Name = "label2";
             label2.Size = new Size(55, 15);
             label2.TabIndex = 8;
@@ -293,7 +312,7 @@
             // textBoxDatabaseName
             // 
             textBoxDatabaseName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxDatabaseName.Location = new Point(119, 42);
+            textBoxDatabaseName.Location = new Point(119, 48);
             textBoxDatabaseName.Name = "textBoxDatabaseName";
             textBoxDatabaseName.Size = new Size(148, 23);
             textBoxDatabaseName.TabIndex = 9;
@@ -302,7 +321,7 @@
             // 
             label3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label3.AutoSize = true;
-            label3.Location = new Point(13, 75);
+            label3.Location = new Point(13, 81);
             label3.Name = "label3";
             label3.Size = new Size(58, 15);
             label3.TabIndex = 10;
@@ -312,7 +331,7 @@
             // 
             label4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label4.AutoSize = true;
-            label4.Location = new Point(13, 104);
+            label4.Location = new Point(13, 110);
             label4.Name = "label4";
             label4.Size = new Size(53, 15);
             label4.TabIndex = 12;
@@ -397,7 +416,7 @@
             // 
             cmbBoxContainerName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             cmbBoxContainerName.FormattingEnabled = true;
-            cmbBoxContainerName.Location = new Point(119, 72);
+            cmbBoxContainerName.Location = new Point(119, 78);
             cmbBoxContainerName.Name = "cmbBoxContainerName";
             cmbBoxContainerName.Size = new Size(148, 23);
             cmbBoxContainerName.TabIndex = 14;
@@ -406,7 +425,7 @@
             // 
             buttonInsert.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             buttonInsert.Enabled = false;
-            buttonInsert.Location = new Point(273, 41);
+            buttonInsert.Location = new Point(273, 47);
             buttonInsert.Name = "buttonInsert";
             buttonInsert.Size = new Size(61, 23);
             buttonInsert.TabIndex = 15;
@@ -432,12 +451,165 @@
             groupBox1.Size = new Size(339, 137);
             groupBox1.TabIndex = 16;
             groupBox1.TabStop = false;
+            groupBox1.Text = "Search Condition";
+            // 
+            // tabControl1
+            // 
+            tabControl1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tabControl1.Controls.Add(tabPage1);
+            tabControl1.Controls.Add(tabPage2);
+            tabControl1.Location = new Point(3, 19);
+            tabControl1.Name = "tabControl1";
+            tabControl1.SelectedIndex = 0;
+            tabControl1.Size = new Size(386, 115);
+            tabControl1.TabIndex = 17;
+            // 
+            // tabPage1
+            // 
+            tabPage1.Controls.Add(txtUniqueKey);
+            tabPage1.Controls.Add(label8);
+            tabPage1.Controls.Add(txtPartitionKey);
+            tabPage1.Controls.Add(label7);
+            tabPage1.Controls.Add(label6);
+            tabPage1.Controls.Add(nupTimeToLiveSeconds);
+            tabPage1.Controls.Add(radioTimeToLiveOn);
+            tabPage1.Controls.Add(radioTimeToLiveOff);
+            tabPage1.Controls.Add(label5);
+            tabPage1.Location = new Point(4, 24);
+            tabPage1.Name = "tabPage1";
+            tabPage1.Padding = new Padding(3);
+            tabPage1.Size = new Size(378, 87);
+            tabPage1.TabIndex = 0;
+            tabPage1.Text = "Settings";
+            tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // txtUniqueKey
+            // 
+            txtUniqueKey.Location = new Point(100, 58);
+            txtUniqueKey.Name = "txtUniqueKey";
+            txtUniqueKey.ReadOnly = true;
+            txtUniqueKey.Size = new Size(270, 23);
+            txtUniqueKey.TabIndex = 13;
+            // 
+            // label8
+            // 
+            label8.AutoSize = true;
+            label8.Location = new Point(7, 63);
+            label8.Name = "label8";
+            label8.Size = new Size(67, 15);
+            label8.TabIndex = 12;
+            label8.Text = "Unique Key";
+            // 
+            // txtPartitionKey
+            // 
+            txtPartitionKey.Location = new Point(100, 33);
+            txtPartitionKey.Name = "txtPartitionKey";
+            txtPartitionKey.ReadOnly = true;
+            txtPartitionKey.Size = new Size(270, 23);
+            txtPartitionKey.TabIndex = 11;
+            // 
+            // label7
+            // 
+            label7.AutoSize = true;
+            label7.Location = new Point(7, 37);
+            label7.Name = "label7";
+            label7.Size = new Size(74, 15);
+            label7.TabIndex = 10;
+            label7.Text = "Partition Key";
+            // 
+            // label6
+            // 
+            label6.AutoSize = true;
+            label6.Location = new Point(319, 11);
+            label6.Name = "label6";
+            label6.Size = new Size(51, 15);
+            label6.TabIndex = 5;
+            label6.Text = "Seconds";
+            label6.Visible = false;
+            // 
+            // nupTimeToLiveSeconds
+            // 
+            nupTimeToLiveSeconds.Enabled = false;
+            nupTimeToLiveSeconds.Location = new Point(193, 6);
+            nupTimeToLiveSeconds.Maximum = new decimal(new int[] { -559939585, 902409669, 54, 0 });
+            nupTimeToLiveSeconds.Minimum = new decimal(new int[] { 1, 0, 0, int.MinValue });
+            nupTimeToLiveSeconds.Name = "nupTimeToLiveSeconds";
+            nupTimeToLiveSeconds.ReadOnly = true;
+            nupTimeToLiveSeconds.Size = new Size(120, 23);
+            nupTimeToLiveSeconds.TabIndex = 4;
+            nupTimeToLiveSeconds.Visible = false;
+            // 
+            // radioTimeToLiveOn
+            // 
+            radioTimeToLiveOn.AutoSize = true;
+            radioTimeToLiveOn.Enabled = false;
+            radioTimeToLiveOn.Location = new Point(146, 9);
+            radioTimeToLiveOn.Name = "radioTimeToLiveOn";
+            radioTimeToLiveOn.Size = new Size(41, 19);
+            radioTimeToLiveOn.TabIndex = 3;
+            radioTimeToLiveOn.TabStop = true;
+            radioTimeToLiveOn.Text = "On";
+            radioTimeToLiveOn.UseVisualStyleBackColor = true;
+            // 
+            // radioTimeToLiveOff
+            // 
+            radioTimeToLiveOff.AutoSize = true;
+            radioTimeToLiveOff.Enabled = false;
+            radioTimeToLiveOff.Location = new Point(103, 9);
+            radioTimeToLiveOff.Name = "radioTimeToLiveOff";
+            radioTimeToLiveOff.Size = new Size(41, 19);
+            radioTimeToLiveOff.TabIndex = 1;
+            radioTimeToLiveOff.TabStop = true;
+            radioTimeToLiveOff.Text = "Off";
+            radioTimeToLiveOff.UseVisualStyleBackColor = true;
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(7, 11);
+            label5.Name = "label5";
+            label5.Size = new Size(70, 15);
+            label5.TabIndex = 0;
+            label5.Text = "Time to Live";
+            // 
+            // tabPage2
+            // 
+            tabPage2.Controls.Add(txtIndexingPolicy);
+            tabPage2.Location = new Point(4, 24);
+            tabPage2.Name = "tabPage2";
+            tabPage2.Padding = new Padding(3);
+            tabPage2.Size = new Size(378, 87);
+            tabPage2.TabIndex = 1;
+            tabPage2.Text = "Indexing Policy";
+            tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // txtIndexingPolicy
+            // 
+            txtIndexingPolicy.Dock = DockStyle.Fill;
+            txtIndexingPolicy.Location = new Point(3, 3);
+            txtIndexingPolicy.Name = "txtIndexingPolicy";
+            txtIndexingPolicy.ReadOnly = true;
+            txtIndexingPolicy.Size = new Size(372, 81);
+            txtIndexingPolicy.TabIndex = 0;
+            txtIndexingPolicy.Text = "";
+            // 
+            // groupBox2
+            // 
+            groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox2.Controls.Add(tabControl1);
+            groupBox2.Location = new Point(649, 3);
+            groupBox2.Name = "groupBox2";
+            groupBox2.Size = new Size(392, 137);
+            groupBox2.TabIndex = 18;
+            groupBox2.TabStop = false;
+            groupBox2.Text = "Container Settings";
             // 
             // FormMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1394, 681);
+            Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Controls.Add(statusStrip1);
             Controls.Add(richTextBoxQuery);
@@ -466,6 +638,12 @@
             statusStrip1.PerformLayout();
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
+            tabControl1.ResumeLayout(false);
+            tabPage1.ResumeLayout(false);
+            tabPage1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)nupTimeToLiveSeconds).EndInit();
+            tabPage2.ResumeLayout(false);
+            groupBox2.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -507,5 +685,19 @@
         private ComboBox cmbBoxContainerName;
         private Button buttonInsert;
         private GroupBox groupBox1;
+        private TabControl tabControl1;
+        private TabPage tabPage1;
+        private TabPage tabPage2;
+        private GroupBox groupBox2;
+        private RadioButton radioTimeToLiveOff;
+        private Label label5;
+        private Label label6;
+        private NumericUpDown nupTimeToLiveSeconds;
+        private RadioButton radioTimeToLiveOn;
+        private TextBox txtUniqueKey;
+        private Label label8;
+        private TextBox txtPartitionKey;
+        private Label label7;
+        private RichTextBox txtIndexingPolicy;
     }
 }

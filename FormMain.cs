@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System.Collections.ObjectModel;
 
 namespace CosmosDBClient
 {
@@ -38,7 +40,6 @@ namespace CosmosDBClient
             cmbBoxContainerName.Text = containerName;
             numericUpDownMaxCount.Value = _maxItemCount;
 
-
             if (_useHyperlinkHandler)
             {
                 _hyperlinkHandler = new HyperlinkHandler();
@@ -50,6 +51,7 @@ namespace CosmosDBClient
                 if (!string.IsNullOrWhiteSpace(databaseName))
                 {
                     LoadContainersIntoComboBox(databaseName);
+                    DisplayContainerSettings();
                 }
             }
             catch (Exception)
@@ -84,6 +86,7 @@ namespace CosmosDBClient
                 Cursor.Current = Cursors.WaitCursor;
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
                 await UpdateDatagridView();
+                DisplayContainerSettings();
                 JsonData.Text = string.Empty;
 
                 ResizeRowHeader();
@@ -208,6 +211,82 @@ namespace CosmosDBClient
             {
                 var containerNames = await _cosmosDBService.GetContainerNamesAsync();
                 cmbBoxContainerName.Items.AddRange(containerNames.ToArray());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+        }
+
+        /// <summary>
+        /// コンテナの設定を表示する
+        /// </summary>
+        private async void DisplayContainerSettings()
+        {
+            try
+            {
+                var containerProperties = await _cosmosDBService.GetContainerPropertiesAsync();
+
+                foreach (TabPage tab in tabControl1.TabPages)
+                {
+                    foreach (Control control in tab.Controls)
+                    {
+                        switch (control.Name)
+                        {
+                            case "txtPartitionKey":
+                                control.Text = string.Join(",", containerProperties.PartitionKeyPaths);
+                                break;
+
+                            case "txtUniqueKey":
+                                control.Text = string.Join(",", containerProperties.UniqueKeyPolicy.UniqueKeys.FirstOrDefault()?.Paths ?? new Collection<string>());
+                                break;
+
+                            case "radioTimeToLiveOff":
+                                {
+                                    if (containerProperties.DefaultTimeToLive == null)
+                                    {
+                                        var radio = (RadioButton)control;
+                                        radio.Checked = true;
+                                    }
+                                }
+
+                                break;
+
+                            case "radioTimeToLiveOn":
+                                {
+                                    if (containerProperties.DefaultTimeToLive != null)
+                                    {
+                                        var radio = (RadioButton)control;
+                                        radio.Checked = true;
+                                    }
+                                }
+
+                                break;
+
+                            case "nupTimeToLiveSeconds":
+                                {
+                                    if (containerProperties.DefaultTimeToLive != null)
+                                    {
+                                        control.Text = containerProperties.DefaultTimeToLive.ToString();
+                                        control.Visible = true;
+                                    }
+                                    else
+                                    {
+                                        control.Visible = false;
+                                    }
+                                }
+
+                                break;
+
+                            case "txtIndexingPolicy":
+                                control.Text = JsonConvert.SerializeObject(containerProperties.IndexingPolicy, Formatting.Indented);
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -411,19 +490,6 @@ namespace CosmosDBClient
                 {
                     _hyperlinkHandler.MarkLinkTextFromText(richTextBoxSelectedCell);
                 }
-            }
-        }
-
-        /// <summary>
-        /// RichTextBox でマウスアップイベントが発生した際の処理ハイパーリンクを処理する
-        /// </summary>
-        /// <param name="sender">イベントの送信元オブジェクト</param>
-        /// <param name="e">マウスイベントデータ</param>
-        private void JsonData_MouseUp(object sender, MouseEventArgs e)
-        {
-            if (_useHyperlinkHandler)
-            {
-                _hyperlinkHandler.HandleMouseUpJson(e, JsonData);
             }
         }
 
