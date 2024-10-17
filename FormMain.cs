@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace CosmosDBClient
 {
@@ -375,6 +376,15 @@ namespace CosmosDBClient
         /// <param name="e">イベントデータ</param>
         private async void buttonDelete_Click(object sender, EventArgs e)
         {
+            await Delete();
+        }
+
+        /// <summary>
+        /// レコードを削除する
+        /// </summary>
+        /// <returns>Task</returns>
+        private async Task Delete()
+        {
             DialogResult result = MessageBox.Show(
                 "Do you want to delete your records?",
                 "Info",
@@ -533,6 +543,14 @@ namespace CosmosDBClient
             var jsonData = (RichTextBox)sender;
             buttonUpdate.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
             buttonDelete.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
+        }
+
+        private async void dataGridViewResults_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                await Delete();
+            }
         }
     }
 }

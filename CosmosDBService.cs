@@ -70,10 +70,10 @@ namespace CosmosDBClient
                 }
             }
 
+            stopwatch.Stop();
             // カラムの並び替えを実施する
             MoveSystemColumnsToEnd(dataTable);
 
-            stopwatch.Stop();
             return (dataTable, totalRequestCharge, documentCount, pageCount, stopwatch.ElapsedMilliseconds);
         }
 

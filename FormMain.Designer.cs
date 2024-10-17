@@ -131,16 +131,17 @@
             dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridViewResults.Size = new Size(1031, 485);
+            dataGridViewResults.RowHeadersWidth = 51;
+            dataGridViewResults.Size = new Size(1030, 484);
             dataGridViewResults.TabIndex = 1;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
+            dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
             // 
             // splitContainer1
             // 
             splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            splitContainer1.IsSplitterFixed = true;
             splitContainer1.Location = new Point(12, 146);
             splitContainer1.Name = "splitContainer1";
             splitContainer1.Orientation = Orientation.Horizontal;
@@ -153,7 +154,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(richTextBoxSelectedCell);
             splitContainer1.Size = new Size(1370, 523);
-            splitContainer1.SplitterDistance = 485;
+            splitContainer1.SplitterDistance = 484;
             splitContainer1.TabIndex = 2;
             // 
             // splitContainer2
@@ -169,8 +170,8 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(splitContainer3);
-            splitContainer2.Size = new Size(1370, 485);
-            splitContainer2.SplitterDistance = 1031;
+            splitContainer2.Size = new Size(1370, 484);
+            splitContainer2.SplitterDistance = 1030;
             splitContainer2.TabIndex = 3;
             // 
             // splitContainer3
@@ -189,8 +190,8 @@
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(splitContainer4);
-            splitContainer3.Size = new Size(335, 485);
-            splitContainer3.SplitterDistance = 452;
+            splitContainer3.Size = new Size(336, 484);
+            splitContainer3.SplitterDistance = 448;
             splitContainer3.TabIndex = 4;
             // 
             // JsonData
@@ -200,7 +201,7 @@
             JsonData.Location = new Point(0, 0);
             JsonData.Name = "JsonData";
             JsonData.ReadOnly = true;
-            JsonData.Size = new Size(335, 452);
+            JsonData.Size = new Size(336, 448);
             JsonData.TabIndex = 3;
             JsonData.Text = "";
             JsonData.TextChanged += JsonData_TextChanged;
@@ -219,8 +220,8 @@
             // splitContainer4.Panel2
             // 
             splitContainer4.Panel2.Controls.Add(buttonDelete);
-            splitContainer4.Size = new Size(335, 29);
-            splitContainer4.SplitterDistance = 165;
+            splitContainer4.Size = new Size(336, 32);
+            splitContainer4.SplitterDistance = 164;
             splitContainer4.TabIndex = 0;
             // 
             // buttonUpdate
@@ -229,7 +230,7 @@
             buttonUpdate.Enabled = false;
             buttonUpdate.Location = new Point(0, 0);
             buttonUpdate.Name = "buttonUpdate";
-            buttonUpdate.Size = new Size(165, 29);
+            buttonUpdate.Size = new Size(164, 32);
             buttonUpdate.TabIndex = 15;
             buttonUpdate.Text = "Update";
             buttonUpdate.UseVisualStyleBackColor = true;
@@ -241,7 +242,7 @@
             buttonDelete.Enabled = false;
             buttonDelete.Location = new Point(0, 0);
             buttonDelete.Name = "buttonDelete";
-            buttonDelete.Size = new Size(166, 29);
+            buttonDelete.Size = new Size(168, 32);
             buttonDelete.TabIndex = 16;
             buttonDelete.Text = "Delete";
             buttonDelete.UseVisualStyleBackColor = true;
@@ -265,7 +266,6 @@
             richTextBoxQuery.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             richTextBoxQuery.Location = new Point(12, 12);
             richTextBoxQuery.Name = "richTextBoxQuery";
-            richTextBoxQuery.ScrollBars = RichTextBoxScrollBars.Vertical;
             richTextBoxQuery.Size = new Size(631, 128);
             richTextBoxQuery.TabIndex = 4;
             richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
@@ -340,6 +340,7 @@
             // 
             // statusStrip1
             // 
+            statusStrip1.ImageScalingSize = new Size(20, 20);
             statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2, toolStripStatusLabel3, toolStripStatusLabel4 });
             statusStrip1.Location = new Point(0, 659);
             statusStrip1.Name = "statusStrip1";
@@ -477,7 +478,7 @@
             tabPage1.Controls.Add(label5);
             tabPage1.Location = new Point(4, 24);
             tabPage1.Name = "tabPage1";
-            tabPage1.Padding = new Padding(3);
+            tabPage1.Padding = new Padding(3, 3, 3, 3);
             tabPage1.Size = new Size(378, 87);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Settings";
@@ -577,7 +578,7 @@
             tabPage2.Controls.Add(txtIndexingPolicy);
             tabPage2.Location = new Point(4, 24);
             tabPage2.Name = "tabPage2";
-            tabPage2.Padding = new Padding(3);
+            tabPage2.Padding = new Padding(3, 3, 3, 3);
             tabPage2.Size = new Size(378, 87);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Indexing Policy";
@@ -595,7 +596,7 @@
             // 
             // groupBox2
             // 
-            groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             groupBox2.Controls.Add(tabControl1);
             groupBox2.Location = new Point(649, 3);
             groupBox2.Name = "groupBox2";
