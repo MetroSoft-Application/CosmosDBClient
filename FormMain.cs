@@ -112,10 +112,10 @@ namespace CosmosDBClient
             using (Graphics g = dataGridViewResults.CreateGraphics())
             {
                 // テキストの幅を計算
-                var size = g.MeasureString(cmbBoxContainerName.Text, dataGridViewResults.Font);
+                var size = g.MeasureString(dataGridViewResults.RowCount.ToString(), dataGridViewResults.Font);
 
                 // 最大幅を保持
-                var maxRowHeaderWidth = (int)size.Width - 20;
+                var maxRowHeaderWidth = (int)size.Width + 20;
 
                 // 計算した最大幅を RowHeadersWidth に設定
                 dataGridViewResults.RowHeadersWidth = maxRowHeaderWidth;
@@ -545,11 +545,132 @@ namespace CosmosDBClient
             buttonDelete.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
         }
 
+        /// <summary>
+        /// DataGridViewでのキー押下イベント
+        /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
         private async void dataGridViewResults_KeyUp(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
-                await Delete();
+                var selectedRows = dataGridViewResults.SelectedRows;
+
+                // 選択された行が1行以上ある場合は、削除処理を呼び出す
+                if (selectedRows.Count > 0)
+                {
+                    await DeleteSelectedRows(selectedRows);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 行削除処理
+        /// </summary>
+        /// <param name="selectedRows">選択行</param>
+        /// <returns>task</returns>
+        private async Task DeleteSelectedRows(DataGridViewSelectedRowCollection selectedRows)
+        {
+            // 削除確認ダイアログを表示
+            DialogResult result = MessageBox.Show(
+                "Do you want to delete the selected records?",
+                "Info",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result != DialogResult.Yes)
+            {
+                return;
+            }
+
+            var deletedIds = new List<string>();
+
+            try
+            {
+                foreach (DataGridViewRow row in selectedRows)
+                {
+                    // 各カラムのセルの値を取得し、JSON オブジェクトを構築
+                    var jsonObject = new JObject();
+
+                    foreach (DataGridViewCell cell in row.Cells)
+                    {
+                        // カラム名をキーにし、セルの値を適切に設定
+                        var columnName = dataGridViewResults.Columns[cell.ColumnIndex].Name;
+                        var cellValue = cell.Value;
+
+                        if (cellValue is DBNull || cellValue is null)
+                        {
+                            jsonObject[columnName] = null;
+                        }
+                        else if (cellValue is string || cellValue is DateTime)
+                        {
+                            jsonObject[columnName] = cellValue.ToString();
+                        }
+                        else if (cellValue is bool)
+                        {
+                            jsonObject[columnName] = (bool)cellValue;
+                        }
+                        else if (cellValue is double || cellValue is float || cellValue is decimal)
+                        {
+                            jsonObject[columnName] = Convert.ToDouble(cellValue);
+                        }
+                        else
+                        {
+                            jsonObject[columnName] = cellValue.ToString();
+                        }
+                    }
+
+                    // IDを取得してリストに追加
+                    var id = jsonObject["id"]?.ToString();
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        deletedIds.Add($"id:{id}");
+                    }
+
+                    await DeleteRow(jsonObject);
+
+                    // DataGridViewから行を削除
+                    dataGridViewResults.Rows.Remove(row);
+                }
+
+                // 削除したIDをメッセージボックスで表示
+                if (deletedIds.Count > 0)
+                {
+                    var message = $"Deleted IDs:\n{string.Join("\n", deletedIds)}";
+                    MessageBox.Show(message, "Info");
+                }
+
+                // DataGridViewの更新
+                await UpdateDatagridView();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+        }
+
+        /// <summary>
+        /// 行削除
+        /// </summary>
+        /// <param name="jsonObject"></param>
+        /// <returns>task</returns>
+        private async Task DeleteRow(JObject jsonObject)
+        {
+            try
+            {
+                // JSONオブジェクトからidを取得
+                var id = jsonObject["id"].ToString();
+
+                // PartitionKeyを自動的に解決して取得
+                var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
+                var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
+
+                var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
             }
         }
     }
