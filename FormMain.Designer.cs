@@ -17,18 +17,9 @@
 
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle11 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle12 = new DataGridViewCellStyle();
             buttonLoadData = new Button();
-            dataGridViewResults = new DataGridView();
-            splitContainer1 = new SplitContainer();
-            splitContainer2 = new SplitContainer();
-            splitContainer3 = new SplitContainer();
-            JsonData = new RichTextBox();
-            splitContainer4 = new SplitContainer();
-            buttonUpdate = new Button();
-            buttonDelete = new Button();
-            richTextBoxSelectedCell = new RichTextBox();
             numericUpDownMaxCount = new NumericUpDown();
             textBoxConnectionString = new TextBox();
             label1 = new Label();
@@ -68,23 +59,15 @@
             txtIndexingPolicy = new RichTextBox();
             groupBox2 = new GroupBox();
             panel1 = new Panel();
-            ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
-            splitContainer1.Panel1.SuspendLayout();
-            splitContainer1.Panel2.SuspendLayout();
-            splitContainer1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)splitContainer2).BeginInit();
-            splitContainer2.Panel1.SuspendLayout();
-            splitContainer2.Panel2.SuspendLayout();
-            splitContainer2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
-            splitContainer3.Panel1.SuspendLayout();
-            splitContainer3.Panel2.SuspendLayout();
-            splitContainer3.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)splitContainer4).BeginInit();
-            splitContainer4.Panel1.SuspendLayout();
-            splitContainer4.Panel2.SuspendLayout();
-            splitContainer4.SuspendLayout();
+            splitContainer1 = new SplitContainer();
+            splitContainer2 = new SplitContainer();
+            dataGridViewResults = new DataGridView();
+            richTextBoxSelectedCell = new RichTextBox();
+            splitContainer3 = new SplitContainer();
+            JsonData = new RichTextBox();
+            splitContainer4 = new SplitContainer();
+            buttonUpdate = new Button();
+            buttonDelete = new Button();
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).BeginInit();
             statusStrip1.SuspendLayout();
             groupBox1.SuspendLayout();
@@ -93,6 +76,23 @@
             ((System.ComponentModel.ISupportInitialize)nupTimeToLiveSeconds).BeginInit();
             tabPage2.SuspendLayout();
             groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
+            splitContainer1.Panel1.SuspendLayout();
+            splitContainer1.Panel2.SuspendLayout();
+            splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer2).BeginInit();
+            splitContainer2.Panel1.SuspendLayout();
+            splitContainer2.Panel2.SuspendLayout();
+            splitContainer2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
+            splitContainer3.Panel1.SuspendLayout();
+            splitContainer3.Panel2.SuspendLayout();
+            splitContainer3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer4).BeginInit();
+            splitContainer4.Panel1.SuspendLayout();
+            splitContainer4.Panel2.SuspendLayout();
+            splitContainer4.SuspendLayout();
             SuspendLayout();
             // 
             // buttonLoadData
@@ -105,160 +105,6 @@
             buttonLoadData.Text = "Exec";
             buttonLoadData.UseVisualStyleBackColor = true;
             buttonLoadData.Click += buttonLoadData_Click;
-            // 
-            // dataGridViewResults
-            // 
-            dataGridViewResults.AllowUserToAddRows = false;
-            dataGridViewResults.AllowUserToDeleteRows = false;
-            dataGridViewResults.AllowUserToOrderColumns = true;
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
-            dataGridViewCellStyle1.Font = new Font("Yu Gothic UI", 9F);
-            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            dataGridViewResults.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewResults.Dock = DockStyle.Fill;
-            dataGridViewResults.Location = new Point(0, 0);
-            dataGridViewResults.Name = "dataGridViewResults";
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle2.Font = new Font("Yu Gothic UI", 9F);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
-            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridViewResults.RowHeadersWidth = 51;
-            dataGridViewResults.Size = new Size(1030, 484);
-            dataGridViewResults.TabIndex = 1;
-            dataGridViewResults.CellClick += dataGridViewResults_CellClick;
-            dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
-            dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
-            dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
-            // 
-            // splitContainer1
-            // 
-            splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            splitContainer1.Location = new Point(12, 146);
-            splitContainer1.Name = "splitContainer1";
-            splitContainer1.Orientation = Orientation.Horizontal;
-            // 
-            // splitContainer1.Panel1
-            // 
-            splitContainer1.Panel1.Controls.Add(splitContainer2);
-            // 
-            // splitContainer1.Panel2
-            // 
-            splitContainer1.Panel2.Controls.Add(richTextBoxSelectedCell);
-            splitContainer1.Size = new Size(1370, 523);
-            splitContainer1.SplitterDistance = 484;
-            splitContainer1.TabIndex = 2;
-            // 
-            // splitContainer2
-            // 
-            splitContainer2.Dock = DockStyle.Fill;
-            splitContainer2.Location = new Point(0, 0);
-            splitContainer2.Name = "splitContainer2";
-            // 
-            // splitContainer2.Panel1
-            // 
-            splitContainer2.Panel1.Controls.Add(dataGridViewResults);
-            // 
-            // splitContainer2.Panel2
-            // 
-            splitContainer2.Panel2.Controls.Add(splitContainer3);
-            splitContainer2.Size = new Size(1370, 484);
-            splitContainer2.SplitterDistance = 1030;
-            splitContainer2.TabIndex = 3;
-            // 
-            // splitContainer3
-            // 
-            splitContainer3.Dock = DockStyle.Fill;
-            splitContainer3.FixedPanel = FixedPanel.Panel2;
-            splitContainer3.IsSplitterFixed = true;
-            splitContainer3.Location = new Point(0, 0);
-            splitContainer3.Name = "splitContainer3";
-            splitContainer3.Orientation = Orientation.Horizontal;
-            // 
-            // splitContainer3.Panel1
-            // 
-            splitContainer3.Panel1.Controls.Add(JsonData);
-            // 
-            // splitContainer3.Panel2
-            // 
-            splitContainer3.Panel2.Controls.Add(splitContainer4);
-            splitContainer3.Size = new Size(336, 484);
-            splitContainer3.SplitterDistance = 448;
-            splitContainer3.TabIndex = 4;
-            // 
-            // JsonData
-            // 
-            JsonData.BackColor = SystemColors.ButtonFace;
-            JsonData.Dock = DockStyle.Fill;
-            JsonData.Location = new Point(0, 0);
-            JsonData.Name = "JsonData";
-            JsonData.ReadOnly = true;
-            JsonData.Size = new Size(336, 448);
-            JsonData.TabIndex = 3;
-            JsonData.Text = "";
-            JsonData.TextChanged += JsonData_TextChanged;
-            // 
-            // splitContainer4
-            // 
-            splitContainer4.Dock = DockStyle.Fill;
-            splitContainer4.IsSplitterFixed = true;
-            splitContainer4.Location = new Point(0, 0);
-            splitContainer4.Name = "splitContainer4";
-            // 
-            // splitContainer4.Panel1
-            // 
-            splitContainer4.Panel1.Controls.Add(buttonUpdate);
-            // 
-            // splitContainer4.Panel2
-            // 
-            splitContainer4.Panel2.Controls.Add(buttonDelete);
-            splitContainer4.Size = new Size(336, 32);
-            splitContainer4.SplitterDistance = 164;
-            splitContainer4.TabIndex = 0;
-            // 
-            // buttonUpdate
-            // 
-            buttonUpdate.Dock = DockStyle.Fill;
-            buttonUpdate.Enabled = false;
-            buttonUpdate.Location = new Point(0, 0);
-            buttonUpdate.Name = "buttonUpdate";
-            buttonUpdate.Size = new Size(164, 32);
-            buttonUpdate.TabIndex = 15;
-            buttonUpdate.Text = "Update";
-            buttonUpdate.UseVisualStyleBackColor = true;
-            buttonUpdate.Click += buttonUpdate_Click;
-            // 
-            // buttonDelete
-            // 
-            buttonDelete.Dock = DockStyle.Fill;
-            buttonDelete.Enabled = false;
-            buttonDelete.Location = new Point(0, 0);
-            buttonDelete.Name = "buttonDelete";
-            buttonDelete.Size = new Size(168, 32);
-            buttonDelete.TabIndex = 16;
-            buttonDelete.Text = "Delete";
-            buttonDelete.UseVisualStyleBackColor = true;
-            buttonDelete.Click += buttonDelete_Click;
-            // 
-            // richTextBoxSelectedCell
-            // 
-            richTextBoxSelectedCell.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            richTextBoxSelectedCell.BackColor = SystemColors.ButtonFace;
-            richTextBoxSelectedCell.Location = new Point(0, 0);
-            richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
-            richTextBoxSelectedCell.ReadOnly = true;
-            richTextBoxSelectedCell.Size = new Size(1369, 25);
-            richTextBoxSelectedCell.TabIndex = 0;
-            richTextBoxSelectedCell.Text = "";
-            richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
             // 
             // numericUpDownMaxCount
             // 
@@ -603,35 +449,172 @@
             panel1.Size = new Size(631, 128);
             panel1.TabIndex = 19;
             // 
+            // splitContainer1
+            // 
+            splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            splitContainer1.Location = new Point(12, 146);
+            splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            splitContainer1.Panel1.Controls.Add(splitContainer2);
+            // 
+            // splitContainer1.Panel2
+            // 
+            splitContainer1.Panel2.Controls.Add(splitContainer3);
+            splitContainer1.Size = new Size(1374, 510);
+            splitContainer1.SplitterDistance = 1034;
+            splitContainer1.TabIndex = 20;
+            // 
+            // splitContainer2
+            // 
+            splitContainer2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            splitContainer2.Location = new Point(0, 0);
+            splitContainer2.Name = "splitContainer2";
+            splitContainer2.Orientation = Orientation.Horizontal;
+            // 
+            // splitContainer2.Panel1
+            // 
+            splitContainer2.Panel1.Controls.Add(dataGridViewResults);
+            // 
+            // splitContainer2.Panel2
+            // 
+            splitContainer2.Panel2.Controls.Add(richTextBoxSelectedCell);
+            splitContainer2.Size = new Size(1034, 510);
+            splitContainer2.SplitterDistance = 478;
+            splitContainer2.TabIndex = 0;
+            // 
+            // dataGridViewResults
+            // 
+            dataGridViewResults.AllowUserToAddRows = false;
+            dataGridViewResults.AllowUserToDeleteRows = false;
+            dataGridViewResults.AllowUserToOrderColumns = true;
+            dataGridViewCellStyle11.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle11.BackColor = SystemColors.ActiveCaption;
+            dataGridViewCellStyle11.Font = new Font("Yu Gothic UI", 9F);
+            dataGridViewCellStyle11.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle11.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle11.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle11.WrapMode = DataGridViewTriState.True;
+            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle11;
+            dataGridViewResults.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewResults.Dock = DockStyle.Fill;
+            dataGridViewResults.Location = new Point(0, 0);
+            dataGridViewResults.Name = "dataGridViewResults";
+            dataGridViewCellStyle12.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle12.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle12.Font = new Font("Yu Gothic UI", 9F);
+            dataGridViewCellStyle12.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle12.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle12.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle12.WrapMode = DataGridViewTriState.True;
+            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle12;
+            dataGridViewResults.RowHeadersWidth = 51;
+            dataGridViewResults.Size = new Size(1034, 478);
+            dataGridViewResults.TabIndex = 19;
+            dataGridViewResults.CellClick += dataGridViewResults_CellClick;
+            dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
+            dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
+            dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
+            // 
+            // richTextBoxSelectedCell
+            // 
+            richTextBoxSelectedCell.BackColor = SystemColors.ButtonFace;
+            richTextBoxSelectedCell.Dock = DockStyle.Fill;
+            richTextBoxSelectedCell.Location = new Point(0, 0);
+            richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
+            richTextBoxSelectedCell.ReadOnly = true;
+            richTextBoxSelectedCell.Size = new Size(1034, 28);
+            richTextBoxSelectedCell.TabIndex = 18;
+            richTextBoxSelectedCell.Text = "";
+            richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
+            // 
+            // splitContainer3
+            // 
+            splitContainer3.Dock = DockStyle.Fill;
+            splitContainer3.FixedPanel = FixedPanel.Panel2;
+            splitContainer3.IsSplitterFixed = true;
+            splitContainer3.Location = new Point(0, 0);
+            splitContainer3.Name = "splitContainer3";
+            splitContainer3.Orientation = Orientation.Horizontal;
+            // 
+            // splitContainer3.Panel1
+            // 
+            splitContainer3.Panel1.Controls.Add(JsonData);
+            // 
+            // splitContainer3.Panel2
+            // 
+            splitContainer3.Panel2.Controls.Add(splitContainer4);
+            splitContainer3.Size = new Size(336, 510);
+            splitContainer3.SplitterDistance = 477;
+            splitContainer3.TabIndex = 0;
+            // 
+            // JsonData
+            // 
+            JsonData.BackColor = SystemColors.ButtonFace;
+            JsonData.Dock = DockStyle.Fill;
+            JsonData.Location = new Point(0, 0);
+            JsonData.Name = "JsonData";
+            JsonData.ReadOnly = true;
+            JsonData.Size = new Size(336, 477);
+            JsonData.TabIndex = 20;
+            JsonData.Text = "";
+            JsonData.TextChanged += JsonData_TextChanged;
+            // 
+            // splitContainer4
+            // 
+            splitContainer4.Dock = DockStyle.Fill;
+            splitContainer4.IsSplitterFixed = true;
+            splitContainer4.Location = new Point(0, 0);
+            splitContainer4.Name = "splitContainer4";
+            // 
+            // splitContainer4.Panel1
+            // 
+            splitContainer4.Panel1.Controls.Add(buttonUpdate);
+            // 
+            // splitContainer4.Panel2
+            // 
+            splitContainer4.Panel2.Controls.Add(buttonDelete);
+            splitContainer4.Size = new Size(336, 29);
+            splitContainer4.SplitterDistance = 166;
+            splitContainer4.TabIndex = 0;
+            // 
+            // buttonUpdate
+            // 
+            buttonUpdate.Dock = DockStyle.Fill;
+            buttonUpdate.Enabled = false;
+            buttonUpdate.Location = new Point(0, 0);
+            buttonUpdate.Name = "buttonUpdate";
+            buttonUpdate.Size = new Size(166, 29);
+            buttonUpdate.TabIndex = 21;
+            buttonUpdate.Text = "Update";
+            buttonUpdate.UseVisualStyleBackColor = true;
+            buttonUpdate.Click += buttonUpdate_Click;
+            // 
+            // buttonDelete
+            // 
+            buttonDelete.Dock = DockStyle.Fill;
+            buttonDelete.Enabled = false;
+            buttonDelete.Location = new Point(0, 0);
+            buttonDelete.Name = "buttonDelete";
+            buttonDelete.Size = new Size(166, 29);
+            buttonDelete.TabIndex = 22;
+            buttonDelete.Text = "Delete";
+            buttonDelete.UseVisualStyleBackColor = true;
+            buttonDelete.Click += buttonDelete_Click;
+            // 
             // FormMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1394, 681);
+            Controls.Add(splitContainer1);
             Controls.Add(panel1);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Controls.Add(statusStrip1);
-            Controls.Add(splitContainer1);
             Name = "FormMain";
             Text = "CosmosDB Client Tool";
-            ((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
-            splitContainer1.Panel1.ResumeLayout(false);
-            splitContainer1.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
-            splitContainer1.ResumeLayout(false);
-            splitContainer2.Panel1.ResumeLayout(false);
-            splitContainer2.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
-            splitContainer2.ResumeLayout(false);
-            splitContainer3.Panel1.ResumeLayout(false);
-            splitContainer3.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)splitContainer3).EndInit();
-            splitContainer3.ResumeLayout(false);
-            splitContainer4.Panel1.ResumeLayout(false);
-            splitContainer4.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)splitContainer4).EndInit();
-            splitContainer4.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).EndInit();
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();
@@ -643,6 +626,23 @@
             ((System.ComponentModel.ISupportInitialize)nupTimeToLiveSeconds).EndInit();
             tabPage2.ResumeLayout(false);
             groupBox2.ResumeLayout(false);
+            splitContainer1.Panel1.ResumeLayout(false);
+            splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
+            splitContainer1.ResumeLayout(false);
+            splitContainer2.Panel1.ResumeLayout(false);
+            splitContainer2.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
+            splitContainer2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
+            splitContainer3.Panel1.ResumeLayout(false);
+            splitContainer3.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer3).EndInit();
+            splitContainer3.ResumeLayout(false);
+            splitContainer4.Panel1.ResumeLayout(false);
+            splitContainer4.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer4).EndInit();
+            splitContainer4.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -650,9 +650,6 @@
         #endregion
 
         private Button buttonLoadData;
-        private DataGridView dataGridViewResults;
-        private SplitContainer splitContainer1;
-        private RichTextBox richTextBoxSelectedCell;
         private NumericUpDown numericUpDownMaxCount;
         private TextBox textBoxConnectionString;
         private Label label1;
@@ -660,7 +657,6 @@
         private TextBox textBoxDatabaseName;
         private Label label3;
         private Label label4;
-        private SplitContainer splitContainer2;
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel toolStripStatusLabel1;
         private ToolStripStatusLabel toolStripStatusLabel2;
@@ -675,11 +671,6 @@
         private ToolStripStatusLabel toolStripStatusLabel11;
         private ToolStripStatusLabel toolStripStatusLabel12;
         private ToolStripStatusLabel toolStripStatusLabel13;
-        private SplitContainer splitContainer3;
-        private RichTextBox JsonData;
-        private SplitContainer splitContainer4;
-        private Button buttonUpdate;
-        private Button buttonDelete;
         private ComboBox cmbBoxContainerName;
         private Button buttonInsert;
         private GroupBox groupBox1;
@@ -698,5 +689,14 @@
         private Label label7;
         private RichTextBox txtIndexingPolicy;
         private Panel panel1;
+        private SplitContainer splitContainer1;
+        private SplitContainer splitContainer2;
+        private DataGridView dataGridViewResults;
+        private RichTextBox richTextBoxSelectedCell;
+        private SplitContainer splitContainer3;
+        private RichTextBox JsonData;
+        private SplitContainer splitContainer4;
+        private Button buttonUpdate;
+        private Button buttonDelete;
     }
 }
