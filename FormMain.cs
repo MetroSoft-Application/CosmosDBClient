@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Data;
+using System.Diagnostics;
 using FastColoredTextBoxNS;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -581,7 +582,9 @@ namespace CosmosDBClient
                 // 選択された行が1行以上ある場合は、削除処理を呼び出す
                 if (selectedRows.Count > 0)
                 {
+                    this.Cursor = Cursors.WaitCursor;
                     await DeleteSelectedRows(selectedRows);
+                    this.Cursor = Cursors.Default;
                 }
             }
         }
@@ -595,7 +598,7 @@ namespace CosmosDBClient
         {
             // 削除確認ダイアログを表示
             DialogResult result = MessageBox.Show(
-                "Do you want to delete the selected records?",
+                $"Do you want to delete the selected records? Count:{selectedRows.Count}",
                 "Info",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question
@@ -608,66 +611,72 @@ namespace CosmosDBClient
 
             var deletedIds = new List<string>();
 
-            // フォーム全体の描画を一時停止
-            this.SuspendLayout();
-
             try
             {
+                var tasks = new List<Task>(); // タスクを格納するリスト
+
                 foreach (DataGridViewRow row in selectedRows)
                 {
-                    // 各カラムのセルの値を取得し、JSON オブジェクトを構築
-                    var jsonObject = new JObject();
-
-                    foreach (DataGridViewCell cell in row.Cells)
+                    // 各行の処理をタスクとして追加
+                    tasks.Add(Task.Run(async () =>
                     {
-                        // カラム名をキーにし、セルの値を適切に設定
-                        var columnName = dataGridViewResults.Columns[cell.ColumnIndex].Name;
-                        var cellValue = cell.Value;
+                        var jsonObject = new JObject();
 
-                        if (cellValue is DBNull || cellValue is null)
+                        foreach (DataGridViewCell cell in row.Cells)
                         {
-                            jsonObject[columnName] = null;
-                        }
-                        else if (cellValue is string || cellValue is DateTime)
-                        {
-                            jsonObject[columnName] = cellValue.ToString();
-                        }
-                        else if (cellValue is bool)
-                        {
-                            jsonObject[columnName] = (bool)cellValue;
-                        }
-                        else if (cellValue is double || cellValue is float || cellValue is decimal)
-                        {
-                            jsonObject[columnName] = Convert.ToDouble(cellValue);
-                        }
-                        else
-                        {
-                            jsonObject[columnName] = cellValue.ToString();
-                        }
-                    }
+                            // カラム名をキーにし、セルの値を適切に設定
+                            var columnName = dataGridViewResults.Columns[cell.ColumnIndex].Name;
+                            var cellValue = cell.Value;
 
-                    // IDを取得してリストに追加
-                    var id = jsonObject["id"]?.ToString();
-                    if (!string.IsNullOrEmpty(id))
-                    {
-                        deletedIds.Add($"id:{id}");
-                    }
+                            if (cellValue is DBNull || cellValue is null)
+                            {
+                                jsonObject[columnName] = null;
+                            }
+                            else if (cellValue is string || cellValue is DateTime)
+                            {
+                                jsonObject[columnName] = cellValue.ToString();
+                            }
+                            else if (cellValue is bool)
+                            {
+                                jsonObject[columnName] = (bool)cellValue;
+                            }
+                            else if (cellValue is double || cellValue is float || cellValue is decimal)
+                            {
+                                jsonObject[columnName] = Convert.ToDouble(cellValue);
+                            }
+                            else
+                            {
+                                jsonObject[columnName] = cellValue.ToString();
+                            }
+                        }
 
-                    await DeleteRow(jsonObject);
+                        // IDを取得してリストに追加
+                        var id = jsonObject["id"]?.ToString();
+                        if (!string.IsNullOrEmpty(id))
+                        {
+                            lock (deletedIds)
+                            {
+                                deletedIds.Add($"id:{id}");
+                                Debug.WriteLine(deletedIds.Count);
+                            }
+                        }
 
-                    // DataGridViewから行を削除
-                    dataGridViewResults.Rows.Remove(row);
+                        await DeleteRow(jsonObject);
+                    }));
                 }
+
+                // すべてのタスクの完了を待つ
+                await Task.WhenAll(tasks);
 
                 var message = "";
                 // 削除したIDをメッセージボックスで表示
-                if (deletedIds.Count > 0 && deletedIds.Count >= 10)
+                if (deletedIds.Count > 0 && deletedIds.Count <= 10)
                 {
                     message = $"Deleted IDs:\n{string.Join("\n", deletedIds)}";
                 }
                 else if (deletedIds.Count > 10)
                 {
-                    message = $"Deleted ID Ount:{deletedIds.Count}";
+                    message = $"Deleted ID Count: {deletedIds.Count}";
                 }
 
                 MessageBox.Show(message, "Info");
@@ -681,8 +690,6 @@ namespace CosmosDBClient
             }
             finally
             {
-                // フォーム全体の描画を再開
-                this.ResumeLayout();
             }
         }
 
@@ -693,21 +700,14 @@ namespace CosmosDBClient
         /// <returns>task</returns>
         private async Task DeleteRow(JObject jsonObject)
         {
-            try
-            {
-                // JSONオブジェクトからidを取得
-                var id = jsonObject["id"].ToString();
+            // JSONオブジェクトからidを取得
+            var id = jsonObject["id"].ToString();
 
-                // PartitionKeyを自動的に解決して取得
-                var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
-                var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
+            // PartitionKeyを自動的に解決して取得
+            var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
+            var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
-                var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error");
-            }
+            var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
         }
     }
 }
