@@ -462,11 +462,6 @@ namespace CosmosDBClient
         /// <param name="e">イベントデータ</param>
         private async void buttonInsert_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_jsonData.Text)) 
-            {
-                return;
-            }
-
             using (var formInsert = new FormInsert(_cosmosDBService, _jsonData.Text))
             {
                 formInsert.ShowDialog();

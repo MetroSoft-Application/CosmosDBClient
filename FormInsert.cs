@@ -22,16 +22,6 @@ namespace CosmosDBClient
             _cosmosDBService = cosmosDBService;
             var jsonObject = default(JObject);
 
-            try
-            {
-                // JSONデータをパース
-                jsonObject = JObject.Parse(json);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
             _jsonData = new FastColoredTextBox();
             _jsonData.Language = Language.JSON;
             _jsonData.Dock = DockStyle.Fill;
@@ -43,17 +33,32 @@ namespace CosmosDBClient
             _jsonData.ShowLineNumbers = false;
             panel1.Controls.Add(_jsonData);
 
+            try
+            {
+                // JSONデータをパース
+                jsonObject = JObject.Parse(json);
+            }
+            catch (Exception)
+            {
+            }
+
             // システムフィールドを除外する
             var filteredObject = new JObject();
-            foreach (var property in jsonObject.Properties())
-            {
-                // システム項目に該当しない場合のみ追加
-                if (!_cosmosDBService.systemColumns.Contains(property.Name))
-                {
-                    filteredObject.Add(property.Name, null);
-                }
+            filteredObject["id"] = Guid.NewGuid().ToString("N");
 
-                filteredObject["id"] = Guid.NewGuid().ToString("N");
+            try
+            {
+                foreach (var property in jsonObject.Properties())
+                {
+                    // システム項目に該当しない場合のみ追加
+                    if (!_cosmosDBService.systemColumns.Contains(property.Name))
+                    {
+                        filteredObject.Add(property.Name, null);
+                    }
+                }
+            }
+            catch (Exception)
+            {
             }
 
             _jsonData.Text = filteredObject.ToString();
