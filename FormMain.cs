@@ -614,8 +614,8 @@ namespace CosmosDBClient
             try
             {
                 var tasks = new List<Task>();
-                int maxDegreeOfParallelism = 10;
-                var semaphore = new SemaphoreSlim(maxDegreeOfParallelism); // セマフォを作成
+                var maxDegreeOfParallelism = 10;
+                var semaphore = new SemaphoreSlim(maxDegreeOfParallelism);
                 foreach (DataGridViewRow row in selectedRows)
                 {
                     await semaphore.WaitAsync();
@@ -654,7 +654,6 @@ namespace CosmosDBClient
                                 }
                             }
 
-                            // IDを取得してリストに追加
                             var id = jsonObject["id"]?.ToString();
                             if (!string.IsNullOrEmpty(id))
                             {
@@ -673,7 +672,6 @@ namespace CosmosDBClient
                     }));
                 }
 
-                // すべてのタスクの完了を待つ
                 await Task.WhenAll(tasks);
 
                 var message = "";
