@@ -613,55 +613,63 @@ namespace CosmosDBClient
 
             try
             {
-                var tasks = new List<Task>(); // タスクを格納するリスト
-
+                var tasks = new List<Task>();
+                int maxDegreeOfParallelism = 10;
+                var semaphore = new SemaphoreSlim(maxDegreeOfParallelism); // セマフォを作成
                 foreach (DataGridViewRow row in selectedRows)
                 {
-                    // 各行の処理をタスクとして追加
+                    await semaphore.WaitAsync();
                     tasks.Add(Task.Run(async () =>
                     {
-                        var jsonObject = new JObject();
-
-                        foreach (DataGridViewCell cell in row.Cells)
+                        try
                         {
-                            // カラム名をキーにし、セルの値を適切に設定
-                            var columnName = dataGridViewResults.Columns[cell.ColumnIndex].Name;
-                            var cellValue = cell.Value;
+                            // 各カラムのセルの値を取得し、JSONオブジェクトを構築
+                            var jsonObject = new JObject();
 
-                            if (cellValue is DBNull || cellValue is null)
+                            foreach (DataGridViewCell cell in row.Cells)
                             {
-                                jsonObject[columnName] = null;
+                                // カラム名をキーにし、セルの値を適切に設定
+                                var columnName = dataGridViewResults.Columns[cell.ColumnIndex].Name;
+                                var cellValue = cell.Value;
+
+                                if (cellValue is DBNull || cellValue is null)
+                                {
+                                    jsonObject[columnName] = null;
+                                }
+                                else if (cellValue is string || cellValue is DateTime)
+                                {
+                                    jsonObject[columnName] = cellValue.ToString();
+                                }
+                                else if (cellValue is bool)
+                                {
+                                    jsonObject[columnName] = (bool)cellValue;
+                                }
+                                else if (cellValue is double || cellValue is float || cellValue is decimal)
+                                {
+                                    jsonObject[columnName] = Convert.ToDouble(cellValue);
+                                }
+                                else
+                                {
+                                    jsonObject[columnName] = cellValue.ToString();
+                                }
                             }
-                            else if (cellValue is string || cellValue is DateTime)
+
+                            // IDを取得してリストに追加
+                            var id = jsonObject["id"]?.ToString();
+                            if (!string.IsNullOrEmpty(id))
                             {
-                                jsonObject[columnName] = cellValue.ToString();
+                                lock (deletedIds)
+                                {
+                                    deletedIds.Add($"id:{id}");
+                                }
                             }
-                            else if (cellValue is bool)
-                            {
-                                jsonObject[columnName] = (bool)cellValue;
-                            }
-                            else if (cellValue is double || cellValue is float || cellValue is decimal)
-                            {
-                                jsonObject[columnName] = Convert.ToDouble(cellValue);
-                            }
-                            else
-                            {
-                                jsonObject[columnName] = cellValue.ToString();
-                            }
+
+                            await DeleteRow(jsonObject);
                         }
-
-                        // IDを取得してリストに追加
-                        var id = jsonObject["id"]?.ToString();
-                        if (!string.IsNullOrEmpty(id))
+                        finally
                         {
-                            lock (deletedIds)
-                            {
-                                deletedIds.Add($"id:{id}");
-                                Debug.WriteLine(deletedIds.Count);
-                            }
+                            semaphore.Release();
                         }
-
-                        await DeleteRow(jsonObject);
                     }));
                 }
 
