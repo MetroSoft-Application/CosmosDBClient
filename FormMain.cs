@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,11 +8,12 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using static System.Runtime.CompilerServices.RuntimeHelpers;
+using FastColoredTextBoxNS;
 
 namespace CosmosDBClient
 {
     /// <summary>
-    /// Cosmos DB ƒNƒ‰ƒCƒAƒ“ƒg‚Ìƒf[ƒ^‚ğ•\¦‚¨‚æ‚ÑŠÇ—‚·‚éƒtƒH[ƒ€ƒNƒ‰ƒX
+    /// Cosmos DB ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®ãƒ‡ãƒ¼ã‚¿ã‚’è¡¨ç¤ºãŠã‚ˆã³ç®¡ç†ã™ã‚‹ãƒ•ã‚©ãƒ¼ãƒ ã‚¯ãƒ©ã‚¹
     /// </summary>
     public partial class FormMain : Form
     {
@@ -20,14 +21,25 @@ namespace CosmosDBClient
         private readonly int _maxItemCount;
         private readonly bool _useHyperlinkHandler;
         private HyperlinkHandler _hyperlinkHandler;
+        private FastColoredTextBox _textBoxQuery;
 
         /// <summary>
-        /// FormMain ƒNƒ‰ƒX‚ÌƒRƒ“ƒXƒgƒ‰ƒNƒ^İ’è‚ğ“Ç‚İ‚İACosmosDBService‚ÌƒCƒ“ƒXƒ^ƒ“ƒX‚ğ‰Šú‰»‚·‚é
+        /// FormMain ã‚¯ãƒ©ã‚¹ã®ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿è¨­å®šã‚’èª­ã¿è¾¼ã¿ã€CosmosDBServiceã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã‚’åˆæœŸåŒ–ã™ã‚‹
         /// </summary>
         public FormMain()
         {
             InitializeComponent();
             AutoScaleMode = AutoScaleMode.Dpi;
+
+            _textBoxQuery = new FastColoredTextBox();
+            _textBoxQuery.Language = Language.SQL;
+            _textBoxQuery.Dock = DockStyle.Fill;
+            _textBoxQuery.ImeMode = ImeMode.Hiragana;
+            _textBoxQuery.BorderStyle = BorderStyle.Fixed3D;
+            _textBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
+            _textBoxQuery.AutoCompleteBrackets = true;
+            _textBoxQuery.TabLength = 4;
+            panel1.Controls.Add(_textBoxQuery);
 
             var configuration = LoadConfiguration();
             _useHyperlinkHandler = configuration.GetValue<bool>("AppSettings:EnableHyperlinkHandler");
@@ -61,9 +73,9 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// İ’èƒtƒ@ƒCƒ‹‚ÆŠÂ‹«•Ï”‚©‚çƒAƒvƒŠƒP[ƒVƒ‡ƒ“İ’è‚ğ“Ç‚İ‚Ş
+        /// è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«ã¨ç’°å¢ƒå¤‰æ•°ã‹ã‚‰ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³è¨­å®šã‚’èª­ã¿è¾¼ã‚€
         /// </summary>
-        /// <returns>İ’èî•ñ‚ğŠÜ‚Ş IConfigurationRoot ƒIƒuƒWƒFƒNƒg</returns>
+        /// <returns>è¨­å®šæƒ…å ±ã‚’å«ã‚€ IConfigurationRoot ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</returns>
         private IConfigurationRoot LoadConfiguration()
         {
             var configuration = new ConfigurationBuilder()
@@ -76,10 +88,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ƒ{ƒ^ƒ“ƒNƒŠƒbƒN‚Éƒf[ƒ^‚ğƒ[ƒh‚µADataGridView ‚É•\¦‚·‚é
+        /// ãƒœã‚¿ãƒ³ã‚¯ãƒªãƒƒã‚¯æ™‚ã«ãƒ‡ãƒ¼ã‚¿ã‚’ãƒ­ãƒ¼ãƒ‰ã—ã€DataGridView ã«è¡¨ç¤ºã™ã‚‹
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private async void buttonLoadData_Click(object sender, EventArgs e)
         {
             try
@@ -105,30 +117,30 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// sƒwƒbƒ_[‚ÌƒTƒCƒY‚ğ’²®
+        /// è¡Œãƒ˜ãƒƒãƒ€ãƒ¼ã®ã‚µã‚¤ã‚ºã‚’èª¿æ•´
         /// </summary>
         private void ResizeRowHeader()
         {
             using (Graphics g = dataGridViewResults.CreateGraphics())
             {
-                // ƒeƒLƒXƒg‚Ì•‚ğŒvZ
+                // ãƒ†ã‚­ã‚¹ãƒˆã®å¹…ã‚’è¨ˆç®—
                 var size = g.MeasureString(dataGridViewResults.RowCount.ToString(), dataGridViewResults.Font);
 
-                // Å‘å•‚ğ•Û
+                // æœ€å¤§å¹…ã‚’ä¿æŒ
                 var maxRowHeaderWidth = (int)size.Width + 20;
 
-                // ŒvZ‚µ‚½Å‘å•‚ğ RowHeadersWidth ‚Éİ’è
+                // è¨ˆç®—ã—ãŸæœ€å¤§å¹…ã‚’ RowHeadersWidth ã«è¨­å®š
                 dataGridViewResults.RowHeadersWidth = maxRowHeaderWidth;
             }
         }
 
         /// <summary>
-        /// Cosmos DB ‚©‚çƒf[ƒ^‚ğæ“¾‚µADataGridView ‚É•\¦‚·‚é
+        /// Cosmos DB ã‹ã‚‰ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—ã—ã€DataGridView ã«è¡¨ç¤ºã™ã‚‹
         /// </summary>
-        /// <returns>”ñ“¯Šú‚Ì Task</returns>
+        /// <returns>éåŒæœŸã® Task</returns>
         private async Task UpdateDatagridView()
         {
-            var query = BuildQuery(richTextBoxQuery.Text, GetMaxItemCount());
+            var query = BuildQuery(_textBoxQuery.Text, GetMaxItemCount());
             var (dataTable, totalRequestCharge, documentCount, pageCount, elapsedMilliseconds) =
                 await _cosmosDBService.FetchDataWithStatusAsync(query, GetMaxItemCount());
 
@@ -140,12 +152,12 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ƒNƒGƒŠ•¶š—ñ‚ğ\’z
-        /// w’è‚³‚ê‚½Å‘åŒ”‚ÉŠî‚Ã‚¢‚ÄATOP‹å‚ğ‘}“ü
+        /// ã‚¯ã‚¨ãƒªæ–‡å­—åˆ—ã‚’æ§‹ç¯‰
+        /// æŒ‡å®šã•ã‚ŒãŸæœ€å¤§ä»¶æ•°ã«åŸºã¥ã„ã¦ã€TOPå¥ã‚’æŒ¿å…¥
         /// </summary>
-        /// <param name="queryText">ƒNƒGƒŠ•¶š—ñ</param>
-        /// <param name="maxCount">æ“¾‚·‚éÅ‘åƒAƒCƒeƒ€”</param>
-        /// <returns>\’z‚³‚ê‚½ƒNƒGƒŠ•¶š—ñ</returns>
+        /// <param name="queryText">ã‚¯ã‚¨ãƒªæ–‡å­—åˆ—</param>
+        /// <param name="maxCount">å–å¾—ã™ã‚‹æœ€å¤§ã‚¢ã‚¤ãƒ†ãƒ æ•°</param>
+        /// <returns>æ§‹ç¯‰ã•ã‚ŒãŸã‚¯ã‚¨ãƒªæ–‡å­—åˆ—</returns>
         private string BuildQuery(string queryText, int maxCount)
         {
             var query = $"SELECT TOP {maxCount} * FROM c";
@@ -167,19 +179,19 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// Å‘åƒAƒCƒeƒ€”‚ğæ“¾‚·‚é
+        /// æœ€å¤§ã‚¢ã‚¤ãƒ†ãƒ æ•°ã‚’å–å¾—ã™ã‚‹
         /// </summary>
-        /// <returns>Å‘åƒAƒCƒeƒ€”</returns>
+        /// <returns>æœ€å¤§ã‚¢ã‚¤ãƒ†ãƒ æ•°</returns>
         private int GetMaxItemCount()
         {
             return (int)numericUpDownMaxCount.Value;
         }
 
         /// <summary>
-        /// “Ç‚İæ‚èê—p‚Ì—ñ‚ğİ’è
-        /// ƒp[ƒeƒBƒVƒ‡ƒ“ƒL[‚Ì—ñ‚à“Ç‚İæ‚èê—p‚Éİ’è
+        /// èª­ã¿å–ã‚Šå°‚ç”¨ã®åˆ—ã‚’è¨­å®š
+        /// ãƒ‘ãƒ¼ãƒ†ã‚£ã‚·ãƒ§ãƒ³ã‚­ãƒ¼ã®åˆ—ã‚‚èª­ã¿å–ã‚Šå°‚ç”¨ã«è¨­å®š
         /// </summary>
-        /// <param name="dataTable">•\¦‚·‚éƒf[ƒ^‚ğŠi”[‚µ‚½DataTable</param>
+        /// <param name="dataTable">è¡¨ç¤ºã™ã‚‹ãƒ‡ãƒ¼ã‚¿ã‚’æ ¼ç´ã—ãŸDataTable</param>
         private async void SetReadOnlyColumns(DataTable dataTable)
         {
             try
@@ -203,9 +215,9 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ƒRƒ“ƒ{ƒ{ƒbƒNƒX‚Éƒf[ƒ^ƒx[ƒX‚ÌƒRƒ“ƒeƒiˆê——‚ğ“Ç‚İ‚Ş
+        /// ã‚³ãƒ³ãƒœãƒœãƒƒã‚¯ã‚¹ã«ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ã®ã‚³ãƒ³ãƒ†ãƒŠä¸€è¦§ã‚’èª­ã¿è¾¼ã‚€
         /// </summary>
-        /// <param name="databaseId">‘ÎÛ‚Ìƒf[ƒ^ƒx[ƒXID</param>
+        /// <param name="databaseId">å¯¾è±¡ã®ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ID</param>
         private async void LoadContainersIntoComboBox(string databaseId)
         {
             try
@@ -220,7 +232,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ƒRƒ“ƒeƒi‚Ìİ’è‚ğ•\¦‚·‚é
+        /// ã‚³ãƒ³ãƒ†ãƒŠã®è¨­å®šã‚’è¡¨ç¤ºã™ã‚‹
         /// </summary>
         private async void DisplayContainerSettings()
         {
@@ -296,13 +308,13 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ƒXƒe[ƒ^ƒXƒo[‚ğXV‚·‚é
-        /// ƒŠƒNƒGƒXƒgƒ`ƒƒ[ƒWAƒhƒLƒ…ƒƒ“ƒg”Aƒy[ƒW”AŒo‰ßŠÔ‚ª•\¦‚³‚ê‚é
+        /// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒãƒ¼ã‚’æ›´æ–°ã™ã‚‹
+        /// ãƒªã‚¯ã‚¨ã‚¹ãƒˆãƒãƒ£ãƒ¼ã‚¸ã€ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆæ•°ã€ãƒšãƒ¼ã‚¸æ•°ã€çµŒéæ™‚é–“ãŒè¡¨ç¤ºã•ã‚Œã‚‹
         /// </summary>
-        /// <param name="totalRequestCharge">‘ƒŠƒNƒGƒXƒgƒ`ƒƒ[ƒW (RU)</param>
-        /// <param name="documentCount">æ“¾‚µ‚½ƒhƒLƒ…ƒƒ“ƒg”</param>
-        /// <param name="pageCount">ƒy[ƒW”</param>
-        /// <param name="elapsedMilliseconds">Œo‰ßŠÔiƒ~ƒŠ•bj</param>
+        /// <param name="totalRequestCharge">ç·ãƒªã‚¯ã‚¨ã‚¹ãƒˆãƒãƒ£ãƒ¼ã‚¸ (RU)</param>
+        /// <param name="documentCount">å–å¾—ã—ãŸãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆæ•°</param>
+        /// <param name="pageCount">ãƒšãƒ¼ã‚¸æ•°</param>
+        /// <param name="elapsedMilliseconds">çµŒéæ™‚é–“ï¼ˆãƒŸãƒªç§’ï¼‰</param>
         private void UpdateStatusStrip(double totalRequestCharge, int documentCount, int pageCount, long elapsedMilliseconds)
         {
             toolStripStatusLabel1.Text = $"Total RU: {totalRequestCharge:F2}";
@@ -312,11 +324,11 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ƒŒƒR[ƒh‚ğXV‚·‚é
-        /// ƒ†[ƒU[Šm”FŒã‚ÉACosmos DB ‚ÖƒAƒbƒvƒT[ƒgiXV‚Ü‚½‚Í‘}“üj‚³‚ê‚é
+        /// ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’æ›´æ–°ã™ã‚‹
+        /// ãƒ¦ãƒ¼ã‚¶ãƒ¼ç¢ºèªå¾Œã«ã€Cosmos DB ã¸ã‚¢ãƒƒãƒ—ã‚µãƒ¼ãƒˆï¼ˆæ›´æ–°ã¾ãŸã¯æŒ¿å…¥ï¼‰ã•ã‚Œã‚‹
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private async void buttonUpdate_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show(
@@ -335,7 +347,7 @@ namespace CosmosDBClient
 
             try
             {
-                // JSONƒf[ƒ^‚ğƒp[ƒX
+                // JSONãƒ‡ãƒ¼ã‚¿ã‚’ãƒ‘ãƒ¼ã‚¹
                 jsonObject = JObject.Parse(JsonData.Text);
             }
             catch (Exception ex)
@@ -346,16 +358,16 @@ namespace CosmosDBClient
 
             try
             {
-                // JSONƒIƒuƒWƒFƒNƒg‚©‚çid‚ğæ“¾
+                // JSONã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‹ã‚‰idã‚’å–å¾—
                 var id = jsonObject["id"].ToString();
 
-                // PartitionKey‚ğ©“®“I‚É‰ğŒˆ‚µ‚Äæ“¾
+                // PartitionKeyã‚’è‡ªå‹•çš„ã«è§£æ±ºã—ã¦å–å¾—
                 var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
 
-                // PartitionKey‚É‘Î‰‚·‚éƒL[€–Ú‚ğæ“¾
+                // PartitionKeyã«å¯¾å¿œã™ã‚‹ã‚­ãƒ¼é …ç›®ã‚’å–å¾—
                 string partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
-                // Cosmos DB‚ÉUpsertˆ—‚ğÀs
+                // Cosmos DBã«Upsertå‡¦ç†ã‚’å®Ÿè¡Œ
                 var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
 
                 var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
@@ -369,18 +381,18 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ƒŒƒR[ƒh‚ğíœ‚·‚é
-        /// ƒ†[ƒU[Šm”FŒãACosmos DB ‚©‚çŠY“–ƒŒƒR[ƒh‚ªíœ‚³‚ê‚é
+        /// ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å‰Šé™¤ã™ã‚‹
+        /// ãƒ¦ãƒ¼ã‚¶ãƒ¼ç¢ºèªå¾Œã€Cosmos DB ã‹ã‚‰è©²å½“ãƒ¬ã‚³ãƒ¼ãƒ‰ãŒå‰Šé™¤ã•ã‚Œã‚‹
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private async void buttonDelete_Click(object sender, EventArgs e)
         {
             await Delete();
         }
 
         /// <summary>
-        /// ƒŒƒR[ƒh‚ğíœ‚·‚é
+        /// ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å‰Šé™¤ã™ã‚‹
         /// </summary>
         /// <returns>Task</returns>
         private async Task Delete()
@@ -401,7 +413,7 @@ namespace CosmosDBClient
 
             try
             {
-                // JSONƒf[ƒ^‚ğƒp[ƒX
+                // JSONãƒ‡ãƒ¼ã‚¿ã‚’ãƒ‘ãƒ¼ã‚¹
                 jsonObject = JObject.Parse(JsonData.Text);
             }
             catch (Exception ex)
@@ -412,13 +424,13 @@ namespace CosmosDBClient
 
             try
             {
-                // JSONƒIƒuƒWƒFƒNƒg‚©‚çid‚ğæ“¾
+                // JSONã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‹ã‚‰idã‚’å–å¾—
                 var id = jsonObject["id"].ToString();
 
-                // PartitionKey‚ğ©“®“I‚É‰ğŒˆ‚µ‚Äæ“¾
+                // PartitionKeyã‚’è‡ªå‹•çš„ã«è§£æ±ºã—ã¦å–å¾—
                 var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
 
-                // PartitionKey‚É‘Î‰‚·‚éƒL[€–Ú‚ğæ“¾
+                // PartitionKeyã«å¯¾å¿œã™ã‚‹ã‚­ãƒ¼é …ç›®ã‚’å–å¾—
                 string partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
                 var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
@@ -434,10 +446,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// ƒŒƒR[ƒh‚ğ‘}“ü‚·‚éƒ†[ƒU[‚ªƒf[ƒ^‚ğ“ü—Í‚µAV‚µ‚¢ƒŒƒR[ƒh‚ª Cosmos DB ‚É’Ç‰Á‚³‚ê‚é
+        /// ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’æŒ¿å…¥ã™ã‚‹ãƒ¦ãƒ¼ã‚¶ãƒ¼ãŒãƒ‡ãƒ¼ã‚¿ã‚’å…¥åŠ›ã—ã€æ–°ã—ã„ãƒ¬ã‚³ãƒ¼ãƒ‰ãŒ Cosmos DB ã«è¿½åŠ ã•ã‚Œã‚‹
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private async void buttonInsert_Click(object sender, EventArgs e)
         {
             using (var formInsert = new FormInsert(_cosmosDBService, JsonData.Text))
@@ -449,10 +461,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// DataGridView ‚Ìs•`‰æŒã‚És”Ô†‚ğ•\¦‚·‚é‚½‚ß‚Ìˆ—
+        /// DataGridView ã®è¡Œæç”»å¾Œã«è¡Œç•ªå·ã‚’è¡¨ç¤ºã™ã‚‹ãŸã‚ã®å‡¦ç†
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">s•`‰æƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">è¡Œæç”»ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private void dataGridViewResults_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
             using var brush = new System.Drawing.SolidBrush(dataGridViewResults.RowHeadersDefaultCellStyle.ForeColor);
@@ -464,10 +476,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// DataGridView ‚ÌƒZƒ‹‚ªƒNƒŠƒbƒN‚³‚ê‚½Û‚ÉA‚»‚ÌƒZƒ‹‚Ìƒf[ƒ^‚ğ•\¦‚·‚é
+        /// DataGridView ã®ã‚»ãƒ«ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸéš›ã«ã€ãã®ã‚»ãƒ«ã®ãƒ‡ãƒ¼ã‚¿ã‚’è¡¨ç¤ºã™ã‚‹
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒZƒ‹ƒNƒŠƒbƒNƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ã‚»ãƒ«ã‚¯ãƒªãƒƒã‚¯ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private void dataGridViewResults_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0)
@@ -504,10 +516,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// RichTextBox ‚Å‚Ìƒ}ƒEƒXƒAƒbƒvƒCƒxƒ“ƒg‚ğˆ—‚·‚éƒŠƒ“ƒN‚ªŠÜ‚Ü‚ê‚Ä‚¢‚éê‡AƒŠƒ“ƒN‚ğˆ—‚·‚é
+        /// RichTextBox ã§ã®ãƒã‚¦ã‚¹ã‚¢ãƒƒãƒ—ã‚¤ãƒ™ãƒ³ãƒˆã‚’å‡¦ç†ã™ã‚‹ãƒªãƒ³ã‚¯ãŒå«ã¾ã‚Œã¦ã„ã‚‹å ´åˆã€ãƒªãƒ³ã‚¯ã‚’å‡¦ç†ã™ã‚‹
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒ}ƒEƒXƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ãƒã‚¦ã‚¹ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private void richTextBoxSelectedCell_MouseUp(object sender, MouseEventArgs e)
         {
             if (_useHyperlinkHandler)
@@ -517,10 +529,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// DataGridView ‚ÌƒZƒ‹ƒtƒH[ƒ}ƒbƒg‚ÉA“Ç‚İæ‚èê—p‚ÌƒJƒ‰ƒ€‚É”wŒiF‚Æ•¶šF‚ğİ’è‚·‚éˆ—
+        /// DataGridView ã®ã‚»ãƒ«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆæ™‚ã«ã€èª­ã¿å–ã‚Šå°‚ç”¨ã®ã‚«ãƒ©ãƒ ã«èƒŒæ™¯è‰²ã¨æ–‡å­—è‰²ã‚’è¨­å®šã™ã‚‹å‡¦ç†
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒZƒ‹ƒtƒH[ƒ}ƒbƒgƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ã‚»ãƒ«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private void dataGridViewResults_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             foreach (DataGridViewColumn column in dataGridViewResults.Columns)
@@ -534,10 +546,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// RichTextBox ‚Ì“à—e‚ª•ÏX‚³‚ê‚½Û‚ÉAƒ{ƒ^ƒ“‚Ì—LŒøó‘Ô‚ğXV‚·‚é
+        /// RichTextBox ã®å†…å®¹ãŒå¤‰æ›´ã•ã‚ŒãŸéš›ã«ã€ãƒœã‚¿ãƒ³ã®æœ‰åŠ¹çŠ¶æ…‹ã‚’æ›´æ–°ã™ã‚‹
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private void JsonData_TextChanged(object sender, EventArgs e)
         {
             var jsonData = (RichTextBox)sender;
@@ -546,17 +558,17 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// DataGridView‚Å‚ÌƒL[‰Ÿ‰ºƒCƒxƒ“ƒg
+        /// DataGridViewã§ã®ã‚­ãƒ¼æŠ¼ä¸‹ã‚¤ãƒ™ãƒ³ãƒˆ
         /// </summary>
-        /// <param name="sender">ƒCƒxƒ“ƒg‚Ì‘—MŒ³ƒIƒuƒWƒFƒNƒg</param>
-        /// <param name="e">ƒCƒxƒ“ƒgƒf[ƒ^</param>
+        /// <param name="sender">ã‚¤ãƒ™ãƒ³ãƒˆã®é€ä¿¡å…ƒã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ</param>
+        /// <param name="e">ã‚¤ãƒ™ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿</param>
         private async void dataGridViewResults_KeyUp(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
                 var selectedRows = dataGridViewResults.SelectedRows;
 
-                // ‘I‘ğ‚³‚ê‚½s‚ª1sˆÈã‚ ‚éê‡‚ÍAíœˆ—‚ğŒÄ‚Ño‚·
+                // é¸æŠã•ã‚ŒãŸè¡ŒãŒ1è¡Œä»¥ä¸Šã‚ã‚‹å ´åˆã¯ã€å‰Šé™¤å‡¦ç†ã‚’å‘¼ã³å‡ºã™
                 if (selectedRows.Count > 0)
                 {
                     await DeleteSelectedRows(selectedRows);
@@ -565,13 +577,13 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// síœˆ—
+        /// è¡Œå‰Šé™¤å‡¦ç†
         /// </summary>
-        /// <param name="selectedRows">‘I‘ğs</param>
+        /// <param name="selectedRows">é¸æŠè¡Œ</param>
         /// <returns>task</returns>
         private async Task DeleteSelectedRows(DataGridViewSelectedRowCollection selectedRows)
         {
-            // íœŠm”Fƒ_ƒCƒAƒƒO‚ğ•\¦
+            // å‰Šé™¤ç¢ºèªãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤º
             DialogResult result = MessageBox.Show(
                 "Do you want to delete the selected records?",
                 "Info",
@@ -590,12 +602,12 @@ namespace CosmosDBClient
             {
                 foreach (DataGridViewRow row in selectedRows)
                 {
-                    // ŠeƒJƒ‰ƒ€‚ÌƒZƒ‹‚Ì’l‚ğæ“¾‚µAJSON ƒIƒuƒWƒFƒNƒg‚ğ\’z
+                    // å„ã‚«ãƒ©ãƒ ã®ã‚»ãƒ«ã®å€¤ã‚’å–å¾—ã—ã€JSON ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’æ§‹ç¯‰
                     var jsonObject = new JObject();
 
                     foreach (DataGridViewCell cell in row.Cells)
                     {
-                        // ƒJƒ‰ƒ€–¼‚ğƒL[‚É‚µAƒZƒ‹‚Ì’l‚ğ“KØ‚Éİ’è
+                        // ã‚«ãƒ©ãƒ åã‚’ã‚­ãƒ¼ã«ã—ã€ã‚»ãƒ«ã®å€¤ã‚’é©åˆ‡ã«è¨­å®š
                         var columnName = dataGridViewResults.Columns[cell.ColumnIndex].Name;
                         var cellValue = cell.Value;
 
@@ -621,7 +633,7 @@ namespace CosmosDBClient
                         }
                     }
 
-                    // ID‚ğæ“¾‚µ‚ÄƒŠƒXƒg‚É’Ç‰Á
+                    // IDã‚’å–å¾—ã—ã¦ãƒªã‚¹ãƒˆã«è¿½åŠ 
                     var id = jsonObject["id"]?.ToString();
                     if (!string.IsNullOrEmpty(id))
                     {
@@ -630,18 +642,18 @@ namespace CosmosDBClient
 
                     await DeleteRow(jsonObject);
 
-                    // DataGridView‚©‚çs‚ğíœ
+                    // DataGridViewã‹ã‚‰è¡Œã‚’å‰Šé™¤
                     dataGridViewResults.Rows.Remove(row);
                 }
 
-                // íœ‚µ‚½ID‚ğƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚Å•\¦
+                // å‰Šé™¤ã—ãŸIDã‚’ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹ã§è¡¨ç¤º
                 if (deletedIds.Count > 0)
                 {
                     var message = $"Deleted IDs:\n{string.Join("\n", deletedIds)}";
                     MessageBox.Show(message, "Info");
                 }
 
-                // DataGridView‚ÌXV
+                // DataGridViewã®æ›´æ–°
                 await UpdateDatagridView();
             }
             catch (Exception ex)
@@ -651,7 +663,7 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// síœ
+        /// è¡Œå‰Šé™¤
         /// </summary>
         /// <param name="jsonObject"></param>
         /// <returns>task</returns>
@@ -659,10 +671,10 @@ namespace CosmosDBClient
         {
             try
             {
-                // JSONƒIƒuƒWƒFƒNƒg‚©‚çid‚ğæ“¾
+                // JSONã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‹ã‚‰idã‚’å–å¾—
                 var id = jsonObject["id"].ToString();
 
-                // PartitionKey‚ğ©“®“I‚É‰ğŒˆ‚µ‚Äæ“¾
+                // PartitionKeyã‚’è‡ªå‹•çš„ã«è§£æ±ºã—ã¦å–å¾—
                 var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
                 var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 

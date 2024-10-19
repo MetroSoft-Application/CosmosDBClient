@@ -29,7 +29,6 @@
             buttonUpdate = new Button();
             buttonDelete = new Button();
             richTextBoxSelectedCell = new RichTextBox();
-            richTextBoxQuery = new RichTextBox();
             numericUpDownMaxCount = new NumericUpDown();
             textBoxConnectionString = new TextBox();
             label1 = new Label();
@@ -68,6 +67,7 @@
             tabPage2 = new TabPage();
             txtIndexingPolicy = new RichTextBox();
             groupBox2 = new GroupBox();
+            panel1 = new Panel();
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -259,16 +259,6 @@
             richTextBoxSelectedCell.TabIndex = 0;
             richTextBoxSelectedCell.Text = "";
             richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
-            // 
-            // richTextBoxQuery
-            // 
-            richTextBoxQuery.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            richTextBoxQuery.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            richTextBoxQuery.Location = new Point(12, 12);
-            richTextBoxQuery.Name = "richTextBoxQuery";
-            richTextBoxQuery.Size = new Size(631, 128);
-            richTextBoxQuery.TabIndex = 4;
-            richTextBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
             // 
             // numericUpDownMaxCount
             // 
@@ -478,7 +468,7 @@
             tabPage1.Controls.Add(label5);
             tabPage1.Location = new Point(4, 24);
             tabPage1.Name = "tabPage1";
-            tabPage1.Padding = new Padding(3, 3, 3, 3);
+            tabPage1.Padding = new Padding(3);
             tabPage1.Size = new Size(378, 87);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Settings";
@@ -578,7 +568,7 @@
             tabPage2.Controls.Add(txtIndexingPolicy);
             tabPage2.Location = new Point(4, 24);
             tabPage2.Name = "tabPage2";
-            tabPage2.Padding = new Padding(3, 3, 3, 3);
+            tabPage2.Padding = new Padding(3);
             tabPage2.Size = new Size(378, 87);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Indexing Policy";
@@ -605,15 +595,23 @@
             groupBox2.TabStop = false;
             groupBox2.Text = "Container Settings";
             // 
+            // panel1
+            // 
+            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            panel1.Location = new Point(12, 12);
+            panel1.Name = "panel1";
+            panel1.Size = new Size(631, 128);
+            panel1.TabIndex = 19;
+            // 
             // FormMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1394, 681);
+            Controls.Add(panel1);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Controls.Add(statusStrip1);
-            Controls.Add(richTextBoxQuery);
             Controls.Add(splitContainer1);
             Name = "FormMain";
             Text = "CosmosDB Client Tool";
@@ -655,7 +653,6 @@
         private DataGridView dataGridViewResults;
         private SplitContainer splitContainer1;
         private RichTextBox richTextBoxSelectedCell;
-        private RichTextBox richTextBoxQuery;
         private NumericUpDown numericUpDownMaxCount;
         private TextBox textBoxConnectionString;
         private Label label1;
@@ -700,5 +697,6 @@
         private TextBox txtPartitionKey;
         private Label label7;
         private RichTextBox txtIndexingPolicy;
+        private Panel panel1;
     }
 }
