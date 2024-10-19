@@ -461,7 +461,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(splitContainer3);
             splitContainer1.Size = new Size(1374, 510);
-            splitContainer1.SplitterDistance = 1034;
+            splitContainer1.SplitterDistance = 1031;
             splitContainer1.TabIndex = 20;
             // 
             // splitContainer2
@@ -478,7 +478,7 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(richTextBoxSelectedCell);
-            splitContainer2.Size = new Size(1034, 510);
+            splitContainer2.Size = new Size(1026, 510);
             splitContainer2.SplitterDistance = 478;
             splitContainer2.TabIndex = 0;
             // 
@@ -508,7 +508,7 @@
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dataGridViewResults.RowHeadersWidth = 51;
-            dataGridViewResults.Size = new Size(1034, 478);
+            dataGridViewResults.Size = new Size(1026, 478);
             dataGridViewResults.TabIndex = 19;
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
@@ -522,7 +522,7 @@
             richTextBoxSelectedCell.Location = new Point(0, 0);
             richTextBoxSelectedCell.Name = "richTextBoxSelectedCell";
             richTextBoxSelectedCell.ReadOnly = true;
-            richTextBoxSelectedCell.Size = new Size(1034, 28);
+            richTextBoxSelectedCell.Size = new Size(1026, 28);
             richTextBoxSelectedCell.TabIndex = 18;
             richTextBoxSelectedCell.Text = "";
             richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
@@ -539,7 +539,7 @@
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(splitContainer4);
-            splitContainer3.Size = new Size(336, 510);
+            splitContainer3.Size = new Size(339, 510);
             splitContainer3.SplitterDistance = 477;
             splitContainer3.TabIndex = 0;
             // 
@@ -557,8 +557,8 @@
             // splitContainer4.Panel2
             // 
             splitContainer4.Panel2.Controls.Add(buttonDelete);
-            splitContainer4.Size = new Size(336, 29);
-            splitContainer4.SplitterDistance = 166;
+            splitContainer4.Size = new Size(339, 29);
+            splitContainer4.SplitterDistance = 167;
             splitContainer4.TabIndex = 0;
             // 
             // buttonUpdate
@@ -567,7 +567,7 @@
             buttonUpdate.Enabled = false;
             buttonUpdate.Location = new Point(0, 0);
             buttonUpdate.Name = "buttonUpdate";
-            buttonUpdate.Size = new Size(166, 29);
+            buttonUpdate.Size = new Size(167, 29);
             buttonUpdate.TabIndex = 21;
             buttonUpdate.Text = "Update";
             buttonUpdate.UseVisualStyleBackColor = true;
@@ -579,7 +579,7 @@
             buttonDelete.Enabled = false;
             buttonDelete.Location = new Point(0, 0);
             buttonDelete.Name = "buttonDelete";
-            buttonDelete.Size = new Size(166, 29);
+            buttonDelete.Size = new Size(168, 29);
             buttonDelete.TabIndex = 22;
             buttonDelete.Text = "Delete";
             buttonDelete.UseVisualStyleBackColor = true;

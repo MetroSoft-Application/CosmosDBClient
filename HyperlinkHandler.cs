@@ -211,7 +211,7 @@ namespace CosmosDBClient
             }
             else
             {
-                MessageBox.Show("Path does not exist: " + link, "Error");
+                //MessageBox.Show("Path does not exist: " + link, "Error");
             }
         }
     }

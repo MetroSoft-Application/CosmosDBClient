@@ -1,10 +1,5 @@
-﻿using System.Data;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using Microsoft.Azure.Cosmos;
+﻿using FastColoredTextBoxNS;
 using Newtonsoft.Json.Linq;
-using Microsoft.Extensions.Configuration;
-using FastColoredTextBoxNS;
 
 namespace CosmosDBClient
 {

@@ -1,14 +1,9 @@
-﻿using System;
+﻿using System.Collections.ObjectModel;
 using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System.Collections.ObjectModel;
-using static System.Runtime.CompilerServices.RuntimeHelpers;
 using FastColoredTextBoxNS;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CosmosDBClient
 {
