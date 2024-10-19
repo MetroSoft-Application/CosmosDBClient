@@ -22,6 +22,7 @@ namespace CosmosDBClient
         private readonly bool _useHyperlinkHandler;
         private HyperlinkHandler _hyperlinkHandler;
         private FastColoredTextBox _textBoxQuery;
+        private FastColoredTextBox _jsonData;
 
         /// <summary>
         /// FormMain クラスのコンストラクタ設定を読み込み、CosmosDBServiceのインスタンスを初期化する
@@ -37,9 +38,23 @@ namespace CosmosDBClient
             _textBoxQuery.ImeMode = ImeMode.Hiragana;
             _textBoxQuery.BorderStyle = BorderStyle.Fixed3D;
             _textBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
-            _textBoxQuery.AutoCompleteBrackets = true;
             _textBoxQuery.TabLength = 4;
+            _textBoxQuery.WordWrap = false;
+            _textBoxQuery.ShowLineNumbers = true;
             panel1.Controls.Add(_textBoxQuery);
+
+            _jsonData = new FastColoredTextBox();
+            _jsonData.Language = Language.JSON;
+            _jsonData.Dock = DockStyle.Fill;
+            _jsonData.ImeMode = ImeMode.Hiragana;
+            _jsonData.BorderStyle = BorderStyle.Fixed3D;
+            _jsonData.BackColor = SystemColors.ButtonFace;
+            _jsonData.Font = new Font("Yu Gothic UI", 9);
+            _jsonData.WordWrap = true;
+            _jsonData.ShowLineNumbers = false;
+            _jsonData.ReadOnly = true;
+            _jsonData.TextChanged += JsonData_TextChanged;
+            splitContainer3.Panel1.Controls.Add(_jsonData);
 
             var configuration = LoadConfiguration();
             _useHyperlinkHandler = configuration.GetValue<bool>("AppSettings:EnableHyperlinkHandler");
@@ -100,7 +115,7 @@ namespace CosmosDBClient
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
                 await UpdateDatagridView();
                 DisplayContainerSettings();
-                JsonData.Text = string.Empty;
+                _jsonData.Text = string.Empty;
 
                 ResizeRowHeader();
 
@@ -348,7 +363,7 @@ namespace CosmosDBClient
             try
             {
                 // JSONデータをパース
-                jsonObject = JObject.Parse(JsonData.Text);
+                jsonObject = JObject.Parse(_jsonData.Text);
             }
             catch (Exception ex)
             {
@@ -414,7 +429,7 @@ namespace CosmosDBClient
             try
             {
                 // JSONデータをパース
-                jsonObject = JObject.Parse(JsonData.Text);
+                jsonObject = JObject.Parse(_jsonData.Text);
             }
             catch (Exception ex)
             {
@@ -452,7 +467,12 @@ namespace CosmosDBClient
         /// <param name="e">イベントデータ</param>
         private async void buttonInsert_Click(object sender, EventArgs e)
         {
-            using (var formInsert = new FormInsert(_cosmosDBService, JsonData.Text))
+            if (string.IsNullOrWhiteSpace(_jsonData.Text)) 
+            {
+                return;
+            }
+
+            using (var formInsert = new FormInsert(_cosmosDBService, _jsonData.Text))
             {
                 formInsert.ShowDialog();
             }
@@ -494,12 +514,12 @@ namespace CosmosDBClient
                 jsonObject[column.HeaderText] = item;
             }
 
-            JsonData.Text = jsonObject.ToString();
+            _jsonData.Text = jsonObject.ToString();
 
-            if (_useHyperlinkHandler)
-            {
-                _hyperlinkHandler.MarkLinkTextFromJson(JsonData);
-            }
+            //if (_useHyperlinkHandler)
+            //{
+            //    _hyperlinkHandler.MarkLinkTextFromJson(JsonData);
+            //}
 
             if (e.ColumnIndex > -1)
             {
@@ -552,7 +572,7 @@ namespace CosmosDBClient
         /// <param name="e">イベントデータ</param>
         private void JsonData_TextChanged(object sender, EventArgs e)
         {
-            var jsonData = (RichTextBox)sender;
+            var jsonData = (FastColoredTextBox)sender;
             buttonUpdate.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
             buttonDelete.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
         }

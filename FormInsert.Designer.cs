@@ -28,18 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
-            richTextBoxInsertJson = new RichTextBox();
             buttonJsonInsert = new Button();
+            panel1 = new Panel();
             SuspendLayout();
-            // 
-            // richTextBoxInsertJson
-            // 
-            richTextBoxInsertJson.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            richTextBoxInsertJson.Location = new Point(12, 12);
-            richTextBoxInsertJson.Name = "richTextBoxInsertJson";
-            richTextBoxInsertJson.Size = new Size(473, 375);
-            richTextBoxInsertJson.TabIndex = 0;
-            richTextBoxInsertJson.Text = "";
             // 
             // buttonJsonInsert
             // 
@@ -52,21 +43,28 @@
             buttonJsonInsert.UseVisualStyleBackColor = true;
             buttonJsonInsert.Click += buttonJsonInsert_Click;
             // 
+            // panel1
+            // 
+            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            panel1.Location = new Point(12, 12);
+            panel1.Name = "panel1";
+            panel1.Size = new Size(473, 375);
+            panel1.TabIndex = 2;
+            // 
             // FormInsert
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(497, 428);
+            Controls.Add(panel1);
             Controls.Add(buttonJsonInsert);
-            Controls.Add(richTextBoxInsertJson);
             Name = "FormInsert";
             Text = "FormInsert";
             ResumeLayout(false);
         }
 
         #endregion
-
-        private RichTextBox richTextBoxInsertJson;
         private Button buttonJsonInsert;
+        private Panel panel1;
     }
 }

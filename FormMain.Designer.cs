@@ -17,8 +17,8 @@
 
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle11 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle12 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             buttonLoadData = new Button();
             numericUpDownMaxCount = new NumericUpDown();
             textBoxConnectionString = new TextBox();
@@ -64,7 +64,6 @@
             dataGridViewResults = new DataGridView();
             richTextBoxSelectedCell = new RichTextBox();
             splitContainer3 = new SplitContainer();
-            JsonData = new RichTextBox();
             splitContainer4 = new SplitContainer();
             buttonUpdate = new Button();
             buttonDelete = new Button();
@@ -86,7 +85,6 @@
             splitContainer2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
-            splitContainer3.Panel1.SuspendLayout();
             splitContainer3.Panel2.SuspendLayout();
             splitContainer3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer4).BeginInit();
@@ -489,26 +487,26 @@
             dataGridViewResults.AllowUserToAddRows = false;
             dataGridViewResults.AllowUserToDeleteRows = false;
             dataGridViewResults.AllowUserToOrderColumns = true;
-            dataGridViewCellStyle11.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle11.BackColor = SystemColors.ActiveCaption;
-            dataGridViewCellStyle11.Font = new Font("Yu Gothic UI", 9F);
-            dataGridViewCellStyle11.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle11.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle11.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle11.WrapMode = DataGridViewTriState.True;
-            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle11;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
+            dataGridViewCellStyle1.Font = new Font("Yu Gothic UI", 9F);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGridViewResults.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridViewResults.Dock = DockStyle.Fill;
             dataGridViewResults.Location = new Point(0, 0);
             dataGridViewResults.Name = "dataGridViewResults";
-            dataGridViewCellStyle12.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle12.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle12.Font = new Font("Yu Gothic UI", 9F);
-            dataGridViewCellStyle12.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle12.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle12.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle12.WrapMode = DataGridViewTriState.True;
-            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle12;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle2.Font = new Font("Yu Gothic UI", 9F);
+            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dataGridViewResults.RowHeadersWidth = 51;
             dataGridViewResults.Size = new Size(1034, 478);
             dataGridViewResults.TabIndex = 19;
@@ -538,28 +536,12 @@
             splitContainer3.Name = "splitContainer3";
             splitContainer3.Orientation = Orientation.Horizontal;
             // 
-            // splitContainer3.Panel1
-            // 
-            splitContainer3.Panel1.Controls.Add(JsonData);
-            // 
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(splitContainer4);
             splitContainer3.Size = new Size(336, 510);
             splitContainer3.SplitterDistance = 477;
             splitContainer3.TabIndex = 0;
-            // 
-            // JsonData
-            // 
-            JsonData.BackColor = SystemColors.ButtonFace;
-            JsonData.Dock = DockStyle.Fill;
-            JsonData.Location = new Point(0, 0);
-            JsonData.Name = "JsonData";
-            JsonData.ReadOnly = true;
-            JsonData.Size = new Size(336, 477);
-            JsonData.TabIndex = 20;
-            JsonData.Text = "";
-            JsonData.TextChanged += JsonData_TextChanged;
             // 
             // splitContainer4
             // 
@@ -635,7 +617,6 @@
             ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
             splitContainer2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
-            splitContainer3.Panel1.ResumeLayout(false);
             splitContainer3.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer3).EndInit();
             splitContainer3.ResumeLayout(false);
@@ -694,7 +675,6 @@
         private DataGridView dataGridViewResults;
         private RichTextBox richTextBoxSelectedCell;
         private SplitContainer splitContainer3;
-        private RichTextBox JsonData;
         private SplitContainer splitContainer4;
         private Button buttonUpdate;
         private Button buttonDelete;

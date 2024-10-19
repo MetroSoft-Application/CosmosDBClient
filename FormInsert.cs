@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Configuration;
+using FastColoredTextBoxNS;
 
 namespace CosmosDBClient
 {
@@ -13,6 +14,7 @@ namespace CosmosDBClient
     public partial class FormInsert : Form
     {
         private CosmosDBService _cosmosDBService;
+        private FastColoredTextBox _jsonData;
 
         /// <summary>
         /// 新しい <see cref="FormInsert"/> クラスのインスタンスを初期化する
@@ -32,8 +34,19 @@ namespace CosmosDBClient
             }
             catch (Exception)
             {
-                return;
+                throw;
             }
+
+            _jsonData = new FastColoredTextBox();
+            _jsonData.Language = Language.JSON;
+            _jsonData.Dock = DockStyle.Fill;
+            _jsonData.ImeMode = ImeMode.Hiragana;
+            _jsonData.BorderStyle = BorderStyle.Fixed3D;
+            _jsonData.BackColor = SystemColors.Window;
+            _jsonData.Font = new Font("Yu Gothic UI", 9);
+            _jsonData.WordWrap = true;
+            _jsonData.ShowLineNumbers = false;
+            panel1.Controls.Add(_jsonData);
 
             // システムフィールドを除外する
             var filteredObject = new JObject();
@@ -48,7 +61,7 @@ namespace CosmosDBClient
                 filteredObject["id"] = Guid.NewGuid().ToString("N");
             }
 
-            richTextBoxInsertJson.Text = filteredObject.ToString();
+            _jsonData.Text = filteredObject.ToString();
         }
 
         /// <summary>
@@ -75,7 +88,7 @@ namespace CosmosDBClient
             try
             {
                 // JSONデータをパース
-                jsonObject = JObject.Parse(richTextBoxInsertJson.Text);
+                jsonObject = JObject.Parse(_jsonData.Text);
             }
             catch (Exception ex)
             {
