@@ -608,6 +608,9 @@ namespace CosmosDBClient
 
             var deletedIds = new List<string>();
 
+            // フォーム全体の描画を一時停止
+            this.SuspendLayout();
+
             try
             {
                 foreach (DataGridViewRow row in selectedRows)
@@ -656,12 +659,18 @@ namespace CosmosDBClient
                     dataGridViewResults.Rows.Remove(row);
                 }
 
+                var message = "";
                 // 削除したIDをメッセージボックスで表示
-                if (deletedIds.Count > 0)
+                if (deletedIds.Count > 0 && deletedIds.Count >= 10)
                 {
-                    var message = $"Deleted IDs:\n{string.Join("\n", deletedIds)}";
-                    MessageBox.Show(message, "Info");
+                    message = $"Deleted IDs:\n{string.Join("\n", deletedIds)}";
                 }
+                else if (deletedIds.Count > 10)
+                {
+                    message = $"Deleted ID Ount:{deletedIds.Count}";
+                }
+
+                MessageBox.Show(message, "Info");
 
                 // DataGridViewの更新
                 await UpdateDatagridView();
@@ -669,6 +678,11 @@ namespace CosmosDBClient
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error");
+            }
+            finally
+            {
+                // フォーム全体の描画を再開
+                this.ResumeLayout();
             }
         }
 
