@@ -579,7 +579,6 @@ namespace CosmosDBClient
             {
                 var selectedRows = dataGridViewResults.SelectedRows;
 
-                // 選択された行が1行以上ある場合は、削除処理を呼び出す
                 if (selectedRows.Count > 0)
                 {
                     await DeleteSelectedRows(selectedRows);
@@ -680,7 +679,7 @@ namespace CosmosDBClient
                 // タイマーを停止
                 stopwatch.Stop();
 
-                var message = $"Finish! Elapsed: {stopwatch.Elapsed.TotalSeconds}秒\n";
+                var message = $"Finish! Elapsed: {stopwatch.Elapsed.TotalSeconds}Sec\n";
                 // 削除したIDをメッセージボックスで表示
                 if (deletedIds.Count > 10)
                 {
