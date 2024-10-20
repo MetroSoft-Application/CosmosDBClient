@@ -618,7 +618,7 @@ namespace CosmosDBClient
             try
             {
                 var tasks = new List<Task>();
-                var maxDegreeOfParallelism = 10;
+                var maxDegreeOfParallelism = Environment.ProcessorCount;
                 var semaphore = new SemaphoreSlim(maxDegreeOfParallelism);
                 foreach (DataGridViewRow row in selectedRows)
                 {
