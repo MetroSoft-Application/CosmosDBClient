@@ -609,6 +609,10 @@ namespace CosmosDBClient
                 return;
             }
 
+            // タイマーを開始
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             var deletedIds = new List<string>();
 
             try
@@ -674,15 +678,18 @@ namespace CosmosDBClient
 
                 await Task.WhenAll(tasks);
 
-                var message = "";
+                // タイマーを停止
+                stopwatch.Stop();
+
+                var message = $"Finish! Elapsed: {stopwatch.Elapsed.TotalSeconds}秒\n";
                 // 削除したIDをメッセージボックスで表示
-                if (deletedIds.Count > 0 && deletedIds.Count <= 10)
+                if (deletedIds.Count > 10)
                 {
-                    message = $"Deleted IDs:\n{string.Join("\n", deletedIds)}";
+                    message += $"Deleted ID Count: {deletedIds.Count}";
                 }
-                else if (deletedIds.Count > 10)
+                else if (deletedIds.Count > 0)
                 {
-                    message = $"Deleted ID Count: {deletedIds.Count}";
+                    message += $"Deleted IDs:\n{string.Join("\n", deletedIds)}";
                 }
 
                 MessageBox.Show(message, "Info");
