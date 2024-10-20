@@ -107,7 +107,7 @@ namespace CosmosDBClient
         {
             try
             {
-                Cursor.Current = Cursors.WaitCursor;
+                dataGridViewResults.ReadOnly = true;
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
                 await UpdateDatagridView();
                 DisplayContainerSettings();
@@ -123,7 +123,7 @@ namespace CosmosDBClient
             }
             finally
             {
-                Cursor.Current = Cursors.Default;
+                dataGridViewResults.ReadOnly = false;
             }
         }
 
@@ -582,9 +582,7 @@ namespace CosmosDBClient
                 // 選択された行が1行以上ある場合は、削除処理を呼び出す
                 if (selectedRows.Count > 0)
                 {
-                    this.Cursor = Cursors.WaitCursor;
                     await DeleteSelectedRows(selectedRows);
-                    this.Cursor = Cursors.Default;
                 }
             }
         }
@@ -617,6 +615,7 @@ namespace CosmosDBClient
 
             try
             {
+                dataGridViewResults.ReadOnly = true;
                 var tasks = new List<Task>();
                 var maxDegreeOfParallelism = Environment.ProcessorCount;
                 var semaphore = new SemaphoreSlim(maxDegreeOfParallelism);
@@ -703,6 +702,7 @@ namespace CosmosDBClient
             }
             finally
             {
+                dataGridViewResults.ReadOnly = false;
             }
         }
 
