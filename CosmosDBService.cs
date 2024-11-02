@@ -17,7 +17,7 @@ namespace CosmosDBClient
         /// </summary>
         public readonly string[] systemColumns = { "id", "_etag", "_rid", "_self", "_attachments", "_ts" };
 
-        private readonly CosmosClient _cosmosClient;
+        private static CosmosClient _cosmosClient;
         private readonly Container _cosmosContainer;
 
         /// <summary>
@@ -28,12 +28,17 @@ namespace CosmosDBClient
         /// <param name="containerName">コンテナ名</param>
         public CosmosDBService(string connectionString, string databaseName, string containerName)
         {
-            var cosmosClientOptions = new CosmosClientOptions
+            // 初回のみ CosmosClient を作成
+            if (_cosmosClient == null)
             {
-                ConnectionMode = ConnectionMode.Gateway
-            };
+                var cosmosClientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway
+                };
+                _cosmosClient = new CosmosClient(connectionString, cosmosClientOptions);
+            }
 
-            _cosmosClient = new CosmosClient(connectionString, cosmosClientOptions);
+            // データベースとコンテナの取得
             _cosmosContainer = _cosmosClient.GetContainer(databaseName, containerName);
         }
 
@@ -52,10 +57,12 @@ namespace CosmosDBClient
             var pageCount = 0;
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
+            // クエリの定義と実行
             var queryDefinition = new QueryDefinition(query);
             var queryResultSetIterator = _cosmosContainer.GetItemQueryIterator<dynamic>(
                 queryDefinition, requestOptions: new QueryRequestOptions { MaxItemCount = maxItemCount });
 
+            // 結果の処理
             while (queryResultSetIterator.HasMoreResults)
             {
                 var currentResultSet = await queryResultSetIterator.ReadNextAsync();
@@ -63,6 +70,7 @@ namespace CosmosDBClient
                 totalRequestCharge += currentResultSet.RequestCharge;
                 documentCount += currentResultSet.Count;
 
+                // データテーブルに結果を追加
                 foreach (var item in currentResultSet)
                 {
                     var jsonObject = JObject.Parse(item.ToString());
