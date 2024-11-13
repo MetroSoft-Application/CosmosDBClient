@@ -17,8 +17,6 @@
 
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             buttonLoadData = new Button();
             numericUpDownMaxCount = new NumericUpDown();
             textBoxConnectionString = new TextBox();
@@ -61,7 +59,7 @@
             panel1 = new Panel();
             splitContainer1 = new SplitContainer();
             splitContainer2 = new SplitContainer();
-            dataGridViewResults = new DataGridView();
+            //dataGridViewResults = new DataGridView();
             richTextBoxSelectedCell = new RichTextBox();
             splitContainer3 = new SplitContainer();
             splitContainer4 = new SplitContainer();
@@ -83,7 +81,6 @@
             splitContainer2.Panel1.SuspendLayout();
             splitContainer2.Panel2.SuspendLayout();
             splitContainer2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)dataGridViewResults).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
             splitContainer3.Panel2.SuspendLayout();
             splitContainer3.SuspendLayout();
@@ -471,49 +468,12 @@
             splitContainer2.Name = "splitContainer2";
             splitContainer2.Orientation = Orientation.Horizontal;
             // 
-            // splitContainer2.Panel1
-            // 
-            splitContainer2.Panel1.Controls.Add(dataGridViewResults);
-            // 
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(richTextBoxSelectedCell);
             splitContainer2.Size = new Size(1026, 510);
             splitContainer2.SplitterDistance = 478;
             splitContainer2.TabIndex = 0;
-            // 
-            // dataGridViewResults
-            // 
-            dataGridViewResults.AllowUserToAddRows = false;
-            dataGridViewResults.AllowUserToDeleteRows = false;
-            dataGridViewResults.AllowUserToOrderColumns = true;
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
-            dataGridViewCellStyle1.Font = new Font("Yu Gothic UI", 9F);
-            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            dataGridViewResults.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewResults.Dock = DockStyle.Fill;
-            dataGridViewResults.Location = new Point(0, 0);
-            dataGridViewResults.Name = "dataGridViewResults";
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle2.Font = new Font("Yu Gothic UI", 9F);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
-            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridViewResults.RowHeadersWidth = 51;
-            dataGridViewResults.Size = new Size(1026, 478);
-            dataGridViewResults.TabIndex = 19;
-            dataGridViewResults.CellClick += dataGridViewResults_CellClick;
-            dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
-            dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
-            dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
             // 
             // richTextBoxSelectedCell
             // 
@@ -616,7 +576,7 @@
             splitContainer2.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
             splitContainer2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
+            //((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
             splitContainer3.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer3).EndInit();
             splitContainer3.ResumeLayout(false);
@@ -672,7 +632,6 @@
         private Panel panel1;
         private SplitContainer splitContainer1;
         private SplitContainer splitContainer2;
-        private DataGridView dataGridViewResults;
         private RichTextBox richTextBoxSelectedCell;
         private SplitContainer splitContainer3;
         private SplitContainer splitContainer4;

@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DG.AdvancedDataGridView" Version="1.2.29301.14" />
     <PackageReference Include="FastColoredTextBox.Net6" Version="1.0.0" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />

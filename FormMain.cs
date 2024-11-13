@@ -1,10 +1,12 @@
 ﻿using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
+using System.Windows.Forms;
 using FastColoredTextBoxNS;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Zuby.ADGV;
 
 namespace CosmosDBClient
 {
@@ -19,6 +21,7 @@ namespace CosmosDBClient
         private HyperlinkHandler _hyperlinkHandler;
         private FastColoredTextBox _textBoxQuery;
         private FastColoredTextBox _jsonData;
+        private AdvancedDataGridView dataGridViewResults;
 
         /// <summary>
         /// FormMain クラスのコンストラクタ設定を読み込み、CosmosDBServiceのインスタンスを初期化する
@@ -27,6 +30,8 @@ namespace CosmosDBClient
         {
             InitializeComponent();
             AutoScaleMode = AutoScaleMode.Dpi;
+
+            SetupDatagridview();
 
             _textBoxQuery = new FastColoredTextBox();
             _textBoxQuery.Language = Language.SQL;
@@ -81,6 +86,47 @@ namespace CosmosDBClient
             catch (Exception)
             {
             }
+        }
+
+        /// <summary>
+        /// DataGridView の設定を行う
+        /// </summary>
+        private void SetupDatagridview()
+        {
+            dataGridViewResults = new AdvancedDataGridView();
+            dataGridViewResults.AllowUserToAddRows = false;
+            dataGridViewResults.AllowUserToDeleteRows = false;
+            dataGridViewResults.AllowUserToOrderColumns = true;
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
+            dataGridViewCellStyle1.Font = new Font("Yu Gothic UI", 9F);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            dataGridViewResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewResults.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewResults.Dock = DockStyle.Fill;
+            dataGridViewResults.Location = new Point(0, 0);
+            dataGridViewResults.Name = "dataGridViewResults";
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle2.Font = new Font("Yu Gothic UI", 9F);
+            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            dataGridViewResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewResults.RowHeadersWidth = 51;
+            dataGridViewResults.Size = new Size(1026, 478);
+            dataGridViewResults.TabIndex = 19;
+            dataGridViewResults.CellClick += dataGridViewResults_CellClick;
+            dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
+            dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
+            dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
+            splitContainer2.Panel1.Controls.Add(dataGridViewResults);
         }
 
         /// <summary>
