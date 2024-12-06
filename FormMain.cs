@@ -22,6 +22,7 @@ namespace CosmosDBClient
         private FastColoredTextBox _textBoxQuery;
         private FastColoredTextBox _jsonData;
         private AdvancedDataGridView dataGridViewResults;
+        private TextStyle jsonStringStyle = new TextStyle(Brushes.Black, null, FontStyle.Regular);
 
         /// <summary>
         /// FormMain クラスのコンストラクタ設定を読み込み、CosmosDBServiceのインスタンスを初期化する
@@ -54,7 +55,15 @@ namespace CosmosDBClient
             _jsonData.WordWrap = true;
             _jsonData.ShowLineNumbers = false;
             _jsonData.ReadOnly = true;
-            _jsonData.TextChanged += JsonData_TextChanged;
+            _jsonData.TextChangedDelayed += (sender, args) =>
+            {
+                _jsonData.BeginUpdate();
+                // 全範囲を対象にクリアしてから、JSON文字列にスタイル適用
+                _jsonData.Range.ClearStyle(_jsonData.SyntaxHighlighter.StringStyle);
+                _jsonData.Range.ClearStyle(jsonStringStyle);
+                _jsonData.Range.SetStyle(jsonStringStyle, "\".*?\"");
+                _jsonData.EndUpdate();
+            };
 
             splitContainer3.Panel1.Controls.Add(_jsonData);
 
@@ -650,10 +659,6 @@ namespace CosmosDBClient
             var jsonData = (FastColoredTextBox)sender;
             buttonUpdate.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
             buttonDelete.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
-            // JSONの文字列リテラル用のスタイルを変更
-            var style = new TextStyle(Brushes.Black, null, FontStyle.Regular);
-            _jsonData.Range.ClearStyle(_jsonData.SyntaxHighlighter.StringStyle); 
-            _jsonData.Range.SetStyle(style, "\".*?\""); 
         }
 
         /// <summary>
