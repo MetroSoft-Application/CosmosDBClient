@@ -55,6 +55,7 @@ namespace CosmosDBClient
             _jsonData.ShowLineNumbers = false;
             _jsonData.ReadOnly = true;
             _jsonData.TextChanged += JsonData_TextChanged;
+
             splitContainer3.Panel1.Controls.Add(_jsonData);
 
             var configuration = LoadConfiguration();
@@ -649,6 +650,10 @@ namespace CosmosDBClient
             var jsonData = (FastColoredTextBox)sender;
             buttonUpdate.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
             buttonDelete.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
+            // JSONの文字列リテラル用のスタイルを変更
+            var style = new TextStyle(Brushes.Black, null, FontStyle.Regular);
+            _jsonData.Range.ClearStyle(_jsonData.SyntaxHighlighter.StringStyle); 
+            _jsonData.Range.SetStyle(style, "\".*?\""); 
         }
 
         /// <summary>
