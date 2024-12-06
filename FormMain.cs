@@ -548,10 +548,12 @@ namespace CosmosDBClient
             foreach (DataGridViewColumn column in dataGridViewResults.Columns)
             {
                 var item = dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Value?.ToString() ?? string.Empty;
-                jsonObject[column.HeaderText] = item;
+                jsonObject[column.HeaderText] = TryParseJson(item);
             }
 
-            _jsonData.Text = jsonObject.ToString();
+            // JSON文字列を整形し、改行とインデントを処理
+            var formattedJson = JsonConvert.SerializeObject(jsonObject, Formatting.Indented);
+            _jsonData.Text = formattedJson;
 
             //if (_useHyperlinkHandler)
             //{
@@ -570,6 +572,41 @@ namespace CosmosDBClient
                     _hyperlinkHandler.MarkLinkTextFromText(richTextBoxSelectedCell);
                 }
             }
+        }
+
+        /// <summary>
+        /// JSON文字列を再帰的にパースし、JTokenオブジェクトに変換する
+        /// </summary>
+        /// <param name="item">Json項目</param>
+        /// <returns>JToken</returns>
+        private JToken TryParseJson(string item)
+        {
+            try
+            {
+                var parsedToken = JToken.Parse(item);
+                if (parsedToken.Type == JTokenType.Object || parsedToken.Type == JTokenType.Array)
+                {
+                    foreach (var child in parsedToken.Children())
+                    {
+                        if (child is JProperty property)
+                        {
+                            property.Value = TryParseJson(property.Value.ToString());
+                        }
+                        else if (child is JArray array)
+                        {
+                            for (int i = 0; i < array.Count; i++)
+                            {
+                                array[i] = TryParseJson(array[i].ToString());
+                            }
+                        }
+                    }
+                    return parsedToken;
+                }
+            }
+            catch (JsonReaderException)
+            {
+            }
+            return item;
         }
 
         /// <summary>
