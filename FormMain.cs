@@ -52,6 +52,7 @@ namespace CosmosDBClient
             _jsonData.BorderStyle = BorderStyle.Fixed3D;
             _jsonData.BackColor = SystemColors.ButtonFace;
             _jsonData.Font = new Font("Yu Gothic UI", 9);
+            _jsonData.TabLength = 4;
             _jsonData.WordWrap = true;
             _jsonData.ShowLineNumbers = false;
             _jsonData.ReadOnly = true;
@@ -163,6 +164,9 @@ namespace CosmosDBClient
         {
             try
             {
+                buttonDelete.Enabled = true;
+                buttonUpdate.Enabled = true;
+
                 dataGridViewResults.ReadOnly = true;
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
                 await UpdateDatagridView();
@@ -647,18 +651,6 @@ namespace CosmosDBClient
                     dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.ForeColor = System.Drawing.Color.White;
                 }
             }
-        }
-
-        /// <summary>
-        /// RichTextBox の内容が変更された際に、ボタンの有効状態を更新する
-        /// </summary>
-        /// <param name="sender">イベントの送信元オブジェクト</param>
-        /// <param name="e">イベントデータ</param>
-        private void JsonData_TextChanged(object sender, EventArgs e)
-        {
-            var jsonData = (FastColoredTextBox)sender;
-            buttonUpdate.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
-            buttonDelete.Enabled = !string.IsNullOrWhiteSpace(jsonData.Text);
         }
 
         /// <summary>
