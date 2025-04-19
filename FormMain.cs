@@ -590,16 +590,43 @@ namespace CosmosDBClient
 
         /// <summary>
         /// JSON文字列を再帰的にパースし、JTokenオブジェクトに変換する
+        /// Cosmos DB で扱える型を考慮し、整数と浮動小数点数を区別
         /// </summary>
         /// <param name="item">Json項目</param>
         /// <returns>JToken</returns>
         private JToken TryParseJson(string item)
         {
+            // Null値の判定
+            if (string.IsNullOrEmpty(item) || item.Equals("null", StringComparison.OrdinalIgnoreCase))
+            {
+                return JValue.CreateNull();
+            }
+
+            // 真偽値の判定
+            if (bool.TryParse(item, out var boolValue))
+            {
+                return JToken.FromObject(boolValue);
+            }
+
+            // 整数の判定
+            if (int.TryParse(item, out var intValue))
+            {
+                return JToken.FromObject(intValue);
+            }
+
+            // 浮動小数点数の判定
+            if (double.TryParse(item, out var doubleValue))
+            {
+                return JToken.FromObject(doubleValue);
+            }
+
+            // JSONオブジェクトまたは配列の判定
             try
             {
                 var parsedToken = JToken.Parse(item);
                 if (parsedToken.Type == JTokenType.Object || parsedToken.Type == JTokenType.Array)
                 {
+                    // 再帰的に子要素を処理
                     foreach (var child in parsedToken.Children())
                     {
                         if (child is JProperty property)
@@ -614,13 +641,16 @@ namespace CosmosDBClient
                             }
                         }
                     }
-                    return parsedToken;
                 }
+                return parsedToken;
             }
             catch (JsonReaderException)
             {
+                // JSONとしてパースできない場合はそのまま文字列として扱う
             }
-            return item;
+
+            // 文字列として扱う
+            return JToken.FromObject(item);
         }
 
         /// <summary>

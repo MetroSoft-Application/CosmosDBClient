@@ -18,7 +18,24 @@ namespace CosmosDBClient
         public readonly string[] systemColumns = { "id", "_etag", "_rid", "_self", "_attachments", "_ts" };
 
         private static CosmosClient _cosmosClient;
-        private readonly Container _cosmosContainer;
+        private Database _cosmosDatabase;
+        private Container _cosmosContainer;
+
+        /// <summary>
+        /// CosmosDBのデータベースオブジェクト
+        /// </summary>
+        public Database CosmosDatabase
+        {
+            get => _cosmosDatabase;
+        }
+
+        /// <summary>
+        /// CosmosDBのコンテナオブジェクト
+        /// </summary>
+        public Container CosmosContainer
+        {
+            get => _cosmosContainer;
+        }
 
         /// <summary>
         /// CosmosDBService クラスのコンストラクタ
@@ -38,8 +55,57 @@ namespace CosmosDBClient
                 _cosmosClient = new CosmosClient(connectionString, cosmosClientOptions);
             }
 
+            // データベースの作成または取得
+            var databaseResponse = _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName).Result;
+            _cosmosDatabase = databaseResponse.Database;
+
             // データベースとコンテナの取得
             _cosmosContainer = _cosmosClient.GetContainer(databaseName, containerName);
+        }
+
+        /// <summary>
+        /// コンテナ名を指定してコンテナを設定する
+        /// </summary>
+        /// <param name="containerName">コンテナ名</param>
+        public void SetContainerByName(string containerName)
+        {
+            if (string.IsNullOrWhiteSpace(containerName))
+            {
+                throw new ArgumentException("Container name cannot be null or empty.", nameof(containerName));
+            }
+
+            // コンテナの存在を確認
+            var containerExists = DoesContainerExistAsync(containerName).GetAwaiter().GetResult();
+            if (!containerExists)
+            {
+                throw new InvalidOperationException($"The container '{containerName}' does not exist in the database '{_cosmosDatabase.Id}'.");
+            }
+
+            // 指定されたコンテナ名でコンテナを取得
+            _cosmosContainer = _cosmosDatabase.GetContainer(containerName);
+        }
+
+        /// <summary>
+        /// 指定されたコンテナが存在するか確認する
+        /// </summary>
+        /// <param name="containerName">コンテナ名</param>
+        /// <returns>コンテナが存在する場合はtrue、それ以外はfalse</returns>
+        private async Task<bool> DoesContainerExistAsync(string containerName)
+        {
+            using (var iterator = _cosmosDatabase.GetContainerQueryIterator<ContainerProperties>())
+            {
+                while (iterator.HasMoreResults)
+                {
+                    foreach (var container in await iterator.ReadNextAsync())
+                    {
+                        if (container.Id == containerName)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -74,13 +140,13 @@ namespace CosmosDBClient
                 foreach (var item in currentResultSet)
                 {
                     var jsonObject = JObject.Parse(item.ToString());
-                    AddRowToDataTable(jsonObject, dataTable);
+                    this.AddRowToDataTable(jsonObject, dataTable);
                 }
             }
 
             stopwatch.Stop();
             // カラムの並び替えを実施する
-            MoveSystemColumnsToEnd(dataTable);
+            this.MoveSystemColumnsToEnd(dataTable);
 
             return (dataTable, totalRequestCharge, documentCount, pageCount, stopwatch.ElapsedMilliseconds);
         }
@@ -167,6 +233,26 @@ namespace CosmosDBClient
         public async Task<ContainerProperties> GetContainerPropertiesAsync()
         {
             return await _cosmosContainer.ReadContainerAsync();
+        }
+
+        /// <summary>
+        /// CosmosDBアカウント内のデータベース一覧を取得する
+        /// </summary>
+        /// <returns>データベース名のリスト</returns>
+        public async Task<List<string>> GetDatabaseNamesAsync()
+        {
+            var databases = new List<string>();
+            using (var iterator = _cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>())
+            {
+                while (iterator.HasMoreResults)
+                {
+                    foreach (var database in await iterator.ReadNextAsync())
+                    {
+                        databases.Add(database.Id);
+                    }
+                }
+            }
+            return databases;
         }
 
         /// <summary>
