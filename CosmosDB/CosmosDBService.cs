@@ -1,11 +1,8 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using System.Data;
+using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Data;
 
-namespace CosmosDBClient
+namespace CosmosDBClient.CosmosDB
 {
     /// <summary>
     /// CosmosDBに対する操作を行うサービスクラス
@@ -20,6 +17,14 @@ namespace CosmosDBClient
         private static CosmosClient _cosmosClient;
         private Database _cosmosDatabase;
         private Container _cosmosContainer;
+
+        /// <summary>
+        /// CosmosDBのクライアントオブジェクト
+        /// </summary>
+        public CosmosClient CosmosClient
+        {
+            get => _cosmosClient;
+        }
 
         /// <summary>
         /// CosmosDBのデータベースオブジェクト
@@ -113,42 +118,94 @@ namespace CosmosDBClient
         /// </summary>
         /// <param name="query">実行するクエリ文字列</param>
         /// <param name="maxItemCount">取得する最大アイテム数</param>
-        /// <returns>データテーブルと、リクエストチャージ、ドキュメント数、ページ数、処理時間を含むタプル</returns>
-        public async Task<(DataTable data, double totalRequestCharge, int documentCount, int pageCount, long elapsedMilliseconds)>
-            FetchDataWithStatusAsync(string query, int maxItemCount)
+        /// <returns>データ取得結果を表す FetchDataResult オブジェクト</returns>
+        public async Task<FetchDataResult> FetchDataWithStatusAsync(string query, int maxItemCount)
         {
             var dataTable = new DataTable();
             var totalRequestCharge = 0d;
             var documentCount = 0;
             var pageCount = 0;
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var startTime = DateTime.UtcNow;
 
-            // クエリの定義と実行
-            var queryDefinition = new QueryDefinition(query);
-            var queryResultSetIterator = _cosmosContainer.GetItemQueryIterator<dynamic>(
-                queryDefinition, requestOptions: new QueryRequestOptions { MaxItemCount = maxItemCount });
+            string errorMessage = null;
+            bool hasMoreResults = false;
 
-            // 結果の処理
-            while (queryResultSetIterator.HasMoreResults)
+            try
             {
-                var currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                pageCount++;
-                totalRequestCharge += currentResultSet.RequestCharge;
-                documentCount += currentResultSet.Count;
+                // クエリの定義と実行
+                var queryDefinition = new QueryDefinition(query);
+                var queryResultSetIterator = _cosmosContainer.GetItemQueryIterator<dynamic>(
+                    queryDefinition, requestOptions: new QueryRequestOptions { MaxItemCount = maxItemCount });
 
-                // データテーブルに結果を追加
-                foreach (var item in currentResultSet)
+                // 結果の処理
+                while (queryResultSetIterator.HasMoreResults)
                 {
-                    var jsonObject = JObject.Parse(item.ToString());
-                    this.AddRowToDataTable(jsonObject, dataTable);
+                    hasMoreResults = true;
+                    var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    pageCount++;
+                    totalRequestCharge += currentResultSet.RequestCharge;
+                    documentCount += currentResultSet.Count;
+
+                    // データテーブルに結果を追加
+                    foreach (var item in currentResultSet)
+                    {
+                        var jsonObject = JObject.Parse(item.ToString());
+                        AddRowToDataTable(jsonObject, dataTable);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+            }
+            finally
+            {
+                stopwatch.Stop();
+            }
+
+            // カラムの並び替えを実施する
+            MoveSystemColumnsToEnd(dataTable);
+
+            var endTime = DateTime.UtcNow;
+            var dataSizeInBytes = CalculateDataSize(dataTable);
+
+            // コンストラクタを使用してFetchDataResultを作成
+            return new FetchDataResult(
+                dataTable,
+                totalRequestCharge,
+                documentCount,
+                pageCount,
+                stopwatch.ElapsedMilliseconds,
+                errorMessage,
+                query,
+                dataSizeInBytes,
+                startTime,
+                endTime,
+                hasMoreResults);
+        }
+
+        /// <summary>
+        /// DataTableのデータサイズを計算する
+        /// </summary>
+        /// <param name="dataTable">データテーブル</param>
+        /// <returns>データサイズ（バイト単位）</returns>
+        private long CalculateDataSize(DataTable dataTable)
+        {
+            long size = 0;
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                foreach (var item in row.ItemArray)
+                {
+                    if (item != null)
+                    {
+                        size += System.Text.Encoding.UTF8.GetByteCount(item.ToString());
+                    }
                 }
             }
 
-            stopwatch.Stop();
-            // カラムの並び替えを実施する
-            this.MoveSystemColumnsToEnd(dataTable);
-
-            return (dataTable, totalRequestCharge, documentCount, pageCount, stopwatch.ElapsedMilliseconds);
+            return size;
         }
 
         /// <summary>

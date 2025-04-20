@@ -2,6 +2,7 @@
 using System.Data;
 using System.Diagnostics;
 using System.Windows.Forms;
+using CosmosDBClient.CosmosDB;
 using FastColoredTextBoxNS;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -212,14 +213,13 @@ namespace CosmosDBClient
         private async Task UpdateDatagridView()
         {
             var query = BuildQuery(_textBoxQuery.Text, GetMaxItemCount());
-            var (dataTable, totalRequestCharge, documentCount, pageCount, elapsedMilliseconds) =
-                await _cosmosDBService.FetchDataWithStatusAsync(query, GetMaxItemCount());
+            var result = await _cosmosDBService.FetchDataWithStatusAsync(query, GetMaxItemCount());
 
             dataGridViewResults.DataSource = null;
-            SetReadOnlyColumns(dataTable);
-            dataGridViewResults.DataSource = dataTable;
+            SetReadOnlyColumns(result.Data);
+            dataGridViewResults.DataSource = result.Data;
 
-            UpdateStatusStrip(totalRequestCharge, documentCount, pageCount, elapsedMilliseconds);
+            UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
         }
 
         /// <summary>

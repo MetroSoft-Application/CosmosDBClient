@@ -1,4 +1,5 @@
-﻿using FastColoredTextBoxNS;
+﻿using CosmosDBClient.CosmosDB;
+using FastColoredTextBoxNS;
 using Newtonsoft.Json.Linq;
 
 namespace CosmosDBClient
