@@ -129,19 +129,18 @@ namespace CosmosDBClient.CosmosDB
             var startTime = DateTime.UtcNow;
 
             string errorMessage = null;
-            bool hasMoreResults = false;
+            FeedIterator<dynamic> queryResultSetIterator = null;
 
             try
             {
                 // クエリの定義と実行
                 var queryDefinition = new QueryDefinition(query);
-                var queryResultSetIterator = _cosmosContainer.GetItemQueryIterator<dynamic>(
+                queryResultSetIterator = _cosmosContainer.GetItemQueryIterator<dynamic>(
                     queryDefinition, requestOptions: new QueryRequestOptions { MaxItemCount = maxItemCount });
 
                 // 結果の処理
                 while (queryResultSetIterator.HasMoreResults)
                 {
-                    hasMoreResults = true;
                     var currentResultSet = await queryResultSetIterator.ReadNextAsync();
                     pageCount++;
                     totalRequestCharge += currentResultSet.RequestCharge;
@@ -170,7 +169,6 @@ namespace CosmosDBClient.CosmosDB
             var endTime = DateTime.UtcNow;
             var dataSizeInBytes = CalculateDataSize(dataTable);
 
-            // コンストラクタを使用してFetchDataResultを作成
             return new FetchDataResult(
                 dataTable,
                 totalRequestCharge,
@@ -181,8 +179,7 @@ namespace CosmosDBClient.CosmosDB
                 query,
                 dataSizeInBytes,
                 startTime,
-                endTime,
-                hasMoreResults);
+                endTime);
         }
 
         /// <summary>
@@ -252,7 +249,7 @@ namespace CosmosDBClient.CosmosDB
                 }
 
                 // 新しいカラムに値を設定
-                row[property.Name] = property.Value?.ToString() ?? string.Empty;
+                row[property.Name] = property.Value ?? string.Empty;
             }
 
             // 行をDataTableに追加
