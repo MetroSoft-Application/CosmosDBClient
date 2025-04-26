@@ -253,7 +253,7 @@ namespace CosmosDBClient.CosmosDB
                 if (DateTime.TryParse(property.Value?.ToString(), out var dateValue))
                 {
                     var jstDate = TimeZoneInfo.ConvertTimeFromUtc(dateValue.ToUniversalTime(), jstTimeZone);
-                    row[property.Name] = jstDate.ToString("yyyy-MM-dd HH:mm:ss"); // タイムゾーン情報なし
+                    row[property.Name] = jstDate.ToString("yyyy-MM-ddTHH:mm:ss"); // タイムゾーン情報なし
                 }
                 else
                 {
@@ -287,7 +287,7 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>削除の結果</returns>
         public async Task<ItemResponse<T>> DeleteItemAsync<T>(string id, PartitionKey partitionKey)
         {
-            return await _cosmosContainer.DeleteItemAsync<T>(id, partitionKey);
+            return await _cosmosContainer.DeleteItemAsync<T>(id, PartitionKey.None);
         }
 
         /// <summary>
