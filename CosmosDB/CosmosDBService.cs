@@ -238,6 +238,7 @@ namespace CosmosDBClient.CosmosDB
         private void AddRowToDataTable(JObject jsonObject, DataTable dataTable)
         {
             var row = dataTable.NewRow();
+            var jstTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Tokyo Standard Time");
 
             foreach (var property in jsonObject.Properties())
             {
@@ -248,8 +249,17 @@ namespace CosmosDBClient.CosmosDB
                     dataTable.Columns.Add(property.Name, typeof(string));
                 }
 
-                // 新しいカラムに値を設定
-                row[property.Name] = property.Value ?? string.Empty;
+                // 日付項目をJSTに変換してフォーマット
+                if (DateTime.TryParse(property.Value?.ToString(), out var dateValue))
+                {
+                    var jstDate = TimeZoneInfo.ConvertTimeFromUtc(dateValue.ToUniversalTime(), jstTimeZone);
+                    row[property.Name] = jstDate.ToString("yyyy-MM-dd HH:mm:ss"); // タイムゾーン情報なし
+                }
+                else
+                {
+                    // 新しいカラムに値を設定
+                    row[property.Name] = property.Value ?? string.Empty;
+                }
             }
 
             // 行をDataTableに追加
