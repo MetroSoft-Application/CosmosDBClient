@@ -287,7 +287,7 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>削除の結果</returns>
         public async Task<ItemResponse<T>> DeleteItemAsync<T>(string id, PartitionKey partitionKey)
         {
-            return await _cosmosContainer.DeleteItemAsync<T>(id, PartitionKey.None);
+            return await _cosmosContainer.DeleteItemAsync<T>(id, partitionKey);
         }
 
         /// <summary>
