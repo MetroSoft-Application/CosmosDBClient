@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Windows.Forms;
 using CosmosDBClient.CosmosDB;
 using FastColoredTextBoxNS;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -24,6 +25,10 @@ namespace CosmosDBClient
         private FastColoredTextBox _jsonData;
         private AdvancedDataGridView dataGridViewResults;
         private TextStyle jsonStringStyle = new TextStyle(Brushes.Black, null, FontStyle.Regular);
+        private DataTable _virtualDataTable;
+        private DataTable _originalDataTable; // フィルタリング時のオリジナルデータ保持用
+        private List<string> _columnNames;
+        private bool _virtualModeEnabled = true;
 
         /// <summary>
         /// FormMain クラスのコンストラクタ設定を読み込み、CosmosDBServiceのインスタンスを初期化する
@@ -109,6 +114,10 @@ namespace CosmosDBClient
             dataGridViewResults.AllowUserToAddRows = false;
             dataGridViewResults.AllowUserToDeleteRows = false;
             dataGridViewResults.AllowUserToOrderColumns = true;
+
+            // 仮想モードを有効化
+            dataGridViewResults.VirtualMode = _virtualModeEnabled;
+
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.ActiveCaption;
@@ -134,11 +143,111 @@ namespace CosmosDBClient
             dataGridViewResults.RowHeadersWidth = 51;
             dataGridViewResults.Size = new Size(1026, 478);
             dataGridViewResults.TabIndex = 19;
+
+            // 仮想モード用のイベントハンドラを追加
+            if (_virtualModeEnabled)
+            {
+                dataGridViewResults.CellValueNeeded += dataGridViewResults_CellValueNeeded;
+                dataGridViewResults.CellValuePushed += dataGridViewResults_CellValuePushed;
+                dataGridViewResults.RowCount = 0;
+            }
+
+            // AdvancedDataGridViewのフィルタとソート関連のイベントを追加
+            if (dataGridViewResults is AdvancedDataGridView advancedGrid)
+            {
+                dataGridViewResults.FilterStringChanged += dataGridViewResults_FilterStringChanged;
+                dataGridViewResults.SortStringChanged += dataGridViewResults_SortStringChanged;
+            }
+
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
             dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
             splitContainer2.Panel1.Controls.Add(dataGridViewResults);
+        }
+
+        /// <summary>
+        /// AdvancedDataGridViewのフィルタリングイベントハンドラ
+        /// </summary>
+        private void dataGridViewResults_FilterStringChanged(object sender, AdvancedDataGridView.FilterEventArgs e)
+        {
+            if (_virtualModeEnabled && _virtualDataTable != null)
+            {
+                try
+                {
+                    // フィルタ適用前にオリジナルのデータテーブルをバックアップ（必要に応じて）
+                    if (_originalDataTable == null)
+                    {
+                        _originalDataTable = _virtualDataTable.Copy();
+                    }
+
+                    // フィルタ文字列を取得
+                    var filterString = dataGridViewResults.FilterString;
+
+                    if (string.IsNullOrEmpty(filterString))
+                    {
+                        // フィルタなしの場合、元のデータに戻す
+                        if (_originalDataTable != null)
+                        {
+                            _virtualDataTable = _originalDataTable.Copy();
+                            _originalDataTable = null;
+                        }
+                    }
+                    else
+                    {
+                        // データテーブルにフィルタを適用
+                        var filteredRows = _originalDataTable.Select(filterString);
+                        _virtualDataTable = _originalDataTable.Clone();
+
+                        foreach (var row in filteredRows)
+                        {
+                            _virtualDataTable.ImportRow(row);
+                        }
+                    }
+
+                    // UIを更新
+                    dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+                    dataGridViewResults.Invalidate();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Filter error: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// AdvancedDataGridViewの並べ替えイベントハンドラ
+        /// </summary>
+        private void dataGridViewResults_SortStringChanged(object sender, AdvancedDataGridView.SortEventArgs e)
+        {
+            if (_virtualModeEnabled && _virtualDataTable != null)
+            {
+                try
+                {
+                    // 並べ替え文字列を取得
+                    var sortString = dataGridViewResults.SortString;
+
+                    // 並べ替えなしの場合は処理しない
+                    if (string.IsNullOrEmpty(sortString))
+                    {
+                        return;
+                    }
+
+                    // データテーブルに並べ替えを適用
+                    _virtualDataTable.DefaultView.Sort = sortString;
+
+                    // 並べ替えられたビューから新しいDataTableを生成
+                    _virtualDataTable = _virtualDataTable.DefaultView.ToTable();
+
+                    // UIを更新
+                    dataGridViewResults.Invalidate();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Sort error: {ex.Message}");
+                }
+            }
         }
 
         /// <summary>
@@ -168,15 +277,31 @@ namespace CosmosDBClient
                 buttonDelete.Enabled = true;
                 buttonUpdate.Enabled = true;
 
-                dataGridViewResults.ReadOnly = true;
+                // 大量データの場合は進捗表示を行う
+                ShowProgressUI(true, "データを読み込んでいます...");
+
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
-                await UpdateDatagridView();
+
+                if (_virtualModeEnabled && GetMaxItemCount() > 1000)
+                {
+                    // 大量データの場合はバッファリングを使用
+                    await UpdateVirtualDataGridView(BuildQuery(_textBoxQuery.Text, GetMaxItemCount()), 1000);
+                }
+                else
+                {
+                    // 通常の更新処理
+                    await UpdateDatagridView();
+                }
+
                 DisplayContainerSettings();
                 _jsonData.Text = string.Empty;
 
                 ResizeRowHeader();
 
                 buttonInsert.Enabled = true;
+
+                // メモリ最適化
+                OptimizeMemoryUsage();
             }
             catch (Exception ex)
             {
@@ -184,8 +309,165 @@ namespace CosmosDBClient
             }
             finally
             {
-                dataGridViewResults.ReadOnly = false;
+                ShowProgressUI(false);
             }
+        }
+
+        /// <summary>
+        /// 進捗表示用UIの表示/非表示を切り替える
+        /// </summary>
+        private void ShowProgressUI(bool show, string message = "")
+        {
+            // この例ではステータスバーに進捗を表示
+            if (show)
+            {
+                toolStripStatusLabel1.Text = message;
+                Cursor = Cursors.WaitCursor;
+                Application.DoEvents();
+            }
+            else
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        /// <summary>
+        /// 進捗状況を更新する
+        /// </summary>
+        private void UpdateProgressUI(string message)
+        {
+            toolStripStatusLabel1.Text = message;
+            Application.DoEvents();
+        }
+
+        /// <summary>
+        /// 大量データ処理時のメモリ使用状況を最適化
+        /// </summary>
+        private void OptimizeMemoryUsage()
+        {
+            // 大規模データセットの場合、明示的なガベージコレクションを実行
+            if (_virtualDataTable != null && _virtualDataTable.Rows.Count > 10000)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+        }
+
+        /// <summary>
+        /// バッファリングを活用した仮想モードの更新処理
+        /// </summary>
+        private async Task UpdateVirtualDataGridView(string query, int batchSize = 1000)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            try
+            {
+                // 新しいデータテーブルを作成
+                var newDataTable = new DataTable();
+                var totalItems = 0;
+                var totalRequestCharge = 0.0;
+                var batchCount = 0;
+
+                // バッチ処理によるデータ取得
+                var queryDefinition = new QueryDefinition(query);
+                var queryResultSetIterator = _cosmosDBService.CosmosContainer.GetItemQueryIterator<dynamic>(
+                    queryDefinition, requestOptions: new QueryRequestOptions { MaxItemCount = batchSize });
+
+                while (queryResultSetIterator.HasMoreResults)
+                {
+                    var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    batchCount++;
+                    totalRequestCharge += currentResultSet.RequestCharge;
+                    totalItems += currentResultSet.Count;
+
+                    // 進捗状況の更新
+                    UpdateProgressUI($"Loading batch {batchCount}, items: {totalItems}...");
+
+                    // バッチごとのデータをDataTableに追加
+                    foreach (var item in currentResultSet)
+                    {
+                        var jsonObject = JObject.Parse(item.ToString());
+                        AddRowToDataTable(jsonObject, newDataTable);
+                    }
+
+                    // 一定間隔でUIを更新し応答性を維持
+                    if (batchCount % 5 == 0)
+                    {
+                        Application.DoEvents();
+                    }
+                }
+
+                // 読み込み完了したデータで更新
+                _virtualDataTable = newDataTable;
+
+                // カラム情報の設定
+                dataGridViewResults.Columns.Clear();
+                _columnNames = new List<string>();
+
+                foreach (DataColumn column in _virtualDataTable.Columns)
+                {
+                    _columnNames.Add(column.ColumnName);
+                    var col = new DataGridViewTextBoxColumn
+                    {
+                        Name = column.ColumnName,
+                        HeaderText = column.ColumnName,
+                        DataPropertyName = column.ColumnName
+                    };
+                    dataGridViewResults.Columns.Add(col);
+                }
+
+                // 読み取り専用列の設定
+                await SetReadOnlyColumnsForVirtualMode();
+
+                // 行数を設定
+                dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+
+                // ステータス更新
+                stopwatch.Stop();
+                UpdateStatusStrip(totalRequestCharge, totalItems, batchCount, stopwatch.ElapsedMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+                stopwatch.Stop();
+            }
+        }
+
+        /// <summary>
+        /// JSONオブジェクトからデータテーブルに行を追加する
+        /// </summary>
+        /// <param name="jsonObject">JSONオブジェクト</param>
+        /// <param name="dataTable">データテーブル</param>
+        private void AddRowToDataTable(JObject jsonObject, DataTable dataTable)
+        {
+            var row = dataTable.NewRow();
+            var jstTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Tokyo Standard Time");
+
+            foreach (var property in jsonObject.Properties())
+            {
+                // カラムが存在するか確認
+                if (!dataTable.Columns.Contains(property.Name))
+                {
+                    // 存在しないカラムは動的に追加
+                    dataTable.Columns.Add(property.Name, typeof(string));
+                }
+
+                // 日付項目をJSTに変換してフォーマット
+                if (DateTime.TryParse(property.Value?.ToString(), out var dateValue))
+                {
+                    var jstDate = TimeZoneInfo.ConvertTimeFromUtc(dateValue.ToUniversalTime(), jstTimeZone);
+                    row[property.Name] = jstDate.ToString("yyyy-MM-ddTHH:mm:ss"); // タイムゾーン情報なし
+                }
+                else
+                {
+                    // 新しいカラムに値を設定
+                    row[property.Name] = property.Value ?? string.Empty;
+                }
+            }
+
+            // 行をDataTableに追加
+            dataTable.Rows.Add(row);
         }
 
         /// <summary>
@@ -215,11 +497,398 @@ namespace CosmosDBClient
             var query = BuildQuery(_textBoxQuery.Text, GetMaxItemCount());
             var result = await _cosmosDBService.FetchDataWithStatusAsync(query, GetMaxItemCount());
 
-            dataGridViewResults.DataSource = null;
-            SetReadOnlyColumns(result.Data);
-            dataGridViewResults.DataSource = result.Data;
+            if (_virtualModeEnabled)
+            {
+                // 仮想モードの場合、DataTableを内部に保持して手動で管理
+                _virtualDataTable = result.Data;
+                _originalDataTable = null; // フィルタリング状態をリセット
+
+                // カラム情報の設定
+                dataGridViewResults.Columns.Clear();
+                _columnNames = new List<string>();
+
+                foreach (DataColumn column in _virtualDataTable.Columns)
+                {
+                    _columnNames.Add(column.ColumnName);
+                    var col = new DataGridViewTextBoxColumn
+                    {
+                        Name = column.ColumnName,
+                        HeaderText = column.ColumnName,
+                        DataPropertyName = column.ColumnName
+                    };
+                    dataGridViewResults.Columns.Add(col);
+                }
+
+                // 行数を設定
+                dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+
+                // 読み取り専用列の設定
+                await SetReadOnlyColumnsForVirtualMode();
+            }
+            else
+            {
+                // 通常モードの場合は従来通りDataSourceを使用
+                dataGridViewResults.DataSource = null;
+                SetReadOnlyColumns(result.Data);
+                dataGridViewResults.DataSource = result.Data;
+            }
 
             UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
+        }
+
+        /// <summary>
+        /// 仮想モード時のセル値取得イベントハンドラ
+        /// </summary>
+        private void dataGridViewResults_CellValueNeeded(object sender, DataGridViewCellValueEventArgs e)
+        {
+            if (_virtualDataTable != null && e.RowIndex < _virtualDataTable.Rows.Count && e.ColumnIndex < _columnNames.Count)
+            {
+                try
+                {
+                    string columnName = _columnNames[e.ColumnIndex];
+                    e.Value = _virtualDataTable.Rows[e.RowIndex][columnName];
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"CellValueNeeded error: {ex.Message} at row {e.RowIndex}, column {e.ColumnIndex}");
+                    e.Value = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 仮想モード時のセル値変更イベントハンドラ
+        /// </summary>
+        private void dataGridViewResults_CellValuePushed(object sender, DataGridViewCellValueEventArgs e)
+        {
+            if (_virtualDataTable != null && e.RowIndex < _virtualDataTable.Rows.Count && e.ColumnIndex < _columnNames.Count)
+            {
+                try
+                {
+                    string columnName = _columnNames[e.ColumnIndex];
+
+                    // 型変換を適切に処理
+                    var column = _virtualDataTable.Columns[columnName];
+                    object typedValue = e.Value;
+
+                    // DBNull対応
+                    if (e.Value == null || string.IsNullOrEmpty(e.Value.ToString()))
+                    {
+                        typedValue = DBNull.Value;
+                    }
+                    else if (column.DataType == typeof(int) && int.TryParse(e.Value.ToString(), out int intValue))
+                    {
+                        typedValue = intValue;
+                    }
+                    else if (column.DataType == typeof(decimal) && decimal.TryParse(e.Value.ToString(), out decimal decimalValue))
+                    {
+                        typedValue = decimalValue;
+                    }
+                    // その他の型変換処理をここに追加
+
+                    _virtualDataTable.Rows[e.RowIndex][columnName] = typedValue;
+
+                    // 編集されたことをマークして必要なUIを更新
+                    if (!_virtualDataTable.Rows[e.RowIndex].RowState.HasFlag(DataRowState.Modified))
+                    {
+                        _virtualDataTable.Rows[e.RowIndex].SetModified();
+                    }
+
+                    // セルのスタイル更新
+                    dataGridViewResults.InvalidateCell(e.ColumnIndex, e.RowIndex);
+
+                    // 重要な列（id, パーティションキーなど）が変更された場合の処理
+                    if (columnName == "id" || IsPartitionKeyColumn(columnName))
+                    {
+                        // 重要な値の変更を通知する場合はここで実装
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"CellValuePushed error: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 指定された列名がパーティションキーの列かどうかをチェック
+        /// </summary>
+        private bool IsPartitionKeyColumn(string columnName)
+        {
+            try
+            {
+                var containerProperties = _cosmosDBService.GetContainerPropertiesAsync().Result;
+                var partitionKeyPaths = containerProperties.PartitionKeyPaths.Select(p => p.Trim('/')).ToArray();
+                return partitionKeyPaths.Contains(columnName);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 仮想モード時の読み取り専用列設定
+        /// </summary>
+        private async Task SetReadOnlyColumnsForVirtualMode()
+        {
+            try
+            {
+                var containerProperties = await _cosmosDBService.GetContainerPropertiesAsync();
+                var partitionKeyPaths = containerProperties.PartitionKeyPaths.Select(p => p.Trim('/')).ToArray();
+                var readOnlyColumns = _cosmosDBService.systemColumns.Concat(partitionKeyPaths).ToArray();
+
+                // 読み取り専用セルの書式用のスタイルを一度だけ作成
+                var readOnlyStyle = new DataGridViewCellStyle
+                {
+                    BackColor = System.Drawing.Color.DarkGray,
+                    ForeColor = System.Drawing.Color.White
+                };
+
+                // ReadOnlyColumnsハッシュセットを作成（Contains検索を高速化）
+                var readOnlyColumnSet = new HashSet<string>(readOnlyColumns);
+
+                foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+                {
+                    if (readOnlyColumnSet.Contains(column.Name))
+                    {
+                        column.ReadOnly = true;
+                        column.DefaultCellStyle = readOnlyStyle;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+        }
+
+        /// <summary>
+        /// DataGridViewのスクロール位置を指定行に移動する
+        /// </summary>
+        /// <param name="rowIndex">表示する行インデックス</param>
+        private void ScrollToRow(int rowIndex)
+        {
+            if (rowIndex >= 0 && rowIndex < dataGridViewResults.RowCount)
+            {
+                try
+                {
+                    // スクロールを最適化（画面中央に表示）
+                    int displayedRows = dataGridViewResults.DisplayedRowCount(false);
+                    int firstDisplayed = Math.Max(0, rowIndex - (displayedRows / 2));
+
+                    dataGridViewResults.FirstDisplayedScrollingRowIndex = firstDisplayed;
+
+                    // 行を選択
+                    dataGridViewResults.ClearSelection();
+                    dataGridViewResults.Rows[rowIndex].Selected = true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error scrolling to row: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// データグリッド内のデータを検索
+        /// </summary>
+        /// <param name="searchText">検索文字列</param>
+        /// <param name="matchCase">大文字/小文字を区別するか</param>
+        /// <param name="wholeWord">単語単位で検索するか</param>
+        private void SearchInGrid(string searchText, bool matchCase = false, bool wholeWord = false)
+        {
+            if (string.IsNullOrEmpty(searchText) || _virtualDataTable == null)
+            {
+                return;
+            }
+
+            var comparisonType = matchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            dataGridViewResults.ClearSelection();
+
+            // 検索対象のセルを特定
+            List<(int RowIndex, int ColIndex)> matches = new List<(int, int)>();
+
+            for (int rowIndex = 0; rowIndex < _virtualDataTable.Rows.Count; rowIndex++)
+            {
+                for (int colIndex = 0; colIndex < _columnNames.Count; colIndex++)
+                {
+                    string cellValue = _virtualDataTable.Rows[rowIndex][_columnNames[colIndex]]?.ToString() ?? "";
+
+                    bool isMatch;
+                    if (wholeWord)
+                    {
+                        // 単語単位での検索
+                        isMatch = cellValue.Equals(searchText, comparisonType) ||
+                                  cellValue.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                          .Any(word => word.Equals(searchText, comparisonType));
+                    }
+                    else
+                    {
+                        // 部分一致検索
+                        isMatch = cellValue.IndexOf(searchText, comparisonType) >= 0;
+                    }
+
+                    if (isMatch)
+                    {
+                        matches.Add((rowIndex, colIndex));
+                    }
+                }
+            }
+
+            // 検索結果があれば最初の一致にスクロール
+            if (matches.Count > 0)
+            {
+                var firstMatch = matches[0];
+                ScrollToRow(firstMatch.RowIndex);
+                dataGridViewResults.CurrentCell = dataGridViewResults[firstMatch.ColIndex, firstMatch.RowIndex];
+
+                // 検索結果の表示
+                MessageBox.Show($"{matches.Count} matches found.", "Search Results");
+            }
+            else
+            {
+                MessageBox.Show("No matches found.", "Search Results");
+            }
+        }
+
+        /// <summary>
+        /// 仮想モード時のDataGridViewのセルがクリックされた際の処理
+        /// </summary>
+        private void dataGridViewResults_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0)
+            {
+                return;
+            }
+
+            var jsonObject = BuildJsonObjectFromRow(e.RowIndex);
+
+            // JSON文字列を整形し、改行とインデントを処理
+            var formattedJson = JsonConvert.SerializeObject(jsonObject, Formatting.Indented);
+            _jsonData.Text = formattedJson;
+
+            if (e.ColumnIndex > -1)
+            {
+                var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString() ?? string.Empty;
+                richTextBoxSelectedCell.Text = cellValue;
+
+                if (_useHyperlinkHandler && (
+                    dataGridViewResults.Columns[e.ColumnIndex].HeaderText == "folderName" ||
+                    dataGridViewResults.Columns[e.ColumnIndex].HeaderText == "fullPath"
+                    ))
+                {
+                    _hyperlinkHandler.MarkLinkTextFromText(richTextBoxSelectedCell);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 選択された行のデータからJSONオブジェクトを構築
+        /// </summary>
+        /// <param name="rowIndex">行インデックス</param>
+        /// <returns>構築されたJSONオブジェクト</returns>
+        private JObject BuildJsonObjectFromRow(int rowIndex)
+        {
+            var jsonObject = new JObject();
+
+            if (_virtualModeEnabled && _virtualDataTable != null && rowIndex < _virtualDataTable.Rows.Count)
+            {
+                // 仮想モードの場合はDataTableから直接データを取得（効率的）
+                var dataRow = _virtualDataTable.Rows[rowIndex];
+
+                foreach (var columnName in _columnNames)
+                {
+                    var value = dataRow[columnName];
+                    if (value is DBNull)
+                    {
+                        jsonObject[columnName] = null;
+                    }
+                    else
+                    {
+                        jsonObject[columnName] = TryParseJson(value.ToString());
+                    }
+                }
+            }
+            else
+            {
+                // 通常モードの場合はDataGridViewのセルから取得
+                foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+                {
+                    var item = dataGridViewResults.Rows[rowIndex].Cells[column.Index].Value?.ToString() ?? string.Empty;
+                    jsonObject[column.HeaderText] = TryParseJson(item);
+                }
+            }
+
+            return jsonObject;
+        }
+
+        /// <summary>
+        /// 選択されたすべての行からデータを取得してJSON配列を構築する
+        /// </summary>
+        /// <param name="selectedRows">選択された行のコレクション</param>
+        /// <returns>JSON配列</returns>
+        private JArray BuildJsonArrayFromSelectedRows(DataGridViewSelectedRowCollection selectedRows)
+        {
+            var jsonArray = new JArray();
+
+            if (selectedRows.Count == 0)
+            {
+                return jsonArray;
+            }
+
+            // 仮想モードの場合
+            if (_virtualModeEnabled && _virtualDataTable != null)
+            {
+                foreach (DataGridViewRow row in selectedRows)
+                {
+                    if (row.Index < _virtualDataTable.Rows.Count)
+                    {
+                        var dataRow = _virtualDataTable.Rows[row.Index];
+                        var rowObject = new JObject();
+
+                        foreach (DataColumn column in _virtualDataTable.Columns)
+                        {
+                            var value = dataRow[column];
+                            if (value is DBNull)
+                            {
+                                rowObject[column.ColumnName] = null;
+                            }
+                            else
+                            {
+                                rowObject[column.ColumnName] = JToken.FromObject(value);
+                            }
+                        }
+
+                        jsonArray.Add(rowObject);
+                    }
+                }
+            }
+            else // 通常モードの場合
+            {
+                foreach (DataGridViewRow row in selectedRows)
+                {
+                    var rowObject = new JObject();
+
+                    foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+                    {
+                        var value = row.Cells[column.Index].Value;
+                        if (value == null || value is DBNull)
+                        {
+                            rowObject[column.Name] = null;
+                        }
+                        else
+                        {
+                            rowObject[column.Name] = JToken.FromObject(value);
+                        }
+                    }
+
+                    jsonArray.Add(rowObject);
+                }
+            }
+
+            return jsonArray;
         }
 
         /// <summary>
@@ -547,48 +1216,6 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// DataGridView のセルがクリックされた際に、そのセルのデータを表示する
-        /// </summary>
-        /// <param name="sender">イベントの送信元オブジェクト</param>
-        /// <param name="e">セルクリックイベントデータ</param>
-        private void dataGridViewResults_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex < 0)
-            {
-                return;
-            }
-
-            var jsonObject = new JObject();
-            foreach (DataGridViewColumn column in dataGridViewResults.Columns)
-            {
-                var item = dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Value?.ToString() ?? string.Empty;
-                jsonObject[column.HeaderText] = TryParseJson(item);
-            }
-
-            // JSON文字列を整形し、改行とインデントを処理
-            var formattedJson = JsonConvert.SerializeObject(jsonObject, Formatting.Indented);
-            _jsonData.Text = formattedJson;
-
-            //if (_useHyperlinkHandler)
-            //{
-            //    _hyperlinkHandler.MarkLinkTextFromJson(JsonData);
-            //}
-
-            if (e.ColumnIndex > -1)
-            {
-                var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
-                richTextBoxSelectedCell.Text = cellValue;
-
-                if (_useHyperlinkHandler && (
-                    dataGridViewResults.Columns[e.ColumnIndex].HeaderText == "folderName" || dataGridViewResults.Columns[e.ColumnIndex].HeaderText == "fullPath"
-                    ))
-                {
-                    _hyperlinkHandler.MarkLinkTextFromText(richTextBoxSelectedCell);
-                }
-            }
-        }
-
-        /// <summary>
         /// JSON文字列を再帰的にパースし、JTokenオブジェクトに変換する
         /// Cosmos DB で扱える型を考慮し、整数と浮動小数点数を区別
         /// </summary>
@@ -673,12 +1300,31 @@ namespace CosmosDBClient
         /// <param name="e">セルフォーマットイベントデータ</param>
         private void dataGridViewResults_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+            if (e.RowIndex < 0 || e.ColumnIndex < 0)
             {
+                return;
+            }
+
+            if (_virtualModeEnabled)
+            {
+                // 仮想モードの場合、列の読み取り専用状態を直接確認
+                var column = dataGridViewResults.Columns[e.ColumnIndex];
                 if (column.ReadOnly)
                 {
-                    dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.BackColor = System.Drawing.Color.DarkGray;
-                    dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.ForeColor = System.Drawing.Color.White;
+                    e.CellStyle.BackColor = System.Drawing.Color.DarkGray;
+                    e.CellStyle.ForeColor = System.Drawing.Color.White;
+                }
+            }
+            else
+            {
+                // 通常モードの場合、従来通りの処理
+                foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+                {
+                    if (column.ReadOnly)
+                    {
+                        dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.BackColor = System.Drawing.Color.DarkGray;
+                        dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.ForeColor = System.Drawing.Color.White;
+                    }
                 }
             }
         }
@@ -726,50 +1372,35 @@ namespace CosmosDBClient
             stopwatch.Start();
 
             var deletedIds = new List<string>();
+            int deletedCount = 0;
 
             try
             {
                 dataGridViewResults.ReadOnly = true;
+                dataGridViewResults.SuspendLayout();
+
                 var tasks = new List<Task>();
                 var maxDegreeOfParallelism = Environment.ProcessorCount;
                 var semaphore = new SemaphoreSlim(maxDegreeOfParallelism);
+
+                // 選択行のインデックスをコピー (削除後も元のインデックスを保持するため)
+                var rowIndexes = new List<int>();
                 foreach (DataGridViewRow row in selectedRows)
+                {
+                    rowIndexes.Add(row.Index);
+                }
+
+                // 降順でソート（インデックスの大きい行から削除して、インデックスのズレを防ぐ）
+                rowIndexes.Sort((a, b) => b.CompareTo(a));
+
+                foreach (var rowIndex in rowIndexes)
                 {
                     await semaphore.WaitAsync();
                     tasks.Add(Task.Run(async () =>
                     {
                         try
                         {
-                            // 各カラムのセルの値を取得し、JSONオブジェクトを構築
-                            var jsonObject = new JObject();
-
-                            foreach (DataGridViewCell cell in row.Cells)
-                            {
-                                // カラム名をキーにし、セルの値を適切に設定
-                                var columnName = dataGridViewResults.Columns[cell.ColumnIndex].Name;
-                                var cellValue = cell.Value;
-
-                                if (cellValue is DBNull || cellValue is null)
-                                {
-                                    jsonObject[columnName] = null;
-                                }
-                                else if (cellValue is string || cellValue is DateTime)
-                                {
-                                    jsonObject[columnName] = cellValue.ToString();
-                                }
-                                else if (cellValue is bool)
-                                {
-                                    jsonObject[columnName] = (bool)cellValue;
-                                }
-                                else if (cellValue is double || cellValue is float || cellValue is decimal)
-                                {
-                                    jsonObject[columnName] = Convert.ToDouble(cellValue);
-                                }
-                                else
-                                {
-                                    jsonObject[columnName] = cellValue.ToString();
-                                }
-                            }
+                            JObject jsonObject = BuildJsonObjectFromRow(rowIndex);
 
                             var id = jsonObject["id"]?.ToString();
                             if (!string.IsNullOrEmpty(id))
@@ -781,6 +1412,9 @@ namespace CosmosDBClient
                             }
 
                             await DeleteRow(jsonObject);
+
+                            // 削除件数をカウント
+                            Interlocked.Increment(ref deletedCount);
                         }
                         finally
                         {
@@ -791,10 +1425,22 @@ namespace CosmosDBClient
 
                 await Task.WhenAll(tasks);
 
+                // 仮想モードの場合は、キャッシュされたDataTableからも削除
+                if (_virtualModeEnabled && _virtualDataTable != null)
+                {
+                    // UI更新を最小限にするため一度だけUpdateDatagridViewを呼ぶ
+                    await UpdateDatagridView();
+                }
+                else
+                {
+                    // 通常モードの場合は従来通りの更新
+                    await UpdateDatagridView();
+                }
+
                 // タイマーを停止
                 stopwatch.Stop();
 
-                var message = $"Finish! Elapsed: {stopwatch.Elapsed.TotalSeconds}Sec\n";
+                var message = $"Finish! Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F2}s - Deleted: {deletedCount} records\n";
                 // 削除したIDをメッセージボックスで表示
                 if (deletedIds.Count > 10)
                 {
@@ -806,9 +1452,6 @@ namespace CosmosDBClient
                 }
 
                 MessageBox.Show(message, "Info");
-
-                // DataGridViewの更新
-                await UpdateDatagridView();
             }
             catch (Exception ex)
             {
@@ -816,6 +1459,7 @@ namespace CosmosDBClient
             }
             finally
             {
+                dataGridViewResults.ResumeLayout();
                 dataGridViewResults.ReadOnly = false;
             }
         }
@@ -835,6 +1479,39 @@ namespace CosmosDBClient
             var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
             var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
+        }
+
+        /// <summary>
+        /// 仮想モードで表示中のデータテーブルに新しい行を追加
+        /// </summary>
+        /// <param name="newRow">追加する行データ</param>
+        private void AddRowToVirtualTable(DataRow newRow)
+        {
+            if (_virtualDataTable != null)
+            {
+                _virtualDataTable.Rows.Add(newRow);
+
+                // UIの行数を更新
+                dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+
+                // 必要に応じてスクロール位置を調整
+                dataGridViewResults.FirstDisplayedScrollingRowIndex = _virtualDataTable.Rows.Count - 1;
+            }
+        }
+
+        /// <summary>
+        /// 仮想モードで表示中のデータテーブルから行を削除
+        /// </summary>
+        /// <param name="rowIndex">削除する行のインデックス</param>
+        private void RemoveRowFromVirtualTable(int rowIndex)
+        {
+            if (_virtualDataTable != null && rowIndex >= 0 && rowIndex < _virtualDataTable.Rows.Count)
+            {
+                _virtualDataTable.Rows.RemoveAt(rowIndex);
+
+                // UIの行数を更新
+                dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+            }
         }
     }
 }
