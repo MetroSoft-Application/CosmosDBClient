@@ -3,6 +3,9 @@ using System.Diagnostics;
 using Microsoft.Azure.Cosmos.Table;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Text;
+using System.Security.Cryptography;
+using System.Net.Http;
 
 namespace CosmosDBClient.TableAPI
 {
@@ -27,6 +30,21 @@ namespace CosmosDBClient.TableAPI
         public readonly string[] systemColumns = { "PartitionKey", "RowKey", "Timestamp", "ETag" };
 
         /// <summary>
+        /// 接続文字列（REST API用）
+        /// </summary>
+        private readonly string _connectionString;  
+        
+              /// <summary>
+        /// アカウント名
+        /// </summary>
+        private string _accountName;
+
+        /// <summary>
+        /// アカウントキー
+        /// </summary>
+        private string _accountKey;
+
+        /// <summary>
         /// コンストラクタ - 接続文字列とテーブル名でサービスを初期化
         /// </summary>
         /// <param name="connectionString">ストレージアカウントの接続文字列</param>
@@ -41,7 +59,11 @@ namespace CosmosDBClient.TableAPI
             if (string.IsNullOrEmpty(tableName))
             {
                 throw new ArgumentException("テーブル名が設定されていません", nameof(tableName));
-            }
+            }            // 接続文字列を保存
+            _connectionString = connectionString;
+
+            // 接続文字列からアカウント名とキーを抽出
+            ParseConnectionString(connectionString);
 
             // ストレージアカウントへの接続
             var storageAccount = CloudStorageAccount.Parse(connectionString);
@@ -272,15 +294,24 @@ namespace CosmosDBClient.TableAPI
                         break;
                     }
                 }
-                while (continuationToken != null);
-
-                result.Data = dataTable;
+                while (continuationToken != null);                result.Data = dataTable;
                 result.DocumentCount = documentCount;
                 result.PageCount = pageCount;
                 result.TotalRequestCharge = totalRequestCharge; // Table APIでは0のまま
             }
+            catch (StorageException ex) when (ex.RequestInformation?.HttpStatusCode == 400)
+            {
+                // クエリ構文エラーや不正なフィルター式の場合
+                throw new Exception($"ODataクエリ構文エラー: {ex.Message}\n詳細: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage ?? "不明なエラー"}", ex);
+            }
+            catch (StorageException ex)
+            {
+                // その他のStorage例外
+                throw new Exception($"Table APIエラー: {ex.Message}\nステータスコード: {ex.RequestInformation?.HttpStatusCode}\n詳細: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage ?? "不明なエラー"}", ex);
+            }
             catch (Exception ex)
             {
+                // その他の一般的な例外
                 throw new Exception($"テーブルデータ取得中にエラーが発生しました: {ex.Message}", ex);
             }
             finally
@@ -544,6 +575,153 @@ namespace CosmosDBClient.TableAPI
             }
 
             return filterText;
+        }
+
+        /// <summary>
+        /// テーブルを作成する
+        /// </summary>
+        /// <returns>テーブル作成の成功/失敗と結果メッセージ</returns>
+        public async Task<(bool Success, string Message)> CreateTableAsync()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(Table.Name))
+                {
+                    return (false, "テーブル名が設定されていません");
+                }
+
+                bool exists = await Table.ExistsAsync();
+                if (exists)
+                {
+                    return (true, $"テーブル '{Table.Name}' は既に存在します。");
+                }
+
+                // テーブルの作成
+                await Table.CreateIfNotExistsAsync();
+                return (true, $"テーブル '{Table.Name}' を作成しました。");
+            }
+            catch (StorageException ex)
+            {
+                return (false, $"Storage例外が発生しました: {ex.Message}\nステータスコード: {ex.RequestInformation?.HttpStatusCode}\n詳細: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"例外が発生しました: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Table APIのインデックスポリシーを取得する
+        /// </summary>
+        /// <returns>インデックスポリシーのJSONオブジェクト</returns>
+        public async Task<JObject> GetIndexingPolicyAsync()
+        {
+            try
+            {
+                // REST APIエンドポイントを構築
+                var resourceUri = $"https://{_accountName}.table.cosmos.azure.com:443/";
+                var resourcePath = $"Tables('{Table.Name}')";
+                var uri = new Uri($"{resourceUri}{resourcePath}");
+
+                using (var httpClient = new HttpClient())
+                {
+                    // 認証ヘッダーを作成
+                    var utcNow = DateTime.UtcNow;
+                    var httpMethod = "GET";
+                    var authHeader = CreateAuthorizationHeader(httpMethod, resourcePath, utcNow);
+
+                    httpClient.DefaultRequestHeaders.Add("Authorization", authHeader);
+                    httpClient.DefaultRequestHeaders.Add("x-ms-date", utcNow.ToString("R"));
+                    httpClient.DefaultRequestHeaders.Add("x-ms-version", "2020-04-08");
+
+                    var response = await httpClient.GetAsync(uri);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        var jsonResponse = JObject.Parse(content);
+
+                        // インデックスポリシーが含まれている場合は返す
+                        if (jsonResponse.ContainsKey("IndexingPolicy"))
+                        {
+                            return jsonResponse["IndexingPolicy"] as JObject;
+                        }
+
+                        // デフォルトのインデックスポリシーを返す
+                        return CreateDefaultTableIndexingPolicy();
+                    }
+                    else
+                    {
+                        // エラーの場合はデフォルトを返す
+                        return CreateDefaultTableIndexingPolicy();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // エラーの場合はデフォルトのインデックスポリシーを返す
+                return CreateDefaultTableIndexingPolicy();
+            }
+        }
+
+        /// <summary>
+        /// Table API用のデフォルトインデックスポリシーを作成
+        /// </summary>
+        /// <returns>デフォルトインデックスポリシー</returns>
+        private JObject CreateDefaultTableIndexingPolicy()
+        {
+            return JObject.Parse(@"{
+                ""indexingMode"": ""consistent"",
+                ""automatic"": true,
+                ""includedPaths"": [
+                    {
+                        ""path"": ""/*""
+                    }
+                ],
+                ""excludedPaths"": [
+                    {
+                        ""path"": ""/\""_etag\""/?"" 
+                    }
+                ]
+            }");
+        }
+
+        /// <summary>
+        /// REST API用の認証ヘッダーを作成
+        /// </summary>
+        /// <param name="httpMethod">HTTPメソッド</param>
+        /// <param name="resourcePath">リソースパス</param>
+        /// <param name="utcNow">UTC日時</param>
+        /// <returns>認証ヘッダー</returns>
+        private string CreateAuthorizationHeader(string httpMethod, string resourcePath, DateTime utcNow)
+        {
+            var stringToSign = $"{httpMethod}\n\n\n{utcNow:R}\n/{_accountName}/{resourcePath}";
+            
+            using (var hmacSha256 = new HMACSHA256(Convert.FromBase64String(_accountKey)))
+            {
+                var signature = Convert.ToBase64String(hmacSha256.ComputeHash(Encoding.UTF8.GetBytes(stringToSign)));
+                return $"SharedKey {_accountName}:{signature}";
+            }
+        }
+
+        /// <summary>
+        /// 接続文字列からアカウント名とキーを抽出
+        /// </summary>
+        /// <param name="connectionString">接続文字列</param>
+        private void ParseConnectionString(string connectionString)
+        {
+            var parts = connectionString.Split(';');
+            foreach (var part in parts)
+            {
+                if (part.StartsWith("AccountName="))
+                {
+                    _accountName = part.Substring("AccountName=".Length);
+                }
+                else if (part.StartsWith("AccountKey="))
+                {
+                    _accountKey = part.Substring("AccountKey=".Length);
+                }
+            }
         }
     }
 }
