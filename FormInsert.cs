@@ -1,6 +1,9 @@
 ﻿using CosmosDBClient.CosmosDB;
+using CosmosDBClient.TableAPI;
 using FastColoredTextBoxNS;
+using Microsoft.Azure.Cosmos.Table;
 using Newtonsoft.Json.Linq;
+using System.Data;
 
 namespace CosmosDBClient
 {
@@ -10,10 +13,13 @@ namespace CosmosDBClient
     public partial class FormInsert : Form
     {
         private CosmosDBService _cosmosDBService;
+        private TableAPIService _tableAPIService;
         private FastColoredTextBox _jsonData;
+        private ApiMode _apiMode;
+        private DataRow _tableRow;
 
         /// <summary>
-        /// 新しい <see cref="FormInsert"/> クラスのインスタンスを初期化する
+        /// 新しい <see cref="FormInsert"/> クラスのインスタンスを初期化する（SQL APIモード用）
         /// </summary>
         /// <param name="cosmosDBService">CosmosDBService</param>
         /// <param name="json">jsonテキスト</param>
@@ -21,6 +27,7 @@ namespace CosmosDBClient
         {
             InitializeComponent();
             _cosmosDBService = cosmosDBService;
+            _apiMode = ApiMode.Sql;
             var jsonObject = default(JObject);
 
             _jsonData = new FastColoredTextBox();
@@ -66,6 +73,63 @@ namespace CosmosDBClient
         }
 
         /// <summary>
+        /// 新しい <see cref="FormInsert"/> クラスのインスタンスを初期化する（Table APIモード用）
+        /// </summary>
+        /// <param name="tableAPIService">TableAPIService</param>
+        /// <param name="tableRow">編集対象のTableAPIエンティティ（DataRow形式）、新規作成時はnull</param>
+        public FormInsert(TableAPIService tableAPIService, DataRow tableRow = null)
+        {
+            InitializeComponent();
+            _tableAPIService = tableAPIService;
+            _tableRow = tableRow;
+            _apiMode = ApiMode.Table;
+
+            _jsonData = new FastColoredTextBox();
+            _jsonData.Language = Language.JSON;
+            _jsonData.Dock = DockStyle.Fill;
+            _jsonData.ImeMode = ImeMode.Hiragana;
+            _jsonData.BorderStyle = BorderStyle.Fixed3D;
+            _jsonData.BackColor = SystemColors.Window;
+            _jsonData.Font = new Font("Yu Gothic UI", 9);
+            _jsonData.WordWrap = true;
+            _jsonData.ShowLineNumbers = false;
+            panel1.Controls.Add(_jsonData);
+
+            // フォームのタイトルを変更
+            this.Text = "Table APIエンティティ挿入/更新";
+
+            if (tableRow != null)
+            {
+                // 既存エンティティの編集
+                var jsonEntity = new JObject();
+                foreach (DataColumn column in tableRow.Table.Columns)
+                {
+                    string columnName = column.ColumnName;
+                    if (!_tableAPIService.systemColumns.Contains(columnName))
+                    {
+                        var value = tableRow[columnName];
+                        jsonEntity[columnName] = value is DBNull ? null : JToken.FromObject(value);
+                    }
+                }
+                  // システム列（PartitionKeyとRowKey）は別途追加
+                jsonEntity["PartitionKey"] = tableRow["PartitionKey"].ToString();
+                jsonEntity["RowKey"] = tableRow["RowKey"].ToString();
+                
+                _jsonData.Text = jsonEntity.ToString(Newtonsoft.Json.Formatting.Indented);
+            }
+            else
+            {
+                // 新規エンティティの作成
+                var jsonEntity = new JObject
+                {                    ["PartitionKey"] = "",  // 必須フィールド
+                    ["RowKey"] = "",        // 必須フィールド
+                    ["SampleProperty"] = "値を入力"
+                };
+                  _jsonData.Text = jsonEntity.ToString(Newtonsoft.Json.Formatting.Indented);
+            }
+        }
+
+        /// <summary>
         /// レコードを挿入する
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
@@ -73,8 +137,8 @@ namespace CosmosDBClient
         private async void buttonJsonInsert_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show(
-                "Do you want to Insert your records?",
-                "Info",
+                "レコードを挿入/更新しますか？",
+                "確認",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question
             );
@@ -93,30 +157,122 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error");
+                MessageBox.Show($"JSONデータの解析エラー: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             try
             {
-                // JSONオブジェクトからidを取得
-                var id = jsonObject["id"].ToString();
-
-                // PartitionKeyを自動的に解決して取得
-                var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
-
-                // PartitionKeyに対応するキー項目を取得
-                var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
-
-                // Cosmos DBにUpsert処理を実行
-                var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
-
-                var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
-                MessageBox.Show(message, "Info");
+                if (_apiMode == ApiMode.Sql)
+                {
+                    // SQL APIモード
+                    await InsertSqlApiDocument(jsonObject);
+                }
+                else
+                {
+                    // Table APIモード
+                    await InsertTableApiEntity(jsonObject);
+                }
+                
+                // 挿入成功したらダイアログを閉じる
+                DialogResult = DialogResult.OK;
+                Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error");
+                MessageBox.Show(ex.Message, "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// SQL APIにドキュメントを挿入する
+        /// </summary>
+        /// <param name="jsonObject">挿入するJSONオブジェクト</param>
+        private async Task InsertSqlApiDocument(JObject jsonObject)
+        {
+            // JSONオブジェクトからidを取得
+            var id = jsonObject["id"]?.ToString();
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new Exception("idフィールドが指定されていないか無効です。");
+            }
+
+            // PartitionKeyを自動的に解決して取得
+            var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
+
+            // PartitionKeyに対応するキー項目を取得
+            var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
+
+            // Cosmos DBにUpsert処理を実行
+            var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
+
+            var message = $"挿入/更新が成功しました！\n\nId: {id}\nパーティションキー: {partitionKeyInfo}\n\n使用RU: {response.RequestCharge}";
+            MessageBox.Show(message, "情報", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        /// <summary>
+        /// Table APIにエンティティを挿入する
+        /// </summary>
+        /// <param name="jsonObject">挿入するJSONオブジェクト</param>
+        private async Task InsertTableApiEntity(JObject jsonObject)
+        {
+            // PartitionKeyとRowKeyの検証
+            var partitionKey = jsonObject["PartitionKey"]?.ToString();
+            var rowKey = jsonObject["RowKey"]?.ToString();
+
+            if (string.IsNullOrEmpty(partitionKey))
+            {
+                throw new Exception("PartitionKeyフィールドが指定されていないか無効です。");
+            }
+
+            if (string.IsNullOrEmpty(rowKey))
+            {
+                throw new Exception("RowKeyフィールドが指定されていないか無効です。");
+            }
+
+            // DynamicTableEntityの作成
+            var entity = new DynamicTableEntity(partitionKey, rowKey);
+
+            // プロパティを追加
+            foreach (var property in jsonObject.Properties())
+            {
+                if (property.Name != "PartitionKey" && property.Name != "RowKey")
+                {
+                    entity.Properties[property.Name] = CreateEntityProperty(property.Value);
+                }
+            }
+
+            // Tableにエンティティを挿入
+            await _tableAPIService.InsertOrReplaceEntityAsync(entity);
+
+            var message = $"エンティティの挿入/更新が成功しました！\n\nPartitionKey: {partitionKey}\nRowKey: {rowKey}";
+            MessageBox.Show(message, "情報", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        
+        /// <summary>
+        /// JTokenからEntityPropertyを作成する
+        /// </summary>
+        /// <param name="token">変換元のJToken</param>
+        /// <returns>EntityProperty</returns>
+        private EntityProperty CreateEntityProperty(JToken token)
+        {
+            switch (token.Type)
+            {
+                case JTokenType.Null:
+                    return EntityProperty.GeneratePropertyForString(null);
+                case JTokenType.String:
+                    return EntityProperty.GeneratePropertyForString(token.ToString());
+                case JTokenType.Boolean:
+                    return EntityProperty.GeneratePropertyForBool(token.Value<bool>());
+                case JTokenType.Integer:
+                    return EntityProperty.GeneratePropertyForInt(token.Value<int>());
+                case JTokenType.Float:
+                    return EntityProperty.GeneratePropertyForDouble(token.Value<double>());
+                case JTokenType.Date:
+                    return EntityProperty.GeneratePropertyForDateTimeOffset(token.Value<DateTimeOffset>());
+                default:
+                    // その他の型は文字列に変換
+                    return EntityProperty.GeneratePropertyForString(token.ToString());
             }
         }
     }

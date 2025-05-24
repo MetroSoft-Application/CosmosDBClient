@@ -243,8 +243,7 @@
             // 
             toolStripStatusLabel13.Name = "toolStripStatusLabel13";
             toolStripStatusLabel13.Size = new Size(23, 23);
-            // 
-            // cmbBoxContainerName
+            //            // cmbBoxContainerName
             // 
             cmbBoxContainerName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             cmbBoxContainerName.FormattingEnabled = true;
@@ -252,6 +251,7 @@
             cmbBoxContainerName.Name = "cmbBoxContainerName";
             cmbBoxContainerName.Size = new Size(148, 23);
             cmbBoxContainerName.TabIndex = 14;
+            cmbBoxContainerName.SelectedIndexChanged += cmbBoxContainerName_SelectedIndexChanged;
             // 
             // buttonInsert
             // 

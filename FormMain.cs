@@ -18,6 +18,7 @@ namespace CosmosDBClient
     public partial class FormMain : Form
     {
         private CosmosDBService _cosmosDBService;
+        private TableAPI.TableAPIService _tableAPIService;
         private readonly int _maxItemCount;
         private readonly bool _useHyperlinkHandler;
         private HyperlinkHandler _hyperlinkHandler;
@@ -29,6 +30,9 @@ namespace CosmosDBClient
         private DataTable _originalDataTable; // フィルタリング時のオリジナルデータ保持用
         private List<string> _columnNames;
         private bool _virtualModeEnabled = true;
+        private ApiMode _apiMode;
+        private Label _tableModeLabel;
+        private TextBox textBoxInfo;
 
         /// <summary>
         /// FormMain クラスのコンストラクタ設定を読み込み、CosmosDBServiceのインスタンスを初期化する
@@ -36,16 +40,12 @@ namespace CosmosDBClient
         public FormMain()
         {
             InitializeComponent();
-            AutoScaleMode = AutoScaleMode.Dpi;
-
-            SetupDatagridview();
+            AutoScaleMode = AutoScaleMode.Dpi;            SetupDatagridview();
 
             _textBoxQuery = new FastColoredTextBox();
-            _textBoxQuery.Language = Language.SQL;
             _textBoxQuery.Dock = DockStyle.Fill;
             _textBoxQuery.ImeMode = ImeMode.Hiragana;
             _textBoxQuery.BorderStyle = BorderStyle.Fixed3D;
-            _textBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
             _textBoxQuery.TabLength = 4;
             _textBoxQuery.WordWrap = false;
             _textBoxQuery.ShowLineNumbers = true;
@@ -75,15 +75,87 @@ namespace CosmosDBClient
             splitContainer3.Panel1.Controls.Add(_jsonData);
 
             var configuration = LoadConfiguration();
+              // APIモードの取得と初期化
+            _apiMode = CosmosDBFactory.InitializeFromConfig(configuration);
+            
+            // APIモードに応じたクエリテキストボックスの設定
+            SetupQueryTextBox();
+            
             _useHyperlinkHandler = configuration.GetValue<bool>("AppSettings:EnableHyperlinkHandler");
             _maxItemCount = configuration.GetValue<int>("AppSettings:MaxItemCount");
             var connectionString = configuration.GetValue<string>("AppSettings:ConnectionString");
-            var databaseName = configuration.GetValue<string>("AppSettings:DatabaseName");
-            var containerName = configuration.GetValue<string>("AppSettings:ContainerName");
+              // モードに応じた初期値とUI設定
+            if (CosmosDBFactory.IsSqlApiMode())
+            {
+                var databaseName = configuration.GetValue<string>("AppSettings:DatabaseName");
+                var containerName = configuration.GetValue<string>("AppSettings:ContainerName");
 
-            textBoxConnectionString.Text = connectionString;
-            textBoxDatabaseName.Text = databaseName;
-            cmbBoxContainerName.Text = containerName;
+                textBoxConnectionString.Text = connectionString;
+                textBoxDatabaseName.Text = databaseName;
+                cmbBoxContainerName.Text = containerName;
+                label2.Text = "Database";
+                label3.Text = "Container";
+                
+                this.Text = "Cosmos DB Client Tool - SQL API Mode";
+                
+                try
+                {
+                    _cosmosDBService = CosmosDBFactory.CreateSqlApiService(
+                        textBoxConnectionString.Text, 
+                        textBoxDatabaseName.Text, 
+                        cmbBoxContainerName.Text);
+                      if (!string.IsNullOrWhiteSpace(textBoxDatabaseName.Text))
+                    {
+                        LoadContainersIntoComboBox(textBoxDatabaseName.Text);
+                        DisplayContainerSettings();
+                    }
+                }
+                catch (Exception)
+                {
+                    // 初期化時のエラーは無視（設定が不完全な場合）
+                }
+            }
+            else  // Table API モード
+            {
+                var tableName = configuration.GetValue<string>("AppSettings:TableName");
+                
+                textBoxConnectionString.Text = connectionString;
+                textBoxDatabaseName.Visible = false;
+                label2.Visible = false;
+                cmbBoxContainerName.Text = tableName;
+                label3.Text = "Table";
+                
+                this.Text = "Cosmos DB Client Tool - Table API Mode";
+                
+                // Table APIモードの表示
+                _tableModeLabel = new Label
+                {
+                    Text = "TABLE API MODE",
+                    ForeColor = Color.Red,
+                    Font = new Font("Arial", 12, FontStyle.Bold),
+                    AutoSize = true,
+                    Location = new Point(textBoxDatabaseName.Location.X, textBoxDatabaseName.Location.Y)
+                };
+                groupBox1.Controls.Add(_tableModeLabel);
+                
+                try
+                {
+                    _tableAPIService = CosmosDBFactory.CreateTableApiService(
+                        textBoxConnectionString.Text, 
+                        cmbBoxContainerName.Text);
+                    
+                    if (!string.IsNullOrWhiteSpace(tableName))
+                    {
+                        LoadTablesIntoComboBox();
+                        DisplayTableSettings();
+                    }
+                }
+                catch (Exception)
+                {
+                    // 初期化時のエラーは無視（設定が不完全な場合）
+                }
+            }
+            
             numericUpDownMaxCount.Value = _maxItemCount;
 
             if (_useHyperlinkHandler)
@@ -92,17 +164,25 @@ namespace CosmosDBClient
             }
 
             try
-            {
-                _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
-                if (!string.IsNullOrWhiteSpace(databaseName))
+            {                _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
+                if (!string.IsNullOrWhiteSpace(textBoxDatabaseName.Text))
                 {
-                    LoadContainersIntoComboBox(databaseName);
+                    LoadContainersIntoComboBox(textBoxDatabaseName.Text);
                     DisplayContainerSettings();
                 }
             }
             catch (Exception)
             {
             }
+
+            // テーブル情報表示用のテキストボックスを初期化
+            textBoxInfo = new TextBox();
+            textBoxInfo.Multiline = true;
+            textBoxInfo.ReadOnly = true;
+            textBoxInfo.ScrollBars = ScrollBars.Vertical;
+            textBoxInfo.Dock = DockStyle.Fill;
+            textBoxInfo.Font = new Font("Yu Gothic UI", 9);
+            tabPage1.Controls.Add(textBoxInfo);
         }
 
         /// <summary>
@@ -263,9 +343,7 @@ namespace CosmosDBClient
                 .Build();
 
             return configuration;
-        }
-
-        /// <summary>
+        }        /// <summary>
         /// ボタンクリック時にデータをロードし、DataGridView に表示する
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
@@ -280,24 +358,38 @@ namespace CosmosDBClient
                 // 大量データの場合は進捗表示を行う
                 ShowProgressUI(true, "データを読み込んでいます...");
 
-                _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
-
-                if (_virtualModeEnabled && GetMaxItemCount() > 1000)
+                if (CosmosDBFactory.IsSqlApiMode())
                 {
-                    // 大量データの場合はバッファリングを使用
-                    await UpdateVirtualDataGridView(BuildQuery(_textBoxQuery.Text, GetMaxItemCount()), 1000);
-                }
-                else
-                {
-                    // 通常の更新処理
-                    await UpdateDatagridView();
-                }
+                    _cosmosDBService = CosmosDBFactory.CreateSqlApiService(
+                        textBoxConnectionString.Text, 
+                        textBoxDatabaseName.Text, 
+                        cmbBoxContainerName.Text);
 
-                DisplayContainerSettings();
+                    if (_virtualModeEnabled && GetMaxItemCount() > 1000)
+                    {
+                        // 大量データの場合はバッファリングを使用
+                        await UpdateVirtualDataGridView(BuildQuery(_textBoxQuery.Text, GetMaxItemCount()), 1000);
+                    }
+                    else
+                    {
+                        // 通常の更新処理
+                        await UpdateDatagridView();
+                    }
+
+                    DisplayContainerSettings();
+                }
+                else // Table API Mode
+                {
+                    _tableAPIService = CosmosDBFactory.CreateTableApiService(
+                        textBoxConnectionString.Text,
+                        cmbBoxContainerName.Text);
+
+                    await UpdateDatagridViewForTableAPI();
+                    DisplayTableSettings();
+                }
+                
                 _jsonData.Text = string.Empty;
-
                 ResizeRowHeader();
-
                 buttonInsert.Enabled = true;
 
                 // メモリ最適化
@@ -534,6 +626,121 @@ namespace CosmosDBClient
             }
 
             UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
+        }        /// <summary>
+        /// Table APIのデータでDataGridViewを更新する
+        /// </summary>
+        private async Task UpdateDatagridViewForTableAPI()
+        {
+            ShowProgressUI(true, "Table APIからデータを取得中...");
+
+            try
+            {
+                // テーブル名が空の場合はエラーメッセージを表示
+                if (string.IsNullOrWhiteSpace(cmbBoxContainerName.Text))
+                {
+                    MessageBox.Show("テーブル名が設定されていません。テーブル名を入力して再度実行してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // TableAPIServiceが未初期化の場合は初期化
+                if (_tableAPIService == null)
+                {
+                    try
+                    {
+                        _tableAPIService = CosmosDBFactory.CreateTableApiService(
+                            textBoxConnectionString.Text,
+                            cmbBoxContainerName.Text);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Table APIサービスの初期化に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+
+                // クエリ文字列の取得
+                string queryText = _textBoxQuery.Text?.Trim();
+                int maxCount = (int)numericUpDownMaxCount.Value;
+
+                // QueryResult取得
+                var result = await _tableAPIService.FetchDataWithStatusAsync(queryText, maxCount);
+
+                // 仮想モード用のデータテーブルを設定
+                if (_virtualModeEnabled)
+                {
+                    _virtualDataTable = result.Data;
+                    _columnNames = new List<string>();
+
+                    // 列名のリストを作成
+                    foreach (DataColumn column in _virtualDataTable.Columns)
+                    {
+                        _columnNames.Add(column.ColumnName);
+                    }
+
+                    // DataGridViewの列を設定
+                    dataGridViewResults.Columns.Clear();
+                    foreach (DataColumn column in _virtualDataTable.Columns)
+                    {
+                        var col = new DataGridViewTextBoxColumn
+                        {
+                            Name = column.ColumnName,
+                            HeaderText = column.ColumnName,
+                            DataPropertyName = column.ColumnName
+                        };
+                        dataGridViewResults.Columns.Add(col);
+                    }
+
+                    // 行数を設定
+                    dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+
+                    // システム列を読み取り専用に設定
+                    var readOnlyStyle = new DataGridViewCellStyle
+                    {
+                        BackColor = System.Drawing.Color.DarkGray,
+                        ForeColor = System.Drawing.Color.White
+                    };
+
+                    var systemColumns = _tableAPIService.systemColumns;
+                    var readOnlyColumnSet = new HashSet<string>(systemColumns);
+
+                    foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+                    {
+                        if (readOnlyColumnSet.Contains(column.Name))
+                        {
+                            column.ReadOnly = true;
+                            column.DefaultCellStyle = readOnlyStyle;
+                        }
+                    }
+                }
+                else
+                {
+                    // 通常モードの場合は従来通りDataSourceを使用
+                    dataGridViewResults.DataSource = null;
+                    
+                    // システム列を読み取り専用に設定
+                    foreach (DataColumn column in result.Data.Columns)
+                    {
+                        if (_tableAPIService.systemColumns.Contains(column.ColumnName))
+                        {
+                            column.ReadOnly = true;
+                        }
+                    }
+                    
+                    dataGridViewResults.DataSource = result.Data;
+                }
+
+                // ステータス更新
+                UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"データの取得中にエラーが発生しました：{ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                ShowProgressUI(false);
+                OptimizeMemoryUsage();
+            }
         }
 
         /// <summary>
@@ -908,58 +1115,67 @@ namespace CosmosDBClient
 
         /// <summary>
         /// レコードを更新する
-        /// ユーザー確認後に、Cosmos DB へアップサート（更新または挿入）される
-        /// </summary>
+        /// ユーザー確認後に、Cosmos DB へアップサート（更新または挿入）される        /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
         private async void buttonUpdate_Click(object sender, EventArgs e)
         {
-            DialogResult result = MessageBox.Show(
-                "Do you want to update your records?",
-                "Info",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
-
-            if (result != DialogResult.Yes)
+            if (dataGridViewResults.SelectedRows.Count == 0)
             {
+                MessageBox.Show("更新するレコードを選択してください。", "情報", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-
-            var jsonObject = default(JObject);
-
+            
+            int selectedRowIndex = dataGridViewResults.SelectedRows[0].Index;
+            
             try
             {
-                // JSONデータをパース
-                jsonObject = JObject.Parse(_jsonData.Text);
+                if (CosmosDBFactory.IsSqlApiMode())
+                {
+                    // SQL APIモード
+                    JObject jsonObject = BuildJsonObjectFromRow(selectedRowIndex);
+                    using (var formInsert = new FormInsert(_cosmosDBService, jsonObject.ToString(Formatting.Indented)))
+                    {
+                        if (formInsert.ShowDialog() == DialogResult.OK)
+                        {
+                            await UpdateDatagridView();
+                        }
+                    }
+                }
+                else
+                {
+                    // Table APIモード
+                    DataRow rowData = null;
+                    if (_virtualModeEnabled && _virtualDataTable != null)
+                    {
+                        if (selectedRowIndex < _virtualDataTable.Rows.Count)
+                        {
+                            rowData = _virtualDataTable.Rows[selectedRowIndex];
+                        }
+                    }
+                    else if (dataGridViewResults.DataSource is DataTable dataTable)
+                    {
+                        if (selectedRowIndex < dataTable.Rows.Count)
+                        {
+                            rowData = dataTable.Rows[selectedRowIndex];
+                        }
+                    }
+                    
+                    if (rowData != null)
+                    {
+                        using (var formInsert = new FormInsert(_tableAPIService, rowData))
+                        {
+                            if (formInsert.ShowDialog() == DialogResult.OK)
+                            {
+                                await UpdateDatagridViewForTableAPI();
+                            }
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error");
-                return;
-            }
-
-            try
-            {
-                // JSONオブジェクトからidを取得
-                var id = jsonObject["id"].ToString();
-
-                // PartitionKeyを自動的に解決して取得
-                var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
-
-                // PartitionKeyに対応するキー項目を取得
-                string partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
-
-                // Cosmos DBにUpsert処理を実行
-                var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
-
-                var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
-                MessageBox.Show(message, "Info");
-                await UpdateDatagridView();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error");
+                MessageBox.Show($"更新処理中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1029,18 +1245,33 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// レコードを挿入するユーザーがデータを入力し、新しいレコードが Cosmos DB に追加される
-        /// </summary>
+        /// レコードを挿入するユーザーがデータを入力し、新しいレコードが Cosmos DB に追加される        /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
         private async void buttonInsert_Click(object sender, EventArgs e)
         {
-            using (var formInsert = new FormInsert(_cosmosDBService, _jsonData.Text))
+            if (CosmosDBFactory.IsSqlApiMode())
             {
-                formInsert.ShowDialog();
+                // SQL APIモード
+                using (var formInsert = new FormInsert(_cosmosDBService, _jsonData.Text))
+                {
+                    if (formInsert.ShowDialog() == DialogResult.OK)
+                    {
+                        await UpdateDatagridView();
+                    }
+                }
             }
-
-            await UpdateDatagridView();
+            else
+            {
+                // Table APIモード
+                using (var formInsert = new FormInsert(_tableAPIService))
+                {
+                    if (formInsert.ShowDialog() == DialogResult.OK)
+                    {
+                        await UpdateDatagridViewForTableAPI();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -1188,9 +1419,7 @@ namespace CosmosDBClient
                     await DeleteSelectedRows(selectedRows);
                 }
             }
-        }
-
-        /// <summary>
+        }        /// <summary>
         /// 行削除処理
         /// </summary>
         /// <param name="selectedRows">選択行</param>
@@ -1199,8 +1428,8 @@ namespace CosmosDBClient
         {
             // 削除確認ダイアログを表示
             DialogResult result = MessageBox.Show(
-                $"Do you want to delete the selected records? Count:{selectedRows.Count}",
-                "Info",
+                $"選択したレコードを削除しますか？ 件数:{selectedRows.Count}",
+                "確認",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question
             );
@@ -1242,19 +1471,55 @@ namespace CosmosDBClient
                     tasks.Add(Task.Run(async () =>
                     {
                         try
-                        {
-                            JObject jsonObject = BuildJsonObjectFromRow(rowIndex);
-
-                            var id = jsonObject["id"]?.ToString();
-                            if (!string.IsNullOrEmpty(id))
+                        {                            if (CosmosDBFactory.IsSqlApiMode())
                             {
-                                lock (deletedIds)
+                                JObject jsonObject = BuildJsonObjectFromRow(rowIndex);
+                                var id = jsonObject["id"]?.ToString();
+                                if (!string.IsNullOrEmpty(id))
                                 {
-                                    deletedIds.Add($"id:{id}");
+                                    lock (deletedIds)
+                                    {
+                                        deletedIds.Add($"id:{id}");
+                                    }
+                                }
+                                await DeleteRow(jsonObject);
+                            }
+                            else // Table APIモード
+                            {
+                                // 行データを取得
+                                DataRow rowData = null;
+                                if (_virtualModeEnabled && _virtualDataTable != null)
+                                {
+                                    if (rowIndex < _virtualDataTable.Rows.Count)
+                                    {
+                                        rowData = _virtualDataTable.Rows[rowIndex];
+                                    }
+                                }
+                                else if (dataGridViewResults.DataSource is DataTable dataTable)
+                                {
+                                    if (rowIndex < dataTable.Rows.Count)
+                                    {
+                                        rowData = dataTable.Rows[rowIndex];
+                                    }
+                                }
+
+                                if (rowData != null)
+                                {
+                                    // PartitionKeyとRowKeyを取得して識別子として記録
+                                    var partitionKey = rowData["PartitionKey"]?.ToString();
+                                    var rowKey = rowData["RowKey"]?.ToString();
+                                    
+                                    if (!string.IsNullOrEmpty(partitionKey) && !string.IsNullOrEmpty(rowKey))
+                                    {
+                                        lock (deletedIds)
+                                        {
+                                            deletedIds.Add($"PK:{partitionKey}, RK:{rowKey}");
+                                        }
+                                    }
+                                    
+                                    await DeleteTableRow(rowData);
                                 }
                             }
-
-                            await DeleteRow(jsonObject);
 
                             // 削除件数をカウント
                             Interlocked.Increment(ref deletedCount);
@@ -1266,18 +1531,25 @@ namespace CosmosDBClient
                     }));
                 }
 
-                await Task.WhenAll(tasks);
-
-                // 仮想モードの場合は、キャッシュされたDataTableからも削除
-                if (_virtualModeEnabled && _virtualDataTable != null)
+                await Task.WhenAll(tasks);                // APIモードに応じてデータを更新
+                if (CosmosDBFactory.IsSqlApiMode())
                 {
-                    // UI更新を最小限にするため一度だけUpdateDatagridViewを呼ぶ
-                    await UpdateDatagridView();
+                    // 仮想モードの場合は、キャッシュされたDataTableからも削除
+                    if (_virtualModeEnabled && _virtualDataTable != null)
+                    {
+                        // UI更新を最小限にするため一度だけUpdateDatagridViewを呼ぶ
+                        await UpdateDatagridView();
+                    }
+                    else
+                    {
+                        // 通常モードの場合は従来通りの更新
+                        await UpdateDatagridView();
+                    }
                 }
-                else
+                else // Table APIモード
                 {
-                    // 通常モードの場合は従来通りの更新
-                    await UpdateDatagridView();
+                    // Table APIのデータを更新
+                    await UpdateDatagridViewForTableAPI();
                 }
 
                 // タイマーを停止
@@ -1322,6 +1594,252 @@ namespace CosmosDBClient
             var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
             var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
+        }
+
+        /// <summary>
+        /// Table APIモード用にテーブル一覧をコンボボックスにロードする
+        /// </summary>
+        private async void LoadTablesIntoComboBox()
+        {
+            try
+            {
+                ShowProgressUI(true, "テーブル一覧を取得中...");
+
+                if (_tableAPIService == null)
+                {
+                    _tableAPIService = CosmosDBFactory.CreateTableApiService(
+                        textBoxConnectionString.Text,
+                        cmbBoxContainerName.Text);
+                }
+
+                var tableNames = await _tableAPIService.GetTableNamesAsync();
+
+                cmbBoxContainerName.Items.Clear();
+                foreach (var tableName in tableNames)
+                {
+                    cmbBoxContainerName.Items.Add(tableName);
+                }
+
+                if (!string.IsNullOrEmpty(cmbBoxContainerName.Text) && tableNames.Contains(cmbBoxContainerName.Text))
+                {
+                    cmbBoxContainerName.SelectedItem = cmbBoxContainerName.Text;
+                }
+                else if (tableNames.Count > 0)
+                {
+                    cmbBoxContainerName.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"テーブル一覧の取得中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                ShowProgressUI(false);
+            }
+        }
+          /// <summary>
+        /// テーブルの設定情報を表示
+        /// </summary>
+        private async void DisplayTableSettings()
+        {
+            try
+            {
+                // テーブル名が空の場合は情報を表示しない
+                if (string.IsNullOrWhiteSpace(cmbBoxContainerName.Text))
+                {
+                    if (textBoxInfo != null)
+                    {
+                        textBoxInfo.Text = "テーブル名が設定されていません。テーブル名を入力して再度実行してください。";
+                    }
+                    return;
+                }
+
+                // TableAPIServiceが未初期化の場合は初期化を試みる
+                if (_tableAPIService == null)
+                {
+                    try
+                    {
+                        _tableAPIService = CosmosDBFactory.CreateTableApiService(
+                            textBoxConnectionString.Text,
+                            cmbBoxContainerName.Text);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (textBoxInfo != null)
+                        {
+                            textBoxInfo.Text = $"Table APIサービスの初期化に失敗しました: {ex.Message}";
+                        }
+                        return;
+                    }
+                }
+
+                ShowProgressUI(true, "テーブル情報を取得中...");
+
+                dynamic tableProperties = await _tableAPIService.GetTablePropertiesAsync();
+
+                // プロパティ表示用のリストを作成
+                var infoText = new List<string>
+                {
+                    $"テーブル名: {tableProperties.Name}",
+                    $"存在: {(tableProperties.Exists ? "はい" : "いいえ")}"
+                };
+                
+                if (tableProperties.Exists)
+                {
+                    infoText.Add($"URI: {tableProperties.Uri}");
+                }                // テキストボックスに表示
+                if (textBoxInfo != null)
+                {
+                    textBoxInfo.Text = string.Join(Environment.NewLine, infoText);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (textBoxInfo != null)
+                {
+                    textBoxInfo.Text = $"テーブル情報の取得中にエラーが発生しました: {ex.Message}";
+                }
+            }
+            finally
+            {
+                ShowProgressUI(false);
+            }
+        }
+
+        /// <summary>
+        /// Table APIのデータ行を削除する
+        /// </summary>
+        /// <param name="rowData">削除する行データ</param>
+        /// <returns>削除結果の成否</returns>
+        private async Task<bool> DeleteTableRow(DataRow rowData)
+        {
+            try
+            {
+                if (_tableAPIService == null)
+                {
+                    MessageBox.Show("Table APIサービスが初期化されていません。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+                
+                // PartitionKeyとRowKeyが必須
+                if (!rowData.Table.Columns.Contains("PartitionKey") || !rowData.Table.Columns.Contains("RowKey"))
+                {
+                    MessageBox.Show("必須のキー情報（PartitionKey、RowKey）が見つかりません。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+                
+                string partitionKey = rowData["PartitionKey"].ToString();
+                string rowKey = rowData["RowKey"].ToString();
+                
+                // Table APIでエンティティを削除
+                await _tableAPIService.DeleteEntityAsync(partitionKey, rowKey);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"データ削除中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// appsettings.jsonファイルの設定を更新する
+        /// </summary>
+        /// <param name="containerOrTableName">選択されたコンテナ/テーブル名</param>
+        private void UpdateAppSettings(string containerOrTableName)
+        {
+            try
+            {
+                // appsettings.jsonのパスを取得
+                string appSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+                
+                // JSONファイルを読み込む
+                string json = File.ReadAllText(appSettingsPath);
+                var jsonObject = JObject.Parse(json);
+                
+                // 接続設定の更新
+                jsonObject["AppSettings"]["ConnectionString"] = textBoxConnectionString.Text;
+                
+                if (CosmosDBFactory.IsSqlApiMode())
+                {
+                    // SQL APIモードの設定更新
+                    jsonObject["AppSettings"]["DatabaseName"] = textBoxDatabaseName.Text;
+                    jsonObject["AppSettings"]["ContainerName"] = containerOrTableName;
+                }
+                else
+                {
+                    // Table APIモードの設定更新
+                    jsonObject["AppSettings"]["TableName"] = containerOrTableName;
+                }
+                
+                // 更新したJSONを書き込み
+                File.WriteAllText(appSettingsPath, jsonObject.ToString(Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"設定ファイルの更新中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// コンボボックスでコンテナ/テーブルの選択が変更された時の処理
+        /// </summary>
+        /// <param name="sender">イベント送信元</param>
+        /// <param name="e">イベント引数</param>
+        private async void cmbBoxContainerName_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string containerOrTableName = cmbBoxContainerName.Text;
+            if (string.IsNullOrEmpty(containerOrTableName)) return;
+            
+            try
+            {
+                if (CosmosDBFactory.IsSqlApiMode())
+                {
+                    // SQL APIモード - コンテナを更新
+                    _cosmosDBService = CosmosDBFactory.CreateSqlApiService(
+                        textBoxConnectionString.Text,
+                        textBoxDatabaseName.Text,
+                        containerOrTableName);
+                        
+                    DisplayContainerSettings();
+                }
+                else
+                {
+                    // Table APIモード - テーブルを更新
+                    _tableAPIService = CosmosDBFactory.CreateTableApiService(
+                        textBoxConnectionString.Text,
+                        containerOrTableName);
+                        
+                    DisplayTableSettings();
+                }
+                
+                // ConfigファイルのAppSettingsを更新
+                UpdateAppSettings(containerOrTableName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"コンテナ/テーブル設定の更新中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// APIモードに応じてクエリテキストボックスを設定する
+        /// </summary>
+        private void SetupQueryTextBox()
+        {
+            if (CosmosDBFactory.IsSqlApiMode())
+            {
+                // SQL APIモードのクエリ例
+                _textBoxQuery.Language = Language.SQL;
+                _textBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
+            }
+            else
+            {
+                // Table APIモードのクエリ例（ODataクエリ形式）
+                _textBoxQuery.Language = Language.Custom;
+                _textBoxQuery.Text = "PartitionKey eq 'your_partition_key'";
+            }
         }
     }
 }
