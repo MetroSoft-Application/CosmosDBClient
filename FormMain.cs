@@ -125,12 +125,14 @@ namespace CosmosDBClient
                 _hyperlinkHandler = new HyperlinkHandler();
             }
             _maxItemCount = configuration.GetValue<int>("AppSettings:MaxItemCount");
-            var connectionString = configuration.GetValue<string>("AppSettings:ConnectionString");
+
             // モードに応じた初期値とUI設定
             if (CosmosDBFactory.IsSqlApiMode())
             {
-                var databaseName = configuration.GetValue<string>("AppSettings:DatabaseName");
-                var containerName = configuration.GetValue<string>("AppSettings:ContainerName");
+                var sqlApiSettings = configuration.GetSection("AppSettings:SqlApi");
+                var connectionString = sqlApiSettings.GetValue<string>("ConnectionString");
+                var databaseName = sqlApiSettings.GetValue<string>("DatabaseName");
+                var containerName = sqlApiSettings.GetValue<string>("ContainerName");
 
                 textBoxConnectionString.Text = connectionString;
                 textBoxDatabaseName.Text = databaseName;
@@ -160,6 +162,8 @@ namespace CosmosDBClient
             else  // Table API モード
             {
                 var tableName = configuration.GetValue<string>("AppSettings:TableName");
+                var tableApiSettings = configuration.GetSection("AppSettings:TableApi");
+                var connectionString = tableApiSettings.GetValue<string>("ConnectionString");
 
                 textBoxConnectionString.Text = connectionString;
                 textBoxDatabaseName.Visible = false;
@@ -397,26 +401,25 @@ namespace CosmosDBClient
                 // 接続文字列のチェック
                 if (string.IsNullOrWhiteSpace(textBoxConnectionString.Text))
                 {
-                    MessageBox.Show("接続文字列が設定されていません。接続文字列を入力してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Connection string is not set. Please enter a connection string.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                // 大量データの場合は進捗表示を行う
-                ShowProgressUI(true, "データを読み込んでいます...");
+                // 大量データの場合は進捗表示を行う                ShowProgressUI(true, "Loading data...");
 
                 if (CosmosDBFactory.IsSqlApiMode())
                 {
                     // データベース名のチェック
                     if (string.IsNullOrWhiteSpace(textBoxDatabaseName.Text))
                     {
-                        MessageBox.Show("データベース名が設定されていません。データベース名を入力してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Database name is not set. Please enter a database name.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
 
                     // コンテナ名のチェック
                     if (string.IsNullOrWhiteSpace(cmbBoxContainerName.Text))
                     {
-                        MessageBox.Show("コンテナ名が設定されていません。コンテナ名を入力してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Container name is not set. Please enter a container name.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
 
@@ -442,18 +445,16 @@ namespace CosmosDBClient
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"SQL APIサービスの実行中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"An error occurred while executing SQL API service: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
-                }
-                else // Table API Mode
+                }                else // Table API Mode
+                { 
+                if (string.IsNullOrWhiteSpace(cmbBoxContainerName.Text))
                 {
-                    // テーブル名のチェック
-                    if (string.IsNullOrWhiteSpace(cmbBoxContainerName.Text))
-                    {
-                        MessageBox.Show("テーブル名が設定されていません。テーブル名を入力してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                    MessageBox.Show("Table name is not set. Please enter a table name.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
 
                     try
                     {
@@ -464,7 +465,7 @@ namespace CosmosDBClient
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Table APIサービスの実行中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"An error occurred while executing Table API service: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
                 }
@@ -713,15 +714,14 @@ namespace CosmosDBClient
         /// Table APIのデータでDataGridViewを更新する
         /// </summary>
         private async Task UpdateDatagridViewForTableAPI()
-        {
-            ShowProgressUI(true, "Table APIからデータを取得中...");
+        {            ShowProgressUI(true, "Retrieving data from Table API...");
 
             try
             {
                 // テーブル名が空の場合はエラーメッセージを表示
                 if (string.IsNullOrWhiteSpace(cmbBoxContainerName.Text))
                 {
-                    MessageBox.Show("テーブル名が設定されていません。テーブル名を入力して再度実行してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Table name is not set. Please enter a table name and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -735,8 +735,7 @@ namespace CosmosDBClient
                             cmbBoxContainerName.Text);
                     }
                     catch (Exception ex)
-                    {
-                        MessageBox.Show($"Table APIサービスの初期化に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    {                        MessageBox.Show($"Failed to initialize Table API service: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
                 }
@@ -744,10 +743,9 @@ namespace CosmosDBClient
                 // テーブルの存在確認
                 bool tableExists = await _tableAPIService.TableExistsAsync();
                 if (!tableExists)
-                {
-                    var tableConfirmResult = MessageBox.Show(
-                        $"テーブル '{cmbBoxContainerName.Text}' は存在しません。作成しますか？",
-                        "テーブル確認",
+                {                    var tableConfirmResult = MessageBox.Show(
+                        $"Table '{cmbBoxContainerName.Text}' does not exist. Would you like to create it?",
+                        "Table Confirmation",
                         MessageBoxButtons.YesNo,
                         MessageBoxIcon.Question);
 
@@ -755,12 +753,11 @@ namespace CosmosDBClient
                     {
                         var createResult = await _tableAPIService.CreateTableAsync();
                         if (!createResult.Success)
-                        {
-                            MessageBox.Show(createResult.Message, "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        {                            MessageBox.Show(createResult.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
                         // テーブルが作成されたことをメッセージで通知
-                        ShowProgressUI(true, "テーブルが作成されました。データを取得中...");
+                        ShowProgressUI(true, "Table created. Loading data...");
                     }
                     else
                     {
@@ -837,7 +834,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"データの取得中にエラーが発生しました：{ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"An error occurred while retrieving data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -1152,17 +1149,17 @@ namespace CosmosDBClient
                     }
 
                     // テーブルが見つかった場合はInfoに表示
-                    textBoxInfo.Text = $"{tableNames.Count} テーブルが見つかりました。";
+                    textBoxInfo.Text = $"{tableNames.Count} tables found.";
                 }
                 else
                 {
-                    textBoxInfo.Text = "テーブルが見つかりませんでした。新しいテーブルを作成してください。";
+                    textBoxInfo.Text = "No tables found. Please create a new table.";
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"テーブル一覧の取得中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                textBoxInfo.Text = $"エラー: {ex.Message}";
+                MessageBox.Show($"An error occurred while retrieving table list: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                textBoxInfo.Text = $"Error: {ex.Message}";
             }
         }
 
@@ -1295,7 +1292,7 @@ namespace CosmosDBClient
         {
             if (dataGridViewResults.SelectedRows.Count == 0)
             {
-                MessageBox.Show("更新するレコードを選択してください。", "情報", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Please select a record to update.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1307,6 +1304,11 @@ namespace CosmosDBClient
                 {
                     // SQL APIモード
                     JObject jsonObject = BuildJsonObjectFromRow(selectedRowIndex);
+                    if (jsonObject is null)
+                    {
+                        return;
+                    }
+
                     using (var formInsert = new FormInsert(_cosmosDBService, jsonObject.ToString(Formatting.Indented)))
                     {
                         if (formInsert.ShowDialog() == DialogResult.OK)
@@ -1359,61 +1361,112 @@ namespace CosmosDBClient
         /// <param name="e">イベントデータ</param>
         private async void buttonDelete_Click(object sender, EventArgs e)
         {
-            await Delete();
+            await DeleteSelectedRows();
         }
 
         /// <summary>
-        /// レコードを削除する
+        /// 選択された行を削除する
         /// </summary>
-        /// <returns>Task</returns>
-        private async Task Delete()
+        private async Task DeleteSelectedRows()
         {
-            DialogResult dialogResult = MessageBox.Show(
-                "Do you want to delete your records?",
-                "Info",
+            if (dataGridViewResults.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Please select a row to delete.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }            var confirmResult = MessageBox.Show(
+                $"Are you sure you want to delete the selected {dataGridViewResults.SelectedRows.Count} row(s)?",
+                "Delete Confirmation",
                 MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
+                MessageBoxIcon.Question);
 
-            if (dialogResult != DialogResult.Yes)
+            if (confirmResult != DialogResult.Yes)
             {
                 return;
             }
 
-            var jsonObject = default(JObject);
+            ShowProgressUI(true, "データを削除中...");
+            var successCount = 0;
+            var errorCount = 0;
+            var totalCount = dataGridViewResults.SelectedRows.Count;
 
             try
             {
-                // JSONデータをパース
-                jsonObject = JObject.Parse(_jsonData.Text);
+                for (int i = 0; i < dataGridViewResults.SelectedRows.Count; i++)
+                {
+                    var row = dataGridViewResults.SelectedRows[i];
+                    try
+                    {
+                        if (CosmosDBFactory.IsSqlApiMode())
+                        {
+                            string id = row.Cells["id"].Value?.ToString();
+                            string partitionKey = GetPartitionKeyValue(row);
+
+                            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(partitionKey))
+                            {
+                                errorCount++;
+                                continue;
+                            }
+
+                            await _cosmosDBService.DeleteItemAsync<dynamic>(id, new PartitionKey(partitionKey));
+                        }
+                        else // Table API mode
+                        {
+                            string partitionKey = row.Cells["PartitionKey"].Value?.ToString();
+                            string rowKey = row.Cells["RowKey"].Value?.ToString();
+
+                            if (string.IsNullOrEmpty(partitionKey) || string.IsNullOrEmpty(rowKey))
+                            {
+                                errorCount++;
+                                continue;
+                            }
+
+                            await _tableAPIService.DeleteEntityAsync(partitionKey, rowKey);
+                        }
+
+                        successCount++;
+                        UpdateProgressUI($"削除中... ({successCount}/{totalCount})");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"行の削除中にエラーが発生しました: {ex.Message}");
+                        errorCount++;
+                    }
+                }
+
+                // 画面を更新
+                if (CosmosDBFactory.IsSqlApiMode())
+                {
+                    await UpdateDatagridView();
+                }
+                else
+                {
+                    await UpdateDatagridViewForTableAPI();
+                }                string resultMessage = $"Deletion completed:\nSuccess: {successCount}\nErrors: {errorCount}";
+                MessageBox.Show(resultMessage, "Deletion Result", MessageBoxButtons.OK,
+                    errorCount == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error");
-                return;
+                MessageBox.Show($"Error occurred during deletion: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
-            try
+            finally
             {
-                // JSONオブジェクトからidを取得
-                var id = jsonObject["id"].ToString();
-
-                // PartitionKeyを自動的に解決して取得
-                var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
-
-                // PartitionKeyに対応するキー項目を取得
-                string partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
-
-                var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
-
-                var message = $"Delete successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
-                MessageBox.Show(message, "Info");
-                await UpdateDatagridView();
+                ShowProgressUI(false);
             }
-            catch (Exception ex)
+        }
+
+        /// <summary>
+        /// 行からパーティションキーの値を取得する
+        /// </summary>
+        private string GetPartitionKeyValue(DataGridViewRow row)
+        {
+            // パーティションキーの列名を取得（実際の環境に合わせて調整が必要）            // パーティションキーとして "Folder" 列を使用
+            if (!row.DataGridView.Columns.Contains("Folder"))
             {
-                MessageBox.Show(ex.Message, "Error");
+                return null;
             }
+
+            return row.Cells["Folder"].Value?.ToString();
         }
 
         /// <summary>
@@ -1425,6 +1478,11 @@ namespace CosmosDBClient
         {
             if (CosmosDBFactory.IsSqlApiMode())
             {
+                if (string.IsNullOrWhiteSpace(_jsonData.Text))
+                {
+                    return;
+                }
+
                 // SQL APIモード
                 using (var formInsert = new FormInsert(_cosmosDBService, _jsonData.Text))
                 {
@@ -1565,7 +1623,7 @@ namespace CosmosDBClient
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Table APIサービスの初期化に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Failed to initialize Table API service: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return false;
                     }
                 }
@@ -1623,7 +1681,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"コンテナ/テーブル選択中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error occurred while selecting container/table: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1642,7 +1700,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"リンククリック処理中にエラーが発生しました: {ex.Message}");
+                Debug.WriteLine($"Error occurred during link click processing: {ex.Message}");
             }
         }
 
@@ -1876,7 +1934,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"クエリテキストボックスの設定中にエラーが発生しました: {ex.Message}");
+                Debug.WriteLine($"Error occurred while setting up query textbox: {ex.Message}");
             }
         }
     }

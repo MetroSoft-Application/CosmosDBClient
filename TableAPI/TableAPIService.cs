@@ -32,9 +32,9 @@ namespace CosmosDBClient.TableAPI
         /// <summary>
         /// 接続文字列（REST API用）
         /// </summary>
-        private readonly string _connectionString;  
-        
-              /// <summary>
+        private readonly string _connectionString;
+
+        /// <summary>
         /// アカウント名
         /// </summary>
         private string _accountName;
@@ -53,13 +53,14 @@ namespace CosmosDBClient.TableAPI
         {
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentException("接続文字列が設定されていません", nameof(connectionString));
+                throw new ArgumentException("Connection string is not set", nameof(connectionString));
             }
 
             if (string.IsNullOrEmpty(tableName))
             {
-                throw new ArgumentException("テーブル名が設定されていません", nameof(tableName));
-            }            // 接続文字列を保存
+                throw new ArgumentException("Table name is not set", nameof(tableName));
+            }
+            // 接続文字列を保存
             _connectionString = connectionString;
 
             // 接続文字列からアカウント名とキーを抽出
@@ -83,12 +84,12 @@ namespace CosmosDBClient.TableAPI
             {
                 if (string.IsNullOrEmpty(connectionString))
                 {
-                    return (false, "接続文字列が設定されていません");
+                    return (false, "Connection string is not set");
                 }
 
                 if (string.IsNullOrEmpty(tableName))
                 {
-                    return (false, "テーブル名が設定されていません");
+                    return (false, "Table name is not set");
                 }
 
                 // ストレージアカウントへの接続
@@ -103,22 +104,20 @@ namespace CosmosDBClient.TableAPI
                 {
                     // 単純なクエリを実行してテスト
                     TableQuery<DynamicTableEntity> query = new TableQuery<DynamicTableEntity>().Take(1);
-                    var result = await table.ExecuteQuerySegmentedAsync(query, null);
-
-                    return (true, $"接続に成功しました。テーブル '{tableName}' は存在します。");
+                    var result = await table.ExecuteQuerySegmentedAsync(query, null); return (true, $"Connection successful. Table '{tableName}' exists.");
                 }
                 else
                 {
-                    return (true, $"接続に成功しましたが、テーブル '{tableName}' は存在しません。テーブルの作成が必要です。");
+                    return (true, $"Connection successful, but table '{tableName}' does not exist. Table creation is required.");
                 }
             }
             catch (StorageException ex)
             {
-                return (false, $"Storage例外が発生しました: {ex.Message}\nステータスコード: {ex.RequestInformation?.HttpStatusCode}\n詳細: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage}");
+                return (false, $"Storage exception occurred: {ex.Message}\nStatus code: {ex.RequestInformation?.HttpStatusCode}\nDetails: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage}");
             }
             catch (Exception ex)
             {
-                return (false, $"例外が発生しました: {ex.Message}");
+                return (false, $"Exception occurred: {ex.Message}");
             }
         }
 
@@ -294,25 +293,25 @@ namespace CosmosDBClient.TableAPI
                         break;
                     }
                 }
-                while (continuationToken != null);                result.Data = dataTable;
+                while (continuationToken != null); result.Data = dataTable;
                 result.DocumentCount = documentCount;
                 result.PageCount = pageCount;
-                result.TotalRequestCharge = totalRequestCharge; // Table APIでは0のまま
+                result.TotalRequestCharge = totalRequestCharge;
             }
             catch (StorageException ex) when (ex.RequestInformation?.HttpStatusCode == 400)
             {
                 // クエリ構文エラーや不正なフィルター式の場合
-                throw new Exception($"ODataクエリ構文エラー: {ex.Message}\n詳細: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage ?? "不明なエラー"}", ex);
+                throw new Exception($"OData query syntax error: {ex.Message}\nDetails: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage ?? "Unknown error"}", ex);
             }
             catch (StorageException ex)
             {
                 // その他のStorage例外
-                throw new Exception($"Table APIエラー: {ex.Message}\nステータスコード: {ex.RequestInformation?.HttpStatusCode}\n詳細: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage ?? "不明なエラー"}", ex);
+                throw new Exception($"Table API error: {ex.Message}\nStatus code: {ex.RequestInformation?.HttpStatusCode}\nDetails: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage ?? "Unknown error"}", ex);
             }
             catch (Exception ex)
             {
                 // その他の一般的な例外
-                throw new Exception($"テーブルデータ取得中にエラーが発生しました: {ex.Message}", ex);
+                throw new Exception($"Error occurred while retrieving table data: {ex.Message}", ex);
             }
             finally
             {
@@ -395,10 +394,8 @@ namespace CosmosDBClient.TableAPI
         {
             if (jsonObject == null)
                 throw new ArgumentNullException(nameof(jsonObject));
-
-            // PartitionKeyとRowKeyは必須
             if (!jsonObject.ContainsKey("PartitionKey") || !jsonObject.ContainsKey("RowKey"))
-                throw new ArgumentException("JSONオブジェクトにはPartitionKeyとRowKeyが必要です");
+                throw new ArgumentException("JSON object must contain PartitionKey and RowKey");
 
             var partitionKey = jsonObject["PartitionKey"].ToString();
             var rowKey = jsonObject["RowKey"].ToString();
@@ -409,7 +406,7 @@ namespace CosmosDBClient.TableAPI
             // 他のプロパティを追加
             foreach (var property in jsonObject.Properties())
             {
-                string propertyName = property.Name;
+                var propertyName = property.Name;
 
                 // システム列はスキップ
                 if (systemColumns.Contains(propertyName))
@@ -489,22 +486,22 @@ namespace CosmosDBClient.TableAPI
         {
             if (entity == null)
             {
-                throw new ArgumentNullException(nameof(entity), "エンティティがnullです");
+                throw new ArgumentNullException(nameof(entity), "Entity is null");
             }
 
             if (string.IsNullOrEmpty(entity.PartitionKey))
             {
-                throw new ArgumentException("パーティションキーが指定されていません", nameof(entity));
+                throw new ArgumentException("Partition key is not specified", nameof(entity));
             }
 
             if (string.IsNullOrEmpty(entity.RowKey))
             {
-                throw new ArgumentException("行キーが指定されていません", nameof(entity));
+                throw new ArgumentException("Row key is not specified", nameof(entity));
             }
 
             // 挿入または更新操作の作成
             var operation = TableOperation.InsertOrReplace(entity);
-            
+
             // 操作の実行
             await Table.ExecuteAsync(operation);
         }
@@ -519,27 +516,26 @@ namespace CosmosDBClient.TableAPI
         {
             if (string.IsNullOrEmpty(partitionKey))
             {
-                throw new ArgumentException("パーティションキーが指定されていません", nameof(partitionKey));
+                throw new ArgumentException("Partition key is not specified", nameof(partitionKey));
             }
 
             if (string.IsNullOrEmpty(rowKey))
             {
-                throw new ArgumentException("行キーが指定されていません", nameof(rowKey));
+                throw new ArgumentException("Row key is not specified", nameof(rowKey));
             }
 
             // エンティティを取得
             var operation = TableOperation.Retrieve<DynamicTableEntity>(partitionKey, rowKey);
             var result = await Table.ExecuteAsync(operation);
             var entity = result.Result as DynamicTableEntity;
-            
             if (entity == null)
             {
-                throw new Exception($"指定されたキーのエンティティが見つかりません: PartitionKey={partitionKey}, RowKey={rowKey}");
+                throw new Exception($"Entity not found with specified keys: PartitionKey={partitionKey}, RowKey={rowKey}");
             }
 
             // 削除操作の作成
             var deleteOperation = TableOperation.Delete(entity);
-            
+
             // 削除操作の実行
             await Table.ExecuteAsync(deleteOperation);
         }
@@ -552,7 +548,7 @@ namespace CosmosDBClient.TableAPI
         public string GetPartitionAndRowKeyValues(JObject jsonObject)
         {
             if (!jsonObject.ContainsKey("PartitionKey") || !jsonObject.ContainsKey("RowKey"))
-                throw new ArgumentException("JSONオブジェクトにはPartitionKeyとRowKeyが含まれている必要があります");
+                throw new ArgumentException("JSON object must contain PartitionKey and RowKey");
 
             var partitionKey = jsonObject["PartitionKey"]?.ToString() ?? "";
             var rowKey = jsonObject["RowKey"]?.ToString() ?? "";
@@ -587,26 +583,26 @@ namespace CosmosDBClient.TableAPI
             {
                 if (string.IsNullOrEmpty(Table.Name))
                 {
-                    return (false, "テーブル名が設定されていません");
+                    return (false, "Table name is not set");
                 }
 
-                bool exists = await Table.ExistsAsync();
+                var exists = await Table.ExistsAsync();
                 if (exists)
                 {
-                    return (true, $"テーブル '{Table.Name}' は既に存在します。");
+                    return (true, $"Table '{Table.Name}' already exists.");
                 }
 
                 // テーブルの作成
                 await Table.CreateIfNotExistsAsync();
-                return (true, $"テーブル '{Table.Name}' を作成しました。");
+                return (true, $"Table '{Table.Name}' created successfully.");
             }
             catch (StorageException ex)
             {
-                return (false, $"Storage例外が発生しました: {ex.Message}\nステータスコード: {ex.RequestInformation?.HttpStatusCode}\n詳細: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage}");
+                return (false, $"Storage exception occurred: {ex.Message}\nStatus code: {ex.RequestInformation?.HttpStatusCode}\nDetails: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage}");
             }
             catch (Exception ex)
             {
-                return (false, $"例外が発生しました: {ex.Message}");
+                return (false, $"Exception occurred: {ex.Message}");
             }
         }
 
@@ -635,7 +631,7 @@ namespace CosmosDBClient.TableAPI
                     httpClient.DefaultRequestHeaders.Add("x-ms-version", "2020-04-08");
 
                     var response = await httpClient.GetAsync(uri);
-                    
+
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -696,7 +692,7 @@ namespace CosmosDBClient.TableAPI
         private string CreateAuthorizationHeader(string httpMethod, string resourcePath, DateTime utcNow)
         {
             var stringToSign = $"{httpMethod}\n\n\n{utcNow:R}\n/{_accountName}/{resourcePath}";
-            
+
             using (var hmacSha256 = new HMACSHA256(Convert.FromBase64String(_accountKey)))
             {
                 var signature = Convert.ToBase64String(hmacSha256.ComputeHash(Encoding.UTF8.GetBytes(stringToSign)));

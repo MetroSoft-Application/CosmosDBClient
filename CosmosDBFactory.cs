@@ -22,10 +22,52 @@ namespace CosmosDBClient
         public static ApiMode InitializeFromConfig(IConfiguration configuration)
         {
             var apiMode = configuration.GetValue<string>("AppSettings:ApiMode");
-            CurrentApiMode = string.Equals(apiMode, "Table", StringComparison.OrdinalIgnoreCase) ? 
+            CurrentApiMode = string.Equals(apiMode, "Table", StringComparison.OrdinalIgnoreCase) ?
                 ApiMode.Table : ApiMode.Sql;
+
+            // SQL API モードの場合の接続情報を読み込む
+            if (IsSqlApiMode())
+            {
+                var sqlApiSettings = configuration.GetSection("AppSettings:SqlApi");
+                SqlConnectionString = sqlApiSettings.GetValue<string>("ConnectionString");
+                SqlDatabaseName = sqlApiSettings.GetValue<string>("DatabaseName");
+                SqlContainerName = sqlApiSettings.GetValue<string>("ContainerName");
+            }
+            // Table API モードの場合の接続情報を読み込む
+            else
+            {
+                var tableApiSettings = configuration.GetSection("AppSettings:TableApi");
+                TableConnectionString = tableApiSettings.GetValue<string>("ConnectionString");
+                TableName = tableApiSettings.GetValue<string>("TableName");
+            }
+
             return CurrentApiMode;
         }
+
+        /// <summary>
+        /// SQL API用の接続文字列
+        /// </summary>
+        public static string SqlConnectionString { get; private set; }
+
+        /// <summary>
+        /// SQL API用のデータベース名
+        /// </summary>
+        public static string SqlDatabaseName { get; private set; }
+
+        /// <summary>
+        /// SQL API用のコンテナ名
+        /// </summary>
+        public static string SqlContainerName { get; private set; }
+
+        /// <summary>
+        /// Table API用の接続文字列
+        /// </summary>
+        public static string TableConnectionString { get; private set; }
+
+        /// <summary>
+        /// Table API用のテーブル名
+        /// </summary>
+        public static string TableName { get; private set; }
 
         /// <summary>
         /// SQL API用サービスを作成する

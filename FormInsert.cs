@@ -48,10 +48,10 @@ namespace CosmosDBClient
             }
             catch (Exception)
             {
-            }
-
-            // システムフィールドを除外する
+            }            // 新規作成用のJSONオブジェクトを準備
             var filteredObject = new JObject();
+
+            // 既存のJSONオブジェクトが有効な場合はIDを保持、それ以外は新規生成
             filteredObject["id"] = Guid.NewGuid().ToString("N");
 
             try
@@ -93,10 +93,8 @@ namespace CosmosDBClient
             _jsonData.Font = new Font("Yu Gothic UI", 9);
             _jsonData.WordWrap = true;
             _jsonData.ShowLineNumbers = false;
-            panel1.Controls.Add(_jsonData);
-
-            // フォームのタイトルを変更
-            this.Text = "Table APIエンティティ挿入/更新";
+            panel1.Controls.Add(_jsonData);            // フォームのタイトルを変更
+            this.Text = "Table API Entity Insert/Update";
 
             if (tableRow != null)
             {
@@ -111,21 +109,21 @@ namespace CosmosDBClient
                         jsonEntity[columnName] = value is DBNull ? null : JToken.FromObject(value);
                     }
                 }
-                  // システム列（PartitionKeyとRowKey）は別途追加
+                // システム列（PartitionKeyとRowKey）は別途追加
                 jsonEntity["PartitionKey"] = tableRow["PartitionKey"].ToString();
                 jsonEntity["RowKey"] = tableRow["RowKey"].ToString();
-                
+
                 _jsonData.Text = jsonEntity.ToString(Newtonsoft.Json.Formatting.Indented);
             }
             else
-            {
-                // 新規エンティティの作成
+            {            // 新規エンティティの作成
                 var jsonEntity = new JObject
-                {                    ["PartitionKey"] = "",  // 必須フィールド
+                {
+                    ["PartitionKey"] = "",  // 必須フィールド
                     ["RowKey"] = "",        // 必須フィールド
-                    ["SampleProperty"] = "値を入力"
+                    ["SampleProperty"] = "Enter value"
                 };
-                  _jsonData.Text = jsonEntity.ToString(Newtonsoft.Json.Formatting.Indented);
+                _jsonData.Text = jsonEntity.ToString(Newtonsoft.Json.Formatting.Indented);
             }
         }
 
@@ -135,10 +133,9 @@ namespace CosmosDBClient
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
         private async void buttonJsonInsert_Click(object sender, EventArgs e)
-        {
-            DialogResult result = MessageBox.Show(
-                "レコードを挿入/更新しますか？",
-                "確認",
+        {            DialogResult result = MessageBox.Show(
+                "Do you want to insert/update the record?",
+                "Confirmation",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question
             );
@@ -157,7 +154,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"JSONデータの解析エラー: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"JSON parse error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -173,14 +170,14 @@ namespace CosmosDBClient
                     // Table APIモード
                     await InsertTableApiEntity(jsonObject);
                 }
-                
+
                 // 挿入成功したらダイアログを閉じる
                 DialogResult = DialogResult.OK;
                 Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -194,7 +191,7 @@ namespace CosmosDBClient
             var id = jsonObject["id"]?.ToString();
             if (string.IsNullOrEmpty(id))
             {
-                throw new Exception("idフィールドが指定されていないか無効です。");
+                throw new Exception("ID field is missing or invalid.");
             }
 
             // PartitionKeyを自動的に解決して取得
@@ -204,10 +201,8 @@ namespace CosmosDBClient
             var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
             // Cosmos DBにUpsert処理を実行
-            var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
-
-            var message = $"挿入/更新が成功しました！\n\nId: {id}\nパーティションキー: {partitionKeyInfo}\n\n使用RU: {response.RequestCharge}";
-            MessageBox.Show(message, "情報", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);            var message = $"Successfully inserted/updated!\n\nId: {id}\nPartition Key: {partitionKeyInfo}\n\nRequest Charge: {response.RequestCharge}";
+            MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>
@@ -222,12 +217,12 @@ namespace CosmosDBClient
 
             if (string.IsNullOrEmpty(partitionKey))
             {
-                throw new Exception("PartitionKeyフィールドが指定されていないか無効です。");
+                throw new Exception("PartitionKey field is missing or invalid.");
             }
 
             if (string.IsNullOrEmpty(rowKey))
             {
-                throw new Exception("RowKeyフィールドが指定されていないか無効です。");
+                throw new Exception("RowKey field is missing or invalid.");
             }
 
             // DynamicTableEntityの作成
@@ -243,12 +238,10 @@ namespace CosmosDBClient
             }
 
             // Tableにエンティティを挿入
-            await _tableAPIService.InsertOrReplaceEntityAsync(entity);
-
-            var message = $"エンティティの挿入/更新が成功しました！\n\nPartitionKey: {partitionKey}\nRowKey: {rowKey}";
-            MessageBox.Show(message, "情報", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            await _tableAPIService.InsertOrReplaceEntityAsync(entity);            var message = $"Entity successfully inserted/updated!\n\nPartition Key: {partitionKey}\nRow Key: {rowKey}";
+            MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        
+
         /// <summary>
         /// JTokenからEntityPropertyを作成する
         /// </summary>
