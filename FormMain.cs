@@ -51,32 +51,41 @@ namespace CosmosDBClient
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false
             };
-            ttlFlowPanel.Controls.Add(label5);
-            ttlFlowPanel.Controls.Add(radioTimeToLiveOff);
-            ttlFlowPanel.Controls.Add(radioTimeToLiveOn);
-            ttlFlowPanel.Controls.Add(nupTimeToLiveSeconds);
-            ttlFlowPanel.Controls.Add(label6);
-
-            // テーブル情報表示用のテキストボックスを初期化
-            textBoxInfo = new TextBox
-            {
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                Dock = DockStyle.Fill,
-                Font = new Font("Yu Gothic UI", 9),
-                Visible = false // 初期状態では非表示
-            };
 
             // tabPage1に追加
-            tabPage1.Controls.Clear();
-            tabPage1.Controls.Add(ttlFlowPanel);
-            tabPage1.Controls.Add(textBoxInfo);
+            if (CosmosDBFactory.IsTableApiMode())
+            {
+                ttlFlowPanel.Controls.Add(label5);
+                ttlFlowPanel.Controls.Add(radioTimeToLiveOff);
+                ttlFlowPanel.Controls.Add(radioTimeToLiveOn);
+                ttlFlowPanel.Controls.Add(nupTimeToLiveSeconds);
+                ttlFlowPanel.Controls.Add(label6);
+                ttlFlowPanel.Controls.Add(label7);
+                ttlFlowPanel.Controls.Add(txtPartitionKey);
+                ttlFlowPanel.Controls.Add(label8);
+                ttlFlowPanel.Controls.Add(txtUniqueKey);
+
+                // テーブル情報表示用のテキストボックスを初期化
+                textBoxInfo = new TextBox
+                {
+                    Multiline = true,
+                    ReadOnly = true,
+                    ScrollBars = ScrollBars.Vertical,
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Yu Gothic UI", 9),
+                    Visible = false
+                };
+                tabPage1.Controls.Clear();
+                tabPage1.Controls.Add(ttlFlowPanel);
+                tabPage1.Controls.Add(textBoxInfo);
+            }
 
             _textBoxQuery = new FastColoredTextBox();
+            _textBoxQuery.Language = Language.SQL;
             _textBoxQuery.Dock = DockStyle.Fill;
             _textBoxQuery.ImeMode = ImeMode.Hiragana;
             _textBoxQuery.BorderStyle = BorderStyle.Fixed3D;
+            _textBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
             _textBoxQuery.TabLength = 4;
             _textBoxQuery.WordWrap = false;
             _textBoxQuery.ShowLineNumbers = true;
@@ -266,10 +275,11 @@ namespace CosmosDBClient
                 dataGridViewResults.FilterStringChanged += dataGridViewResults_FilterStringChanged;
                 dataGridViewResults.SortStringChanged += dataGridViewResults_SortStringChanged;
             }
+
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
-            // dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting; // 未実装のため無効化
+            dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
-            // dataGridViewResults.KeyUp += dataGridViewResults_KeyUp; // 未実装のため無効化
+            dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
             splitContainer2.Panel1.Controls.Add(dataGridViewResults);
         }
 
@@ -1043,21 +1053,22 @@ namespace CosmosDBClient
         /// <returns>構築されたクエリ文字列</returns>
         private string BuildQuery(string queryText, int maxCount)
         {
-            var resultQuery = $"SELECT TOP {maxCount} * FROM c";
+            var query = $"SELECT TOP {maxCount} * FROM c";
 
             if (!string.IsNullOrWhiteSpace(queryText))
             {
-                resultQuery = queryText;
-                if (!System.Text.RegularExpressions.Regex.IsMatch(resultQuery, @"\bSELECT\s+TOP\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                query = queryText;
+                if (!System.Text.RegularExpressions.Regex.IsMatch(query, @"\bSELECT\s+TOP\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
                 {
-                    var selectIndex = System.Text.RegularExpressions.Regex.Match(resultQuery, @"\bSELECT\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Index; if (selectIndex != -1)
+                    var selectIndex = System.Text.RegularExpressions.Regex.Match(query, @"\bSELECT\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Index;
+                    if (selectIndex != -1)
                     {
-                        resultQuery = resultQuery.Insert(selectIndex + 6, $" TOP {maxCount}");
+                        query = query.Insert(selectIndex + 6, $" TOP {maxCount}");
                     }
                 }
             }
 
-            return resultQuery;
+            return query;
         }
 
         /// <summary>
@@ -1166,9 +1177,6 @@ namespace CosmosDBClient
                 if (CosmosDBFactory.IsSqlApiMode())
                 {
                     var containerProperties = await _cosmosDBService.GetContainerPropertiesAsync();
-
-                    // TextBoxInfoを非表示
-                    textBoxInfo.Visible = false;
 
                     // パーティションキーとユニークキーを表示
                     txtPartitionKey.Visible = true;
@@ -1339,7 +1347,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"更新処理中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error");
             }
         }
 
@@ -1636,6 +1644,194 @@ namespace CosmosDBClient
             {
                 Debug.WriteLine($"リンククリック処理中にエラーが発生しました: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// DataGridView のセルフォーマット時に、読み取り専用のカラムに背景色と文字色を設定する処理
+        /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">セルフォーマットイベントデータ</param>
+        private void dataGridViewResults_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0)
+            {
+                return;
+            }
+
+            if (_virtualModeEnabled)
+            {
+                // 仮想モードの場合、列の読み取り専用状態を直接確認
+                var column = dataGridViewResults.Columns[e.ColumnIndex];
+                if (column.ReadOnly)
+                {
+                    e.CellStyle.BackColor = System.Drawing.Color.DarkGray;
+                    e.CellStyle.ForeColor = System.Drawing.Color.White;
+                }
+            }
+            else
+            {
+                // 通常モードの場合、従来通りの処理
+                foreach (DataGridViewColumn column in dataGridViewResults.Columns)
+                {
+                    if (column.ReadOnly)
+                    {
+                        dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.BackColor = System.Drawing.Color.DarkGray;
+                        dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.ForeColor = System.Drawing.Color.White;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// DataGridViewでのキー押下イベント
+        /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
+        private async void dataGridViewResults_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                var selectedRows = dataGridViewResults.SelectedRows;
+
+                if (selectedRows.Count > 0)
+                {
+                    await DeleteSelectedRows(selectedRows);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 行削除処理
+        /// </summary>
+        /// <param name="selectedRows">選択行</param>
+        /// <returns>task</returns>
+        private async Task DeleteSelectedRows(DataGridViewSelectedRowCollection selectedRows)
+        {
+            // 削除確認ダイアログを表示
+            DialogResult result = MessageBox.Show(
+                $"Do you want to delete the selected records? Count:{selectedRows.Count}",
+                "Info",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result != DialogResult.Yes)
+            {
+                return;
+            }
+
+            // タイマーを開始
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var deletedIds = new List<string>();
+            int deletedCount = 0;
+
+            try
+            {
+                dataGridViewResults.ReadOnly = true;
+                dataGridViewResults.SuspendLayout();
+
+                var tasks = new List<Task>();
+                var maxDegreeOfParallelism = Environment.ProcessorCount;
+                var semaphore = new SemaphoreSlim(maxDegreeOfParallelism);
+
+                // 選択行のインデックスをコピー (削除後も元のインデックスを保持するため)
+                var rowIndexes = new List<int>();
+                foreach (DataGridViewRow row in selectedRows)
+                {
+                    rowIndexes.Add(row.Index);
+                }
+
+                // 降順でソート（インデックスの大きい行から削除して、インデックスのズレを防ぐ）
+                rowIndexes.Sort((a, b) => b.CompareTo(a));
+
+                foreach (var rowIndex in rowIndexes)
+                {
+                    await semaphore.WaitAsync();
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            JObject jsonObject = BuildJsonObjectFromRow(rowIndex);
+
+                            var id = jsonObject["id"]?.ToString();
+                            if (!string.IsNullOrEmpty(id))
+                            {
+                                lock (deletedIds)
+                                {
+                                    deletedIds.Add($"id:{id}");
+                                }
+                            }
+
+                            await DeleteRow(jsonObject);
+
+                            // 削除件数をカウント
+                            Interlocked.Increment(ref deletedCount);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                        }
+                    }));
+                }
+
+                await Task.WhenAll(tasks);
+
+                // 仮想モードの場合は、キャッシュされたDataTableからも削除
+                if (_virtualModeEnabled && _virtualDataTable != null)
+                {
+                    // UI更新を最小限にするため一度だけUpdateDatagridViewを呼ぶ
+                    await UpdateDatagridView();
+                }
+                else
+                {
+                    // 通常モードの場合は従来通りの更新
+                    await UpdateDatagridView();
+                }
+
+                // タイマーを停止
+                stopwatch.Stop();
+
+                var message = $"Finish! Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F2}s - Deleted: {deletedCount} records\n";
+                // 削除したIDをメッセージボックスで表示
+                if (deletedIds.Count > 10)
+                {
+                    message += $"Deleted ID Count: {deletedIds.Count}";
+                }
+                else if (deletedIds.Count > 0)
+                {
+                    message += $"Deleted IDs:\n{string.Join("\n", deletedIds)}";
+                }
+
+                MessageBox.Show(message, "Info");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+            finally
+            {
+                dataGridViewResults.ResumeLayout();
+                dataGridViewResults.ReadOnly = false;
+            }
+        }
+
+        /// <summary>
+        /// 行削除
+        /// </summary>
+        /// <param name="jsonObject"></param>
+        /// <returns>task</returns>
+        private async Task DeleteRow(JObject jsonObject)
+        {
+            // JSONオブジェクトからidを取得
+            var id = jsonObject["id"].ToString();
+
+            // PartitionKeyを自動的に解決して取得
+            var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
+            var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
+
+            var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
         }
 
         /// <summary>

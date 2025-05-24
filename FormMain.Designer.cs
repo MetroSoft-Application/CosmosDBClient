@@ -37,12 +37,12 @@
             toolStripStatusLabel10 = new ToolStripStatusLabel();
             toolStripStatusLabel11 = new ToolStripStatusLabel();
             toolStripStatusLabel12 = new ToolStripStatusLabel();
-            toolStripStatusLabel13 = new ToolStripStatusLabel(); cmbBoxContainerName = new ComboBox();
+            toolStripStatusLabel13 = new ToolStripStatusLabel();
+            cmbBoxContainerName = new ComboBox();
             buttonInsert = new Button();
             groupBox1 = new GroupBox();
             tabControl1 = new TabControl();
             tabPage1 = new TabPage();
-            label6 = new Label();
             nupTimeToLiveSeconds = new NumericUpDown();
             radioTimeToLiveOn = new RadioButton();
             radioTimeToLiveOff = new RadioButton();
@@ -53,11 +53,11 @@
             label8 = new Label();
             tabPage2 = new TabPage();
             txtIndexingPolicy = new RichTextBox();
+            label6 = new Label();
             groupBox2 = new GroupBox();
             panel1 = new Panel();
             splitContainer1 = new SplitContainer();
             splitContainer2 = new SplitContainer();
-            //dataGridViewResults = new DataGridView();
             richTextBoxSelectedCell = new RichTextBox();
             splitContainer3 = new SplitContainer();
             splitContainer4 = new SplitContainer();
@@ -76,7 +76,6 @@
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer2).BeginInit();
-            splitContainer2.Panel1.SuspendLayout();
             splitContainer2.Panel2.SuspendLayout();
             splitContainer2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
@@ -241,7 +240,8 @@
             // 
             toolStripStatusLabel13.Name = "toolStripStatusLabel13";
             toolStripStatusLabel13.Size = new Size(23, 23);
-            //            // cmbBoxContainerName
+            // 
+            // cmbBoxContainerName
             // 
             cmbBoxContainerName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             cmbBoxContainerName.FormattingEnabled = true;
@@ -287,13 +287,15 @@
             // 
             tabControl1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             tabControl1.Controls.Add(tabPage1);
-            tabControl1.Controls.Add(tabPage2); tabControl1.Location = new Point(3, 19);
+            tabControl1.Controls.Add(tabPage2);
+            tabControl1.Location = new Point(3, 19);
             tabControl1.Name = "tabControl1";
             tabControl1.SelectedIndex = 0;
             tabControl1.Size = new Size(386, 115);
             tabControl1.TabIndex = 17;
-            //            // tabPage1
-            //            tabPage1.Controls.Add(label6);
+            // 
+            // tabPage1
+            // 
             tabPage1.Controls.Add(nupTimeToLiveSeconds);
             tabPage1.Controls.Add(radioTimeToLiveOn);
             tabPage1.Controls.Add(radioTimeToLiveOff);
@@ -301,22 +303,14 @@
             tabPage1.Controls.Add(txtPartitionKey);
             tabPage1.Controls.Add(label7);
             tabPage1.Controls.Add(txtUniqueKey);
-            tabPage1.Controls.Add(label8); tabPage1.Location = new Point(4, 24);
+            tabPage1.Controls.Add(label8);
+            tabPage1.Location = new Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new Padding(3);
             tabPage1.Size = new Size(378, 87);
             tabPage1.TabIndex = 0;
-            tabPage1.Text = "Settings"; tabPage1.UseVisualStyleBackColor = true;
-            // 
-            // label6
-            // 
-            label6.AutoSize = true;
-            label6.Location = new Point(319, 11);
-            label6.Name = "label6";
-            label6.Size = new Size(51, 15);
-            label6.TabIndex = 5;
-            label6.Text = "Seconds";
-            label6.Visible = false;
+            tabPage1.Text = "Settings";
+            tabPage1.UseVisualStyleBackColor = true;
             // 
             // nupTimeToLiveSeconds
             // 
@@ -355,7 +349,7 @@
             radioTimeToLiveOff.UseVisualStyleBackColor = true;
             // 
             // label5
-            //            label5.AutoSize = true;
+            // 
             label5.Location = new Point(7, 11);
             label5.Name = "label5";
             label5.Size = new Size(70, 15);
@@ -376,13 +370,13 @@
             label7.AutoSize = true;
             label7.Location = new Point(7, 38);
             label7.Name = "label7";
-            label7.Size = new Size(69, 15);
+            label7.Size = new Size(74, 15);
             label7.TabIndex = 7;
             label7.Text = "Partition Key";
             // 
             // txtUniqueKey
             // 
-            txtUniqueKey.Location = new Point(272, 35);
+            txtUniqueKey.Location = new Point(80, 61);
             txtUniqueKey.Multiline = true;
             txtUniqueKey.Name = "txtUniqueKey";
             txtUniqueKey.ReadOnly = true;
@@ -392,15 +386,16 @@
             // label8
             // 
             label8.AutoSize = true;
-            label8.Location = new Point(246, 38);
+            label8.Location = new Point(7, 64);
             label8.Name = "label8";
-            label8.Size = new Size(68, 15);
+            label8.Size = new Size(67, 15);
             label8.TabIndex = 9;
             label8.Text = "Unique Key";
             // 
             // tabPage2
             // 
-            tabPage2.Controls.Add(txtIndexingPolicy); tabPage2.Location = new Point(4, 24);
+            tabPage2.Controls.Add(txtIndexingPolicy);
+            tabPage2.Location = new Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new Padding(3);
             tabPage2.Size = new Size(378, 87);
@@ -418,9 +413,20 @@
             txtIndexingPolicy.TabIndex = 0;
             txtIndexingPolicy.Text = "";
             // 
+            // label6
+            // 
+            label6.AutoSize = true;
+            label6.Location = new Point(319, 11);
+            label6.Name = "label6";
+            label6.Size = new Size(51, 15);
+            label6.TabIndex = 5;
+            label6.Text = "Seconds";
+            label6.Visible = false;
+            // 
             // groupBox2
             // 
-            groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Right; groupBox2.Controls.Add(tabControl1);
+            groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            groupBox2.Controls.Add(tabControl1);
             groupBox2.Location = new Point(649, 3);
             groupBox2.Name = "groupBox2";
             groupBox2.Size = new Size(392, 137);
@@ -437,7 +443,7 @@
             panel1.TabIndex = 19;
             // 
             // splitContainer1
-            //            splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            // 
             splitContainer1.Location = new Point(12, 146);
             splitContainer1.Name = "splitContainer1";
             // 
@@ -447,7 +453,8 @@
             // 
             // splitContainer1.Panel2
             // 
-            splitContainer1.Panel2.Controls.Add(splitContainer3); splitContainer1.Size = new Size(1374, 510);
+            splitContainer1.Panel2.Controls.Add(splitContainer3);
+            splitContainer1.Size = new Size(1374, 510);
             splitContainer1.SplitterDistance = 1031;
             splitContainer1.TabIndex = 20;
             // 
@@ -562,11 +569,9 @@
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
-            splitContainer2.Panel1.ResumeLayout(false);
             splitContainer2.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
             splitContainer2.ResumeLayout(false);
-            //((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
             splitContainer3.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer3).EndInit();
             splitContainer3.ResumeLayout(false);
@@ -609,7 +614,7 @@
         private TabPage tabPage1;
         private TabPage tabPage2;
         private GroupBox groupBox2;
-        private RadioButton radioTimeToLiveOff;        private Label label5;
+        private RadioButton radioTimeToLiveOff; private Label label5;
         private Label label6;
         private NumericUpDown nupTimeToLiveSeconds;
         private RadioButton radioTimeToLiveOn;
