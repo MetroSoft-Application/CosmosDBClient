@@ -335,13 +335,21 @@ namespace CosmosDBClient.TableAPI
             switch (property.PropertyType)
             {
                 case EdmType.String:
+                    // 文字列が日付形式の場合は、DateTimeOffsetに変換を試みる
+                    if (property.StringValue != null &&
+                        property.StringValue.Contains("T") &&
+                        DateTimeOffset.TryParse(property.StringValue, out var dateTimeOffset))
+                    {
+                        return dateTimeOffset;
+                    }
                     return property.StringValue != null ? property.StringValue : DBNull.Value;
                 case EdmType.Binary:
                     return property.BinaryValue != null ? property.BinaryValue : DBNull.Value;
                 case EdmType.Boolean:
                     return property.BooleanValue.HasValue ? property.BooleanValue.Value : DBNull.Value;
                 case EdmType.DateTime:
-                    return property.DateTimeOffsetValue.HasValue ? property.DateTimeOffsetValue.Value : DBNull.Value;
+                    // DateTimeをDateTimeOffsetに変換
+                    return property.DateTime.HasValue ? new DateTimeOffset(property.DateTime.Value) : DBNull.Value;
                 case EdmType.Double:
                     return property.DoubleValue.HasValue ? property.DoubleValue.Value : DBNull.Value;
                 case EdmType.Guid:
@@ -449,7 +457,7 @@ namespace CosmosDBClient.TableAPI
                     return EntityProperty.GeneratePropertyForBool(token.Value<bool>());
 
                 case JTokenType.Date:
-                    return EntityProperty.GeneratePropertyForDateTimeOffset(token.Value<DateTimeOffset>());
+                    return EntityProperty.GeneratePropertyForDateTimeOffset(token.Value<DateTime>());
 
                 case JTokenType.Guid:
                     return EntityProperty.GeneratePropertyForGuid(token.Value<Guid>());
@@ -554,56 +562,6 @@ namespace CosmosDBClient.TableAPI
             var rowKey = jsonObject["RowKey"]?.ToString() ?? "";
 
             return $"PartitionKey: {partitionKey}{Environment.NewLine}RowKey: {rowKey}";
-        }
-
-        /// <summary>
-        /// クエリ文字列を構築する
-        /// </summary>
-        /// <param name="filterText">フィルタ条件のテキスト</param>
-        /// <param name="maxItemCount">最大アイテム数</param>
-        /// <returns>ODATA形式のクエリ文字列</returns>
-        public string BuildQuery(string filterText, int maxItemCount)
-        {
-            // フィルタ文字列が空の場合は全件取得
-            if (string.IsNullOrWhiteSpace(filterText))
-            {
-                return "";
-            }
-
-            return filterText;
-        }
-
-        /// <summary>
-        /// テーブルを作成する
-        /// </summary>
-        /// <returns>テーブル作成の成功/失敗と結果メッセージ</returns>
-        public async Task<(bool Success, string Message)> CreateTableAsync()
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(Table.Name))
-                {
-                    return (false, "Table name is not set");
-                }
-
-                var exists = await Table.ExistsAsync();
-                if (exists)
-                {
-                    return (true, $"Table '{Table.Name}' already exists.");
-                }
-
-                // テーブルの作成
-                await Table.CreateIfNotExistsAsync();
-                return (true, $"Table '{Table.Name}' created successfully.");
-            }
-            catch (StorageException ex)
-            {
-                return (false, $"Storage exception occurred: {ex.Message}\nStatus code: {ex.RequestInformation?.HttpStatusCode}\nDetails: {ex.RequestInformation?.ExtendedErrorInformation?.ErrorMessage}");
-            }
-            catch (Exception ex)
-            {
-                return (false, $"Exception occurred: {ex.Message}");
-            }
         }
 
         /// <summary>
@@ -717,6 +675,58 @@ namespace CosmosDBClient.TableAPI
                 {
                     _accountKey = part.Substring("AccountKey=".Length);
                 }
+            }
+        }
+
+        /// <summary>
+        /// SQL構文からODataフィルタ形式に変換するメソッド
+        /// </summary>
+        /// <param name="sqlQuery">SQL形式のクエリ</param>
+        /// <returns>ODataフィルタ形式のクエリ</returns>
+        public string ConvertSqlToODataFilter(string sqlQuery)
+        {
+            try
+            {
+                // SQL構文を簡易解析
+                sqlQuery = sqlQuery.Trim();
+
+                // WHEREの部分を抽出
+                int wherePos = sqlQuery.ToUpper().IndexOf("WHERE");
+                if (wherePos >= 0)
+                {
+                    var whereClause = sqlQuery.Substring(wherePos + 5).Trim();
+
+                    // SQL特有の構文を変換
+                    whereClause = whereClause.Replace(" AND ", " and ")
+                                            .Replace(" OR ", " or ")
+                                            .Replace(" = ", " eq ")
+                                            .Replace(" != ", " ne ")
+                                            .Replace(" <> ", " ne ")
+                                            .Replace(" > ", " gt ")
+                                            .Replace(" >= ", " ge ")
+                                            .Replace(" < ", " lt ")
+                                            .Replace(" <= ", " le ");
+
+                    // LIKEをコントロール
+                    if (whereClause.Contains(" LIKE ") || whereClause.Contains(" like "))
+                    {
+                        // LIKEをサポートしていないので注意メッセージを表示
+                        MessageBox.Show("'LIKE' operator is not supported in Table API. Please modify your search criteria.", "Query Conversion", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                        // 代わりに単純な文字列比較を提案
+                        whereClause = whereClause.Replace(" LIKE ", " eq ").Replace(" like ", " eq ");
+                    }
+
+                    return whereClause;
+                }
+
+                // WHERE句がない場合はデフォルト条件
+                return "";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred during query conversion: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return "";
             }
         }
     }

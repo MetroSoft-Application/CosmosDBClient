@@ -93,7 +93,7 @@ namespace CosmosDBClient
             _jsonData.Font = new Font("Yu Gothic UI", 9);
             _jsonData.WordWrap = true;
             _jsonData.ShowLineNumbers = false;
-            panel1.Controls.Add(_jsonData);            // フォームのタイトルを変更
+            panel1.Controls.Add(_jsonData);
             this.Text = "Table API Entity Insert/Update";
 
             if (tableRow != null)
@@ -116,11 +116,12 @@ namespace CosmosDBClient
                 _jsonData.Text = jsonEntity.ToString(Newtonsoft.Json.Formatting.Indented);
             }
             else
-            {            // 新規エンティティの作成
+            {
+                // 新規エンティティの作成
                 var jsonEntity = new JObject
                 {
-                    ["PartitionKey"] = "",  // 必須フィールド
-                    ["RowKey"] = "",        // 必須フィールド
+                    ["PartitionKey"] = "",
+                    ["RowKey"] = "",
                     ["SampleProperty"] = "Enter value"
                 };
                 _jsonData.Text = jsonEntity.ToString(Newtonsoft.Json.Formatting.Indented);
@@ -133,7 +134,8 @@ namespace CosmosDBClient
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
         private async void buttonJsonInsert_Click(object sender, EventArgs e)
-        {            DialogResult result = MessageBox.Show(
+        {
+            DialogResult result = MessageBox.Show(
                 "Do you want to insert/update the record?",
                 "Confirmation",
                 MessageBoxButtons.YesNo,
@@ -201,7 +203,7 @@ namespace CosmosDBClient
             var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
             // Cosmos DBにUpsert処理を実行
-            var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);            var message = $"Successfully inserted/updated!\n\nId: {id}\nPartition Key: {partitionKeyInfo}\n\nRequest Charge: {response.RequestCharge}";
+            var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey); var message = $"Successfully inserted/updated!\n\nId: {id}\nPartition Key: {partitionKeyInfo}\n\nRequest Charge: {response.RequestCharge}";
             MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -238,7 +240,7 @@ namespace CosmosDBClient
             }
 
             // Tableにエンティティを挿入
-            await _tableAPIService.InsertOrReplaceEntityAsync(entity);            var message = $"Entity successfully inserted/updated!\n\nPartition Key: {partitionKey}\nRow Key: {rowKey}";
+            await _tableAPIService.InsertOrReplaceEntityAsync(entity); var message = $"Entity successfully inserted/updated!\n\nPartition Key: {partitionKey}\nRow Key: {rowKey}";
             MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
