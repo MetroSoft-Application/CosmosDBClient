@@ -43,6 +43,7 @@ namespace CosmosDBClient
         {
             InitializeComponent();
             AutoScaleMode = AutoScaleMode.Dpi;
+
             SetupDatagridview();
             var configuration = LoadConfiguration();
             // APIモードの取得と初期化
@@ -65,11 +66,11 @@ namespace CosmosDBClient
                     ttlFlowPanel.Controls.Add(radioTimeToLiveOff);
                     ttlFlowPanel.Controls.Add(radioTimeToLiveOn);
                     ttlFlowPanel.Controls.Add(nupTimeToLiveSeconds);
-                    ttlFlowPanel.Controls.Add(label6);
-                    ttlFlowPanel.Controls.Add(label7);
-                    ttlFlowPanel.Controls.Add(txtPartitionKey);
-                    ttlFlowPanel.Controls.Add(label8);
-                    ttlFlowPanel.Controls.Add(txtUniqueKey);
+                    //ttlFlowPanel.Controls.Add(label6);
+                    //ttlFlowPanel.Controls.Add(label7);
+                    //ttlFlowPanel.Controls.Add(txtPartitionKey);
+                    //ttlFlowPanel.Controls.Add(label8);
+                    //ttlFlowPanel.Controls.Add(txtUniqueKey);
 
                     textBoxInfo = new TextBox
                     {
@@ -257,7 +258,6 @@ namespace CosmosDBClient
                 default:
                     throw new InvalidOperationException($"Unsupported API mode: {_apiMode}");
             }
-            // textBoxInfoは既にコンストラクタの最初で初期化済みのため、ここでの再初期化は不要
         }
 
         /// <summary>
@@ -514,7 +514,9 @@ namespace CosmosDBClient
                 }
 
                 _jsonData.Text = string.Empty;
+
                 ResizeRowHeader();
+
                 buttonInsert.Enabled = true;
 
                 // メモリ最適化

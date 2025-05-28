@@ -48,10 +48,10 @@ namespace CosmosDBClient
             }
             catch (Exception)
             {
-            }            // 新規作成用のJSONオブジェクトを準備
-            var filteredObject = new JObject();
+            }
 
-            // 既存のJSONオブジェクトが有効な場合はIDを保持、それ以外は新規生成
+            // システムフィールドを除外する
+            var filteredObject = new JObject();
             filteredObject["id"] = Guid.NewGuid().ToString("N");
 
             try
@@ -136,8 +136,8 @@ namespace CosmosDBClient
         private async void buttonJsonInsert_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show(
-                "Do you want to insert/update the record?",
-                "Confirmation",
+                "Do you want to Insert your records?",
+                "Info",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question
             );

@@ -12,6 +12,7 @@
             }
             base.Dispose(disposing);
         }
+
         #region Windows Form Designer generated code
 
         private void InitializeComponent()
@@ -43,17 +44,17 @@
             groupBox1 = new GroupBox();
             tabControl1 = new TabControl();
             tabPage1 = new TabPage();
+            txtUniqueKey = new TextBox();
+            label8 = new Label();
+            txtPartitionKey = new TextBox();
+            label7 = new Label();
+            label6 = new Label();
             nupTimeToLiveSeconds = new NumericUpDown();
             radioTimeToLiveOn = new RadioButton();
             radioTimeToLiveOff = new RadioButton();
             label5 = new Label();
-            txtPartitionKey = new TextBox();
-            label7 = new Label();
-            txtUniqueKey = new TextBox();
-            label8 = new Label();
             tabPage2 = new TabPage();
             txtIndexingPolicy = new RichTextBox();
-            label6 = new Label();
             groupBox2 = new GroupBox();
             panel1 = new Panel();
             splitContainer1 = new SplitContainer();
@@ -76,6 +77,7 @@
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer2).BeginInit();
+            splitContainer2.Panel1.SuspendLayout();
             splitContainer2.Panel2.SuspendLayout();
             splitContainer2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
@@ -296,14 +298,15 @@
             // 
             // tabPage1
             // 
+            tabPage1.Controls.Add(txtUniqueKey);
+            tabPage1.Controls.Add(label8);
+            tabPage1.Controls.Add(txtPartitionKey);
+            tabPage1.Controls.Add(label7);
+            tabPage1.Controls.Add(label6);
             tabPage1.Controls.Add(nupTimeToLiveSeconds);
             tabPage1.Controls.Add(radioTimeToLiveOn);
             tabPage1.Controls.Add(radioTimeToLiveOff);
             tabPage1.Controls.Add(label5);
-            tabPage1.Controls.Add(txtPartitionKey);
-            tabPage1.Controls.Add(label7);
-            tabPage1.Controls.Add(txtUniqueKey);
-            tabPage1.Controls.Add(label8);
             tabPage1.Location = new Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new Padding(3);
@@ -311,6 +314,50 @@
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Settings";
             tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // txtUniqueKey
+            // 
+            txtUniqueKey.Location = new Point(100, 58);
+            txtUniqueKey.Name = "txtUniqueKey";
+            txtUniqueKey.ReadOnly = true;
+            txtUniqueKey.Size = new Size(270, 23);
+            txtUniqueKey.TabIndex = 13;
+            // 
+            // label8
+            // 
+            label8.AutoSize = true;
+            label8.Location = new Point(7, 63);
+            label8.Name = "label8";
+            label8.Size = new Size(67, 15);
+            label8.TabIndex = 12;
+            label8.Text = "Unique Key";
+            // 
+            // txtPartitionKey
+            // 
+            txtPartitionKey.Location = new Point(100, 33);
+            txtPartitionKey.Name = "txtPartitionKey";
+            txtPartitionKey.ReadOnly = true;
+            txtPartitionKey.Size = new Size(270, 23);
+            txtPartitionKey.TabIndex = 11;
+            // 
+            // label7
+            // 
+            label7.AutoSize = true;
+            label7.Location = new Point(7, 37);
+            label7.Name = "label7";
+            label7.Size = new Size(74, 15);
+            label7.TabIndex = 10;
+            label7.Text = "Partition Key";
+            // 
+            // label6
+            // 
+            label6.AutoSize = true;
+            label6.Location = new Point(319, 11);
+            label6.Name = "label6";
+            label6.Size = new Size(51, 15);
+            label6.TabIndex = 5;
+            label6.Text = "Seconds";
+            label6.Visible = false;
             // 
             // nupTimeToLiveSeconds
             // 
@@ -350,47 +397,12 @@
             // 
             // label5
             // 
+            label5.AutoSize = true;
             label5.Location = new Point(7, 11);
             label5.Name = "label5";
             label5.Size = new Size(70, 15);
             label5.TabIndex = 0;
             label5.Text = "Time to Live";
-            // 
-            // txtPartitionKey
-            // 
-            txtPartitionKey.Location = new Point(80, 35);
-            txtPartitionKey.Multiline = true;
-            txtPartitionKey.Name = "txtPartitionKey";
-            txtPartitionKey.ReadOnly = true;
-            txtPartitionKey.Size = new Size(160, 20);
-            txtPartitionKey.TabIndex = 6;
-            // 
-            // label7
-            // 
-            label7.AutoSize = true;
-            label7.Location = new Point(7, 38);
-            label7.Name = "label7";
-            label7.Size = new Size(74, 15);
-            label7.TabIndex = 7;
-            label7.Text = "Partition Key";
-            // 
-            // txtUniqueKey
-            // 
-            txtUniqueKey.Location = new Point(80, 61);
-            txtUniqueKey.Multiline = true;
-            txtUniqueKey.Name = "txtUniqueKey";
-            txtUniqueKey.ReadOnly = true;
-            txtUniqueKey.Size = new Size(100, 20);
-            txtUniqueKey.TabIndex = 8;
-            // 
-            // label8
-            // 
-            label8.AutoSize = true;
-            label8.Location = new Point(7, 64);
-            label8.Name = "label8";
-            label8.Size = new Size(67, 15);
-            label8.TabIndex = 9;
-            label8.Text = "Unique Key";
             // 
             // tabPage2
             // 
@@ -413,16 +425,6 @@
             txtIndexingPolicy.TabIndex = 0;
             txtIndexingPolicy.Text = "";
             // 
-            // label6
-            // 
-            label6.AutoSize = true;
-            label6.Location = new Point(319, 11);
-            label6.Name = "label6";
-            label6.Size = new Size(51, 15);
-            label6.TabIndex = 5;
-            label6.Text = "Seconds";
-            label6.Visible = false;
-            // 
             // groupBox2
             // 
             groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -444,6 +446,7 @@
             // 
             // splitContainer1
             // 
+            splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             splitContainer1.Location = new Point(12, 146);
             splitContainer1.Name = "splitContainer1";
             // 
@@ -569,6 +572,7 @@
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
+            splitContainer2.Panel1.ResumeLayout(false);
             splitContainer2.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
             splitContainer2.ResumeLayout(false);
@@ -614,14 +618,15 @@
         private TabPage tabPage1;
         private TabPage tabPage2;
         private GroupBox groupBox2;
-        private RadioButton radioTimeToLiveOff; private Label label5;
+        private RadioButton radioTimeToLiveOff;
+        private Label label5;
         private Label label6;
         private NumericUpDown nupTimeToLiveSeconds;
         private RadioButton radioTimeToLiveOn;
-        private TextBox txtPartitionKey;
-        private Label label7;
         private TextBox txtUniqueKey;
         private Label label8;
+        private TextBox txtPartitionKey;
+        private Label label7;
         private RichTextBox txtIndexingPolicy;
         private Panel panel1;
         private SplitContainer splitContainer1;
