@@ -66,11 +66,6 @@ namespace CosmosDBClient
                     ttlFlowPanel.Controls.Add(radioTimeToLiveOff);
                     ttlFlowPanel.Controls.Add(radioTimeToLiveOn);
                     ttlFlowPanel.Controls.Add(nupTimeToLiveSeconds);
-                    //ttlFlowPanel.Controls.Add(label6);
-                    //ttlFlowPanel.Controls.Add(label7);
-                    //ttlFlowPanel.Controls.Add(txtPartitionKey);
-                    //ttlFlowPanel.Controls.Add(label8);
-                    //ttlFlowPanel.Controls.Add(txtUniqueKey);
 
                     textBoxInfo = new TextBox
                     {
@@ -99,12 +94,11 @@ namespace CosmosDBClient
             _textBoxQuery.Dock = DockStyle.Fill;
             _textBoxQuery.ImeMode = ImeMode.Hiragana;
             _textBoxQuery.BorderStyle = BorderStyle.Fixed3D;
-            _textBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
+            SetupQueryTextBox();
             _textBoxQuery.TabLength = 4;
             _textBoxQuery.WordWrap = false;
             _textBoxQuery.ShowLineNumbers = true;
             panel1.Controls.Add(_textBoxQuery);
-            SetupQueryTextBox();
 
             _jsonData = new FastColoredTextBox();
             _jsonData.Language = Language.JSON;
@@ -1264,7 +1258,7 @@ namespace CosmosDBClient
                             }
                             else
                             {
-                                txtUniqueKey.Text = "No unique keys defined";
+                                txtUniqueKey.Text = string.Empty;
                             }
 
                             // TTLの設定を表示
@@ -1299,12 +1293,10 @@ namespace CosmosDBClient
                             txtUniqueKey.Visible = false;
                             label8.Visible = false;
 
-                            // Table APIモードでもTTL設定は表示
                             radioTimeToLiveOff.Visible = true;
                             radioTimeToLiveOn.Visible = true;
                             label5.Visible = true;
 
-                            // Table APIではTTLは通常OFF
                             radioTimeToLiveOff.Checked = true;
                             nupTimeToLiveSeconds.Visible = false;
                             label6.Visible = false;
