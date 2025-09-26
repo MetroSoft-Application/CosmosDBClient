@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using CosmosDBClient.CosmosDB;
 using FastColoredTextBoxNS;
@@ -21,7 +22,7 @@ namespace CosmosDBClient
         private readonly int _maxItemCount;
         private readonly bool _useHyperlinkHandler;
         private HyperlinkHandler _hyperlinkHandler;
-        private FastColoredTextBox _textBoxQuery;
+        private TabControl _queryTabControl;
         private FastColoredTextBox _jsonData;
         private AdvancedDataGridView dataGridViewResults;
         private TextStyle jsonStringStyle = new TextStyle(Brushes.Black, null, FontStyle.Regular);
@@ -41,17 +42,7 @@ namespace CosmosDBClient
             AutoScaleMode = AutoScaleMode.Dpi;
 
             SetupDatagridview();
-
-            _textBoxQuery = new FastColoredTextBox();
-            _textBoxQuery.Language = Language.SQL;
-            _textBoxQuery.Dock = DockStyle.Fill;
-            _textBoxQuery.ImeMode = ImeMode.Hiragana;
-            _textBoxQuery.BorderStyle = BorderStyle.Fixed3D;
-            _textBoxQuery.Text = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
-            _textBoxQuery.TabLength = 4;
-            _textBoxQuery.WordWrap = false;
-            _textBoxQuery.ShowLineNumbers = true;
-            panel1.Controls.Add(_textBoxQuery);
+            SetupQueryTabs();
 
             _jsonData = new FastColoredTextBox();
             _jsonData.Language = Language.JSON;
@@ -167,6 +158,278 @@ namespace CosmosDBClient
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
             dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
             splitContainer2.Panel1.Controls.Add(dataGridViewResults);
+        }
+
+        /// <summary>
+        /// クエリタブの設定を行う
+        /// </summary>
+        private void SetupQueryTabs()
+        {
+            _queryTabControl = new TabControl();
+            _queryTabControl.Dock = DockStyle.Fill;
+            _queryTabControl.Alignment = TabAlignment.Top;
+            _queryTabControl.HotTrack = true;
+            _queryTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+
+            // タブの描画イベントを追加（アクティブなタブを強調表示）
+            _queryTabControl.DrawItem += QueryTabControl_DrawItem;
+
+            // ダブルクリックで新しいタブを追加
+            _queryTabControl.DoubleClick += (sender, e) => AddNewQueryTab();
+
+            // キーボードイベントの処理
+            _queryTabControl.KeyDown += QueryTabControl_KeyDown;
+
+            // タブ選択変更時の再描画
+            _queryTabControl.SelectedIndexChanged += (sender, e) => _queryTabControl.Invalidate();
+
+            // 右クリックメニューを追加
+            var contextMenu = new ContextMenuStrip();
+            var addTabMenuItem = new ToolStripMenuItem("Add New Tab (Ctrl+T)");
+            var closeTabMenuItem = new ToolStripMenuItem("Close Tab (Ctrl+W)");
+            var closeAllTabsMenuItem = new ToolStripMenuItem("Close All Tabs");
+            var renameTabMenuItem = new ToolStripMenuItem("Rename Tab (F2)");
+
+            addTabMenuItem.Click += (sender, e) => AddNewQueryTab();
+            closeTabMenuItem.Click += (sender, e) => CloseCurrentTab();
+            closeAllTabsMenuItem.Click += (sender, e) => CloseAllTabs();
+            renameTabMenuItem.Click += (sender, e) => RenameCurrentTab();
+
+            contextMenu.Items.AddRange(new ToolStripItem[] {
+                addTabMenuItem,
+                new ToolStripSeparator(),
+                closeTabMenuItem,
+                closeAllTabsMenuItem,
+                new ToolStripSeparator(),
+                renameTabMenuItem
+            });
+            _queryTabControl.ContextMenuStrip = contextMenu;
+
+            panel1.Controls.Add(_queryTabControl);
+
+            // 初期タブを作成
+            AddNewQueryTab("Query 1", "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1");
+        }
+
+        /// <summary>
+        /// クエリタブコントロールのキーボードイベントを処理
+        /// </summary>
+        private void QueryTabControl_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.T)
+            {
+                // Ctrl+T: 新しいタブを追加
+                AddNewQueryTab();
+                e.Handled = true;
+            }
+            else if (e.Control && e.KeyCode == Keys.W)
+            {
+                // Ctrl+W: 現在のタブを閉じる
+                CloseCurrentTab();
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.F2)
+            {
+                // F2: タブ名を変更
+                RenameCurrentTab();
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// タブのカスタム描画処理（アクティブなタブを強調表示）
+        /// </summary>
+        private void QueryTabControl_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            var tabControl = sender as TabControl;
+            var tabPage = tabControl.TabPages[e.Index];
+            var tabRect = tabControl.GetTabRect(e.Index);
+
+            // アクティブなタブかどうか判定
+            bool isSelected = (e.Index == tabControl.SelectedIndex);
+
+            // 標準的なWindows Formsのテーマに合わせた色設定
+            var backColor = isSelected ? SystemColors.Window : SystemColors.Control;
+            var textColor = isSelected ? SystemColors.WindowText : SystemColors.ControlText;
+            var borderColor = SystemColors.ControlDark;
+
+            // 背景を描画
+            using (var brush = new SolidBrush(backColor))
+            {
+                e.Graphics.FillRectangle(brush, tabRect);
+            }
+
+            // 境界線を描画（Windowsの標準的なスタイル）
+            using (var pen = new Pen(borderColor))
+            {
+                // 上と左右の境界線
+                e.Graphics.DrawLine(pen, tabRect.Left, tabRect.Bottom, tabRect.Left, tabRect.Top + 2);
+                e.Graphics.DrawLine(pen, tabRect.Left, tabRect.Top + 2, tabRect.Left + 2, tabRect.Top);
+                e.Graphics.DrawLine(pen, tabRect.Left + 2, tabRect.Top, tabRect.Right - 3, tabRect.Top);
+                e.Graphics.DrawLine(pen, tabRect.Right - 3, tabRect.Top, tabRect.Right - 1, tabRect.Top + 2);
+                e.Graphics.DrawLine(pen, tabRect.Right - 1, tabRect.Top + 2, tabRect.Right - 1, tabRect.Bottom);
+
+                // 非アクティブタブのみ下線を描画
+                if (!isSelected)
+                {
+                    e.Graphics.DrawLine(pen, tabRect.Left, tabRect.Bottom - 1, tabRect.Right - 1, tabRect.Bottom - 1);
+                }
+            }
+
+            // アクティブなタブの強調効果（内側の明るいハイライト）
+            if (isSelected)
+            {
+                using (var pen = new Pen(SystemColors.ControlLightLight))
+                {
+                    e.Graphics.DrawLine(pen, tabRect.Left + 1, tabRect.Bottom - 1, tabRect.Left + 1, tabRect.Top + 3);
+                    e.Graphics.DrawLine(pen, tabRect.Left + 1, tabRect.Top + 3, tabRect.Left + 3, tabRect.Top + 1);
+                    e.Graphics.DrawLine(pen, tabRect.Left + 3, tabRect.Top + 1, tabRect.Right - 4, tabRect.Top + 1);
+                }
+            }
+
+            // テキストを描画
+            var textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
+            var font = tabControl.Font;
+
+            // アクティブタブは若干太字で
+            if (isSelected)
+            {
+                font = new Font(tabControl.Font, FontStyle.Bold);
+            }
+
+            TextRenderer.DrawText(e.Graphics, tabPage.Text, font, tabRect, textColor, textFlags);
+
+            // フォントをクリーンアップ
+            if (isSelected && font != tabControl.Font)
+            {
+                font.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 新しいクエリタブを追加する
+        /// </summary>
+        /// <param name="tabName">タブ名（省略時は自動生成）</param>
+        /// <param name="initialQuery">初期クエリ（省略時はデフォルトクエリ）</param>
+        private void AddNewQueryTab(string tabName = null, string initialQuery = null)
+        {
+            if (tabName == null)
+            {
+                tabName = $"Query {_queryTabControl.TabPages.Count + 1}";
+            }
+
+            if (initialQuery == null)
+            {
+                initialQuery = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
+            }
+
+            var tabPage = new TabPage(tabName);
+
+            var textBoxQuery = new FastColoredTextBox();
+            textBoxQuery.Language = Language.SQL;
+            textBoxQuery.Dock = DockStyle.Fill;
+            textBoxQuery.ImeMode = ImeMode.Hiragana;
+            textBoxQuery.BorderStyle = BorderStyle.Fixed3D;
+            textBoxQuery.Text = initialQuery;
+            textBoxQuery.TabLength = 4;
+            textBoxQuery.WordWrap = false;
+            textBoxQuery.ShowLineNumbers = true;
+
+            tabPage.Controls.Add(textBoxQuery);
+            _queryTabControl.TabPages.Add(tabPage);
+            _queryTabControl.SelectedTab = tabPage;
+        }
+
+        /// <summary>
+        /// 現在のタブを閉じる
+        /// </summary>
+        private void CloseCurrentTab()
+        {
+            if (_queryTabControl.TabPages.Count <= 1)
+            {
+                MessageBox.Show("At least one tab is required.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var selectedTab = _queryTabControl.SelectedTab;
+            if (selectedTab != null)
+            {
+                _queryTabControl.TabPages.Remove(selectedTab);
+            }
+        }
+
+        /// <summary>
+        /// すべてのタブを閉じて初期状態に戻す
+        /// </summary>
+        private void CloseAllTabs()
+        {
+            _queryTabControl.TabPages.Clear();
+            AddNewQueryTab("Query 1", "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1");
+        }
+
+        /// <summary>
+        /// 現在のタブ名を変更する
+        /// </summary>
+        private void RenameCurrentTab()
+        {
+            var selectedTab = _queryTabControl.SelectedTab;
+            if (selectedTab == null) return;
+
+            using (var inputForm = new Form())
+            {
+                inputForm.Text = "Rename Tab";
+                inputForm.Size = new Size(300, 120);
+                inputForm.StartPosition = FormStartPosition.CenterParent;
+                inputForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                inputForm.MaximizeBox = false;
+                inputForm.MinimizeBox = false;
+
+                var textBox = new TextBox
+                {
+                    Text = selectedTab.Text,
+                    Location = new Point(20, 20),
+                    Size = new Size(240, 20)
+                };
+
+                var okButton = new Button
+                {
+                    Text = "OK",
+                    DialogResult = DialogResult.OK,
+                    Location = new Point(110, 50),
+                    Size = new Size(75, 23)
+                };
+
+                var cancelButton = new Button
+                {
+                    Text = "Cancel",
+                    DialogResult = DialogResult.Cancel,
+                    Location = new Point(190, 50),
+                    Size = new Size(75, 23)
+                };
+
+                inputForm.Controls.AddRange(new Control[] { textBox, okButton, cancelButton });
+                inputForm.AcceptButton = okButton;
+                inputForm.CancelButton = cancelButton;
+
+                if (inputForm.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(textBox.Text))
+                {
+                    selectedTab.Text = textBox.Text;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 現在選択されているクエリテキストを取得する
+        /// </summary>
+        /// <returns>現在選択されているタブのクエリテキスト</returns>
+        private string GetCurrentQueryText()
+        {
+            var selectedTab = _queryTabControl.SelectedTab;
+            if (selectedTab?.Controls[0] is FastColoredTextBox textBox)
+            {
+                return textBox.Text;
+            }
+            return "SELECT * FROM c";
         }
 
         /// <summary>
@@ -288,7 +551,7 @@ namespace CosmosDBClient
                 if (_virtualModeEnabled && GetMaxItemCount() > 1000)
                 {
                     // 大量データの場合はバッファリングを使用
-                    await UpdateVirtualDataGridView(BuildQuery(_textBoxQuery.Text, GetMaxItemCount()), 1000);
+                    await UpdateVirtualDataGridView(BuildQuery(GetCurrentQueryText(), GetMaxItemCount()), 1000);
                 }
                 else
                 {
@@ -499,7 +762,7 @@ namespace CosmosDBClient
         /// <returns>非同期の Task</returns>
         private async Task UpdateDatagridView()
         {
-            var query = BuildQuery(_textBoxQuery.Text, GetMaxItemCount());
+            var query = BuildQuery(GetCurrentQueryText(), GetMaxItemCount());
             var result = await _cosmosDBService.FetchDataWithStatusAsync(query, GetMaxItemCount());
 
             if (_virtualModeEnabled)
