@@ -26,9 +26,11 @@ namespace CosmosDBClient
         private AdvancedDataGridView dataGridViewResults;
         private TextStyle jsonStringStyle = new TextStyle(Brushes.Black, null, FontStyle.Regular);
         private DataTable _virtualDataTable;
-        private DataTable _originalDataTable; // フィルタリング時のオリジナルデータ保持用
+        private DataTable _originalDataTable;
         private List<string> _columnNames;
         private bool _virtualModeEnabled = true;
+        private HashSet<(int Row, int Column)> _modifiedCells = new HashSet<(int, int)>();
+        private HashSet<int> _modifiedRows = new HashSet<int>();
 
         /// <summary>
         /// FormMain クラスのコンストラクタ設定を読み込み、CosmosDBServiceのインスタンスを初期化する
@@ -161,6 +163,7 @@ namespace CosmosDBClient
 
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
             dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
+            dataGridViewResults.CellValueChanged += dataGridViewResults_CellValueChanged;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
             dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
             splitContainer2.Panel1.Controls.Add(dataGridViewResults);
@@ -401,6 +404,8 @@ namespace CosmosDBClient
                 // 読み込み完了したデータで更新
                 _virtualDataTable = newDataTable;
 
+                ClearModificationMarks();
+
                 // カラム情報の設定
                 dataGridViewResults.Columns.Clear();
                 _columnNames = new List<string>();
@@ -501,7 +506,9 @@ namespace CosmosDBClient
             {
                 // 仮想モードの場合、DataTableを内部に保持して手動で管理
                 _virtualDataTable = result.Data;
-                _originalDataTable = null; // フィルタリング状態をリセット
+                _originalDataTable = null;
+
+                ClearModificationMarks();
 
                 // カラム情報の設定
                 dataGridViewResults.Columns.Clear();
@@ -531,6 +538,8 @@ namespace CosmosDBClient
                 dataGridViewResults.DataSource = null;
                 SetReadOnlyColumns(result.Data);
                 dataGridViewResults.DataSource = result.Data;
+
+                ClearModificationMarks();
             }
 
             UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
@@ -567,7 +576,9 @@ namespace CosmosDBClient
                 {
                     string columnName = _columnNames[e.ColumnIndex];
 
-                    // 型変換を適切に処理
+                    object originalValue = _virtualDataTable.Rows[e.RowIndex][columnName];
+                    bool valueChanged = !object.Equals(originalValue, e.Value);
+
                     var column = _virtualDataTable.Columns[columnName];
                     object typedValue = e.Value;
 
@@ -584,11 +595,15 @@ namespace CosmosDBClient
                     {
                         typedValue = decimalValue;
                     }
-                    // その他の型変換処理をここに追加
 
                     _virtualDataTable.Rows[e.RowIndex][columnName] = typedValue;
 
-                    // 編集されたことをマークして必要なUIを更新
+                    if (valueChanged)
+                    {
+                        _modifiedCells.Add((e.RowIndex, e.ColumnIndex));
+                        _modifiedRows.Add(e.RowIndex);
+                    }
+
                     if (!_virtualDataTable.Rows[e.RowIndex].RowState.HasFlag(DataRowState.Modified))
                     {
                         _virtualDataTable.Rows[e.RowIndex].SetModified();
@@ -596,6 +611,7 @@ namespace CosmosDBClient
 
                     // セルのスタイル更新
                     dataGridViewResults.InvalidateCell(e.ColumnIndex, e.RowIndex);
+                    dataGridViewResults.InvalidateRow(e.RowIndex);
 
                     // 重要な列（id, パーティションキーなど）が変更された場合の処理
                     if (columnName == "id" || IsPartitionKeyColumn(columnName))
@@ -624,6 +640,30 @@ namespace CosmosDBClient
             catch
             {
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// セルと行の変更マークをクリアする
+        /// </summary>
+        private void ClearModificationMarks()
+        {
+            _modifiedCells.Clear();
+            _modifiedRows.Clear();
+        }
+
+        /// <summary>
+        /// 通常モード時のセル値変更イベントハンドラ
+        /// </summary>
+        private void dataGridViewResults_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && !_virtualModeEnabled)
+            {
+                _modifiedCells.Add((e.RowIndex, e.ColumnIndex));
+                _modifiedRows.Add(e.RowIndex);
+
+                dataGridViewResults.InvalidateCell(e.ColumnIndex, e.RowIndex);
+                dataGridViewResults.InvalidateRow(e.RowIndex);
             }
         }
 
@@ -908,14 +948,25 @@ namespace CosmosDBClient
 
         /// <summary>
         /// レコードを更新する
-        /// ユーザー確認後に、Cosmos DB へアップサート（更新または挿入）される
+        /// 変更された行のみを対象として、Cosmos DB へアップサート（更新または挿入）される
         /// </summary>
         /// <param name="sender">イベントの送信元オブジェクト</param>
         /// <param name="e">イベントデータ</param>
         private async void buttonUpdate_Click(object sender, EventArgs e)
         {
+            if (_modifiedRows.Count == 0)
+            {
+                MessageBox.Show(
+                    "No modified records found. Please modify data before updating.",
+                    "Info",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+                return;
+            }
+
             DialogResult result = MessageBox.Show(
-                "Do you want to update your records?",
+                $"Do you want to update {_modifiedRows.Count} modified records?",
                 "Info",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question
@@ -926,40 +977,60 @@ namespace CosmosDBClient
                 return;
             }
 
-            var jsonObject = default(JObject);
+            var successCount = 0;
+            var errorCount = 0;
+            var totalRequestCharge = 0.0;
+            var errorMessages = new List<string>();
 
             try
             {
-                // JSONデータをパース
-                jsonObject = JObject.Parse(_jsonData.Text);
+                foreach (var rowIndex in _modifiedRows.ToList())
+                {
+                    try
+                    {
+                        // JSONオブジェクトを行データから構築
+                        var jsonObject = BuildJsonObjectFromRow(rowIndex);
+
+                        // JSONオブジェクトからidを取得
+                        var id = jsonObject["id"]?.ToString();
+
+                        // PartitionKeyを自動的に解決して取得
+                        var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
+
+                        // Cosmos DBにUpsert処理を実行
+                        var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
+                        totalRequestCharge += response.RequestCharge;
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        errorCount++;
+                        errorMessages.Add($"行 {rowIndex + 1}: {ex.Message}");
+                    }
+                }
+
+                var message = $"Update completed!\n\nSuccess: {successCount} records\nFailed: {errorCount} records\nTotal request charge: {totalRequestCharge:F2}";
+
+                if (errorMessages.Count > 0)
+                {
+                    message += "\n\nError details:\n" + string.Join("\n", errorMessages.Take(5));
+                    if (errorMessages.Count > 5)
+                    {
+                        message += $"\n... {errorMessages.Count - 5} more errors";
+                    }
+                }
+
+                MessageBox.Show(message, "Update Result");
+
+                if (successCount > 0)
+                {
+                    ClearModificationMarks();
+                    await UpdateDatagridView();
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error");
-                return;
-            }
-
-            try
-            {
-                // JSONオブジェクトからidを取得
-                var id = jsonObject["id"].ToString();
-
-                // PartitionKeyを自動的に解決して取得
-                var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
-
-                // PartitionKeyに対応するキー項目を取得
-                string partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
-
-                // Cosmos DBにUpsert処理を実行
-                var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
-
-                var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
-                MessageBox.Show(message, "Info");
-                await UpdateDatagridView();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error");
+                MessageBox.Show($"Error occurred during update process: {ex.Message}", "Error");
             }
         }
 
@@ -1050,12 +1121,37 @@ namespace CosmosDBClient
         /// <param name="e">行描画イベントデータ</param>
         private void dataGridViewResults_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
-            using var brush = new System.Drawing.SolidBrush(dataGridViewResults.RowHeadersDefaultCellStyle.ForeColor);
-            e.Graphics.DrawString((e.RowIndex + 1).ToString(),
-                                  dataGridViewResults.DefaultCellStyle.Font,
-                                  brush,
-                                  e.RowBounds.Location.X + 15,
-                                  e.RowBounds.Location.Y + 4);
+            var brush = new System.Drawing.SolidBrush(dataGridViewResults.RowHeadersDefaultCellStyle.ForeColor);
+            var backgroundColor = dataGridViewResults.RowHeadersDefaultCellStyle.BackColor;
+
+            if (_modifiedRows.Contains(e.RowIndex))
+            {
+                backgroundColor = System.Drawing.Color.IndianRed;
+                brush = new System.Drawing.SolidBrush(System.Drawing.Color.White);
+
+                using (var backgroundBrush = new System.Drawing.SolidBrush(backgroundColor))
+                {
+                    var headerRect = new Rectangle(e.RowBounds.X, e.RowBounds.Y,
+                                                 dataGridViewResults.RowHeadersWidth, e.RowBounds.Height);
+                    e.Graphics.FillRectangle(backgroundBrush, headerRect);
+                }
+
+                e.Graphics.DrawString("*" + (e.RowIndex + 1).ToString(),
+                                      new Font(dataGridViewResults.DefaultCellStyle.Font, FontStyle.Bold),
+                                      brush,
+                                      e.RowBounds.Location.X + 5,
+                                      e.RowBounds.Location.Y + 4);
+            }
+            else
+            {
+                e.Graphics.DrawString((e.RowIndex + 1).ToString(),
+                                      dataGridViewResults.DefaultCellStyle.Font,
+                                      brush,
+                                      e.RowBounds.Location.X + 15,
+                                      e.RowBounds.Location.Y + 4);
+            }
+
+            brush.Dispose();
         }
 
         /// <summary>
@@ -1148,14 +1244,30 @@ namespace CosmosDBClient
                 return;
             }
 
+            if (_modifiedCells.Contains((e.RowIndex, e.ColumnIndex)))
+            {
+                e.CellStyle.BackColor = System.Drawing.Color.LightCoral;
+                e.CellStyle.ForeColor = System.Drawing.Color.Black;
+                return;
+            }
+
+            if (_modifiedRows.Contains(e.RowIndex))
+            {
+                e.CellStyle.BackColor = System.Drawing.Color.MistyRose;
+                e.CellStyle.ForeColor = System.Drawing.Color.Black;
+            }
+
             if (_virtualModeEnabled)
             {
                 // 仮想モードの場合、列の読み取り専用状態を直接確認
                 var column = dataGridViewResults.Columns[e.ColumnIndex];
                 if (column.ReadOnly)
                 {
-                    e.CellStyle.BackColor = System.Drawing.Color.DarkGray;
-                    e.CellStyle.ForeColor = System.Drawing.Color.White;
+                    if (!_modifiedCells.Contains((e.RowIndex, e.ColumnIndex)) && !_modifiedRows.Contains(e.RowIndex))
+                    {
+                        e.CellStyle.BackColor = System.Drawing.Color.DarkGray;
+                        e.CellStyle.ForeColor = System.Drawing.Color.White;
+                    }
                 }
             }
             else
@@ -1165,8 +1277,11 @@ namespace CosmosDBClient
                 {
                     if (column.ReadOnly)
                     {
-                        dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.BackColor = System.Drawing.Color.DarkGray;
-                        dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.ForeColor = System.Drawing.Color.White;
+                        if (!_modifiedCells.Contains((e.RowIndex, e.ColumnIndex)) && !_modifiedRows.Contains(e.RowIndex))
+                        {
+                            dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.BackColor = System.Drawing.Color.DarkGray;
+                            dataGridViewResults.Rows[e.RowIndex].Cells[column.Index].Style.ForeColor = System.Drawing.Color.White;
+                        }
                     }
                 }
             }
