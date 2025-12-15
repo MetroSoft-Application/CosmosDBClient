@@ -17,6 +17,7 @@ namespace CosmosDBClient.CosmosDB
         private static CosmosClient _cosmosClient;
         private Database _cosmosDatabase;
         private Container _cosmosContainer;
+        private RequestOptions _requestOptions;
 
         /// <summary>
         /// CosmosDBのクライアントオブジェクト
@@ -43,6 +44,42 @@ namespace CosmosDBClient.CosmosDB
         }
 
         /// <summary>
+        /// リクエストオプション
+        /// </summary>
+        public RequestOptions RequestOptions
+        {
+            get => _requestOptions;
+            set => _requestOptions = value;
+        }
+
+        /// <summary>
+        /// PriorityLevelを設定したQueryRequestOptionsを生成する
+        /// </summary>
+        /// <returns>QueryRequestOptionsオブジェクト</returns>
+        private QueryRequestOptions CreateQueryRequestOptions()
+        {
+            return new QueryRequestOptions { PriorityLevel = _requestOptions.PriorityLevel };
+        }
+
+        /// <summary>
+        /// PriorityLevelを設定したItemRequestOptionsを生成する
+        /// </summary>
+        /// <returns>ItemRequestOptionsオブジェクト</returns>
+        private ItemRequestOptions CreateItemRequestOptions()
+        {
+            return new ItemRequestOptions { PriorityLevel = _requestOptions.PriorityLevel };
+        }
+
+        /// <summary>
+        /// PriorityLevelを設定したContainerRequestOptionsを生成する
+        /// </summary>
+        /// <returns>ContainerRequestOptionsオブジェクト</returns>
+        private ContainerRequestOptions CreateContainerRequestOptions()
+        {
+            return new ContainerRequestOptions { PriorityLevel = _requestOptions.PriorityLevel };
+        }
+
+        /// <summary>
         /// CosmosDBService クラスのコンストラクタ
         /// </summary>
         /// <param name="connectionString">CosmosDBへの接続文字列</param>
@@ -66,6 +103,10 @@ namespace CosmosDBClient.CosmosDB
 
             // データベースとコンテナの取得
             _cosmosContainer = _cosmosClient.GetContainer(databaseName, containerName);
+
+            // デフォルトのリクエストオプションを初期化
+            _requestOptions = new RequestOptions();
+            _requestOptions.PriorityLevel = PriorityLevel.Low;
         }
 
         /// <summary>
@@ -97,7 +138,8 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>コンテナが存在する場合はtrue、それ以外はfalse</returns>
         private async Task<bool> DoesContainerExistAsync(string containerName)
         {
-            using (var iterator = _cosmosDatabase.GetContainerQueryIterator<ContainerProperties>())
+            var requestOptions = CreateQueryRequestOptions();
+            using (var iterator = _cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(requestOptions: requestOptions))
             {
                 while (iterator.HasMoreResults)
                 {
@@ -135,8 +177,11 @@ namespace CosmosDBClient.CosmosDB
             {
                 // クエリの定義と実行
                 var queryDefinition = new QueryDefinition(query);
+                var requestOptions = CreateQueryRequestOptions();
+                requestOptions.MaxItemCount = maxItemCount;
                 queryResultSetIterator = _cosmosContainer.GetItemQueryIterator<dynamic>(
-                    queryDefinition, requestOptions: new QueryRequestOptions { MaxItemCount = maxItemCount });
+                    queryDefinition,
+                    requestOptions: requestOptions);
 
                 // 結果の処理
                 while (queryResultSetIterator.HasMoreResults)
@@ -275,7 +320,8 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>アップサートの結果</returns>
         public async Task<ItemResponse<T>> UpsertItemAsync<T>(T jsonObject, PartitionKey partitionKey)
         {
-            return await _cosmosContainer.UpsertItemAsync(jsonObject, partitionKey);
+            var requestOptions = CreateItemRequestOptions();
+            return await _cosmosContainer.UpsertItemAsync(jsonObject, partitionKey, requestOptions);
         }
 
         /// <summary>
@@ -287,7 +333,8 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>削除の結果</returns>
         public async Task<ItemResponse<T>> DeleteItemAsync<T>(string id, PartitionKey partitionKey)
         {
-            return await _cosmosContainer.DeleteItemAsync<T>(id, partitionKey);
+            var requestOptions = CreateItemRequestOptions();
+            return await _cosmosContainer.DeleteItemAsync<T>(id, partitionKey, requestOptions);
         }
 
         /// <summary>
@@ -296,7 +343,8 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>ContainerPropertiesオブジェクト</returns>
         public async Task<ContainerProperties> GetContainerPropertiesAsync()
         {
-            return await _cosmosContainer.ReadContainerAsync();
+            var requestOptions = CreateContainerRequestOptions();
+            return await _cosmosContainer.ReadContainerAsync(requestOptions);
         }
 
         /// <summary>
@@ -306,7 +354,8 @@ namespace CosmosDBClient.CosmosDB
         public async Task<List<string>> GetDatabaseNamesAsync()
         {
             var databases = new List<string>();
-            using (var iterator = _cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>())
+            var requestOptions = CreateQueryRequestOptions();
+            using (var iterator = _cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(requestOptions: requestOptions))
             {
                 while (iterator.HasMoreResults)
                 {
@@ -327,7 +376,8 @@ namespace CosmosDBClient.CosmosDB
         {
             var containers = new List<string>();
             var database = _cosmosClient.GetDatabase(_cosmosContainer.Database.Id);
-            using (var iterator = database.GetContainerQueryIterator<ContainerProperties>())
+            var requestOptions = CreateQueryRequestOptions();
+            using (var iterator = database.GetContainerQueryIterator<ContainerProperties>(requestOptions: requestOptions))
             {
                 while (iterator.HasMoreResults)
                 {
@@ -347,7 +397,8 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>パーティションキー</returns>
         public async Task<PartitionKey> ResolvePartitionKeyAsync(JObject jsonObject)
         {
-            var containerProperties = await _cosmosContainer.ReadContainerAsync();
+            var requestOptions = CreateContainerRequestOptions();
+            var containerProperties = await _cosmosContainer.ReadContainerAsync(requestOptions);
             var partitionKeyPaths = containerProperties.Resource.PartitionKeyPaths;
             var partitionKeyBuilder = new PartitionKeyBuilder();
 
@@ -371,7 +422,8 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>PartitionKeyに対応するフィールド名と値を改行で連結した文字列</returns>
         public string GetPartitionKeyValues(JObject jsonObject)
         {
-            var containerProperties = _cosmosContainer.ReadContainerAsync().Result;
+            var requestOptions = CreateContainerRequestOptions();
+            var containerProperties = _cosmosContainer.ReadContainerAsync(requestOptions).Result;
             var partitionKeyPaths = containerProperties.Resource.PartitionKeyPaths;
 
             return string.Join("\n", partitionKeyPaths.Select(path =>
