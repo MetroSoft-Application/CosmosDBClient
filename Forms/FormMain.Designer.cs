@@ -25,6 +25,13 @@
             textBoxDatabaseName = new TextBox();
             label3 = new Label();
             label4 = new Label();
+            checkBoxPagingMode = new CheckBox();
+            buttonPrevPage = new Button();
+            buttonNextPage = new Button();
+            labelPageInfo = new Label();
+            groupBoxPagingSettings = new GroupBox();
+            numericUpDownPageSize = new NumericUpDown();
+            labelPageSize = new Label();
             statusStrip1 = new StatusStrip();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             toolStripStatusLabel2 = new ToolStripStatusLabel();
@@ -59,13 +66,14 @@
             panel1 = new Panel();
             splitContainer1 = new SplitContainer();
             splitContainer2 = new SplitContainer();
-            //dataGridViewResults = new DataGridView();
             richTextBoxSelectedCell = new RichTextBox();
             splitContainer3 = new SplitContainer();
             splitContainer4 = new SplitContainer();
             buttonUpdate = new Button();
             buttonDelete = new Button();
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).BeginInit();
+            groupBoxPagingSettings.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownPageSize).BeginInit();
             statusStrip1.SuspendLayout();
             groupBox1.SuspendLayout();
             tabControl1.SuspendLayout();
@@ -78,7 +86,6 @@
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer2).BeginInit();
-            splitContainer2.Panel1.SuspendLayout();
             splitContainer2.Panel2.SuspendLayout();
             splitContainer2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer3).BeginInit();
@@ -89,9 +96,9 @@
             splitContainer4.Panel2.SuspendLayout();
             splitContainer4.SuspendLayout();
             SuspendLayout();
-            // 
+            //
             // buttonLoadData
-            // 
+            //
             buttonLoadData.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             buttonLoadData.Location = new Point(273, 18);
             buttonLoadData.Name = "buttonLoadData";
@@ -100,9 +107,9 @@
             buttonLoadData.Text = "Exec";
             buttonLoadData.UseVisualStyleBackColor = true;
             buttonLoadData.Click += buttonLoadData_Click;
-            // 
+            //
             // numericUpDownMaxCount
-            // 
+            //
             numericUpDownMaxCount.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             numericUpDownMaxCount.Location = new Point(119, 108);
             numericUpDownMaxCount.Maximum = new decimal(new int[] { 1569325056, 23283064, 0, 0 });
@@ -110,18 +117,18 @@
             numericUpDownMaxCount.Size = new Size(148, 23);
             numericUpDownMaxCount.TabIndex = 5;
             numericUpDownMaxCount.Value = new decimal(new int[] { 100, 0, 0, 0 });
-            // 
+            //
             // textBoxConnectionString
-            // 
+            //
             textBoxConnectionString.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             textBoxConnectionString.Location = new Point(119, 18);
             textBoxConnectionString.Name = "textBoxConnectionString";
             textBoxConnectionString.Size = new Size(148, 23);
             textBoxConnectionString.TabIndex = 6;
             textBoxConnectionString.UseSystemPasswordChar = true;
-            // 
+            //
             // label1
-            // 
+            //
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label1.AutoSize = true;
             label1.Location = new Point(13, 21);
@@ -129,9 +136,9 @@
             label1.Size = new Size(99, 15);
             label1.TabIndex = 7;
             label1.Text = "ConnectionString";
-            // 
+            //
             // label2
-            // 
+            //
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label2.AutoSize = true;
             label2.Location = new Point(13, 51);
@@ -139,17 +146,17 @@
             label2.Size = new Size(55, 15);
             label2.TabIndex = 8;
             label2.Text = "Database";
-            // 
+            //
             // textBoxDatabaseName
-            // 
+            //
             textBoxDatabaseName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             textBoxDatabaseName.Location = new Point(119, 48);
             textBoxDatabaseName.Name = "textBoxDatabaseName";
             textBoxDatabaseName.Size = new Size(148, 23);
             textBoxDatabaseName.TabIndex = 9;
-            // 
+            //
             // label3
-            // 
+            //
             label3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label3.AutoSize = true;
             label3.Location = new Point(13, 81);
@@ -157,20 +164,99 @@
             label3.Size = new Size(58, 15);
             label3.TabIndex = 10;
             label3.Text = "Container";
-            // 
+            //
             // label4
-            // 
+            //
             label4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             label4.AutoSize = true;
             label4.Location = new Point(13, 110);
             label4.Name = "label4";
-            label4.Size = new Size(53, 15);
+            label4.Size = new Size(56, 15);
             label4.TabIndex = 12;
-            label4.Text = "MaxRow";
+            label4.Text = "Max Row";
             label4.TextAlign = ContentAlignment.MiddleRight;
-            // 
+            //
+            // checkBoxPagingMode
+            //
+            checkBoxPagingMode.AutoSize = true;
+            checkBoxPagingMode.Checked = true;
+            checkBoxPagingMode.CheckState = CheckState.Checked;
+            checkBoxPagingMode.Location = new Point(6, 52);
+            checkBoxPagingMode.Name = "checkBoxPagingMode";
+            checkBoxPagingMode.Size = new Size(97, 19);
+            checkBoxPagingMode.TabIndex = 16;
+            checkBoxPagingMode.Text = "Paging Mode";
+            checkBoxPagingMode.UseVisualStyleBackColor = true;
+            checkBoxPagingMode.CheckedChanged += checkBoxPagingMode_CheckedChanged;
+            //
+            // buttonPrevPage
+            //
+            buttonPrevPage.Enabled = false;
+            buttonPrevPage.Location = new Point(2, 108);
+            buttonPrevPage.Name = "buttonPrevPage";
+            buttonPrevPage.Size = new Size(60, 23);
+            buttonPrevPage.TabIndex = 17;
+            buttonPrevPage.Text = "Prev";
+            buttonPrevPage.UseVisualStyleBackColor = true;
+            buttonPrevPage.Click += buttonPrevPage_Click;
+            //
+            // buttonNextPage
+            //
+            buttonNextPage.Enabled = false;
+            buttonNextPage.Location = new Point(68, 108);
+            buttonNextPage.Name = "buttonNextPage";
+            buttonNextPage.Size = new Size(60, 23);
+            buttonNextPage.TabIndex = 18;
+            buttonNextPage.Text = "Next";
+            buttonNextPage.UseVisualStyleBackColor = true;
+            buttonNextPage.Click += buttonNextPage_Click;
+            //
+            // labelPageInfo
+            //
+            labelPageInfo.AutoSize = true;
+            labelPageInfo.Location = new Point(6, 86);
+            labelPageInfo.Name = "labelPageInfo";
+            labelPageInfo.Size = new Size(30, 15);
+            labelPageInfo.TabIndex = 19;
+            labelPageInfo.Text = "0 / 0";
+            //
+            // groupBoxPagingSettings
+            //
+            groupBoxPagingSettings.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            groupBoxPagingSettings.Controls.Add(labelPageInfo);
+            groupBoxPagingSettings.Controls.Add(buttonNextPage);
+            groupBoxPagingSettings.Controls.Add(buttonPrevPage);
+            groupBoxPagingSettings.Controls.Add(checkBoxPagingMode);
+            groupBoxPagingSettings.Controls.Add(numericUpDownPageSize);
+            groupBoxPagingSettings.Controls.Add(labelPageSize);
+            groupBoxPagingSettings.Location = new Point(810, 3);
+            groupBoxPagingSettings.Name = "groupBoxPagingSettings";
+            groupBoxPagingSettings.Size = new Size(231, 137);
+            groupBoxPagingSettings.TabIndex = 23;
+            groupBoxPagingSettings.TabStop = false;
+            groupBoxPagingSettings.Text = "Paging Settings";
+            //
+            // numericUpDownPageSize
+            //
+            numericUpDownPageSize.Location = new Point(80, 22);
+            numericUpDownPageSize.Maximum = new decimal(new int[] { 1000000000, 0, 0, 0 });
+            numericUpDownPageSize.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numericUpDownPageSize.Name = "numericUpDownPageSize";
+            numericUpDownPageSize.Size = new Size(100, 23);
+            numericUpDownPageSize.TabIndex = 20;
+            numericUpDownPageSize.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            //
+            // labelPageSize
+            //
+            labelPageSize.AutoSize = true;
+            labelPageSize.Location = new Point(6, 25);
+            labelPageSize.Name = "labelPageSize";
+            labelPageSize.Size = new Size(59, 15);
+            labelPageSize.TabIndex = 21;
+            labelPageSize.Text = "Page Row";
+            //
             // statusStrip1
-            // 
+            //
             statusStrip1.ImageScalingSize = new Size(20, 20);
             statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2, toolStripStatusLabel3, toolStripStatusLabel4 });
             statusStrip1.Location = new Point(0, 659);
@@ -178,83 +264,83 @@
             statusStrip1.Size = new Size(1394, 22);
             statusStrip1.TabIndex = 13;
             statusStrip1.Text = "statusStrip1";
-            // 
+            //
             // toolStripStatusLabel1
-            // 
+            //
             toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             toolStripStatusLabel1.Size = new Size(0, 17);
-            // 
+            //
             // toolStripStatusLabel2
-            // 
+            //
             toolStripStatusLabel2.Name = "toolStripStatusLabel2";
             toolStripStatusLabel2.Size = new Size(0, 17);
-            // 
+            //
             // toolStripStatusLabel3
-            // 
+            //
             toolStripStatusLabel3.Name = "toolStripStatusLabel3";
             toolStripStatusLabel3.Size = new Size(0, 17);
-            // 
+            //
             // toolStripStatusLabel4
-            // 
+            //
             toolStripStatusLabel4.Name = "toolStripStatusLabel4";
             toolStripStatusLabel4.Size = new Size(0, 17);
-            // 
+            //
             // toolStripStatusLabel5
-            // 
+            //
             toolStripStatusLabel5.Name = "toolStripStatusLabel5";
             toolStripStatusLabel5.Size = new Size(23, 23);
-            // 
+            //
             // toolStripStatusLabel6
-            // 
+            //
             toolStripStatusLabel6.Name = "toolStripStatusLabel6";
             toolStripStatusLabel6.Size = new Size(23, 23);
-            // 
+            //
             // toolStripStatusLabel7
-            // 
+            //
             toolStripStatusLabel7.Name = "toolStripStatusLabel7";
             toolStripStatusLabel7.Size = new Size(23, 23);
-            // 
+            //
             // toolStripStatusLabel8
-            // 
+            //
             toolStripStatusLabel8.Name = "toolStripStatusLabel8";
             toolStripStatusLabel8.Size = new Size(23, 23);
-            // 
+            //
             // toolStripStatusLabel9
-            // 
+            //
             toolStripStatusLabel9.Name = "toolStripStatusLabel9";
             toolStripStatusLabel9.Size = new Size(23, 23);
-            // 
+            //
             // toolStripStatusLabel10
-            // 
+            //
             toolStripStatusLabel10.Name = "toolStripStatusLabel10";
             toolStripStatusLabel10.Size = new Size(23, 23);
-            // 
+            //
             // toolStripStatusLabel11
-            // 
+            //
             toolStripStatusLabel11.Name = "toolStripStatusLabel11";
             toolStripStatusLabel11.Size = new Size(23, 23);
-            // 
+            //
             // toolStripStatusLabel12
-            // 
+            //
             toolStripStatusLabel12.Name = "toolStripStatusLabel12";
             toolStripStatusLabel12.Size = new Size(23, 23);
-            // 
+            //
             // toolStripStatusLabel13
-            // 
+            //
             toolStripStatusLabel13.Name = "toolStripStatusLabel13";
             toolStripStatusLabel13.Size = new Size(23, 23);
-            // 
+            //
             // cmbBoxContainerName
-            // 
+            //
             cmbBoxContainerName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             cmbBoxContainerName.FormattingEnabled = true;
             cmbBoxContainerName.Location = new Point(119, 78);
             cmbBoxContainerName.Name = "cmbBoxContainerName";
             cmbBoxContainerName.Size = new Size(148, 23);
             cmbBoxContainerName.TabIndex = 14;
-            // 
+            //
             // buttonInsert
-            // 
+            //
             buttonInsert.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             buttonInsert.Enabled = false;
             buttonInsert.Location = new Point(273, 47);
@@ -264,9 +350,9 @@
             buttonInsert.Text = "Insert";
             buttonInsert.UseVisualStyleBackColor = true;
             buttonInsert.Click += buttonInsert_Click;
-            // 
+            //
             // groupBox1
-            // 
+            //
             groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             groupBox1.Controls.Add(label2);
             groupBox1.Controls.Add(buttonInsert);
@@ -284,9 +370,9 @@
             groupBox1.TabIndex = 16;
             groupBox1.TabStop = false;
             groupBox1.Text = "Search Condition";
-            // 
+            //
             // tabControl1
-            // 
+            //
             tabControl1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             tabControl1.Controls.Add(tabPage1);
             tabControl1.Controls.Add(tabPage2);
@@ -295,9 +381,9 @@
             tabControl1.SelectedIndex = 0;
             tabControl1.Size = new Size(386, 115);
             tabControl1.TabIndex = 17;
-            // 
+            //
             // tabPage1
-            // 
+            //
             tabPage1.Controls.Add(txtUniqueKey);
             tabPage1.Controls.Add(label8);
             tabPage1.Controls.Add(txtPartitionKey);
@@ -314,43 +400,43 @@
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Settings";
             tabPage1.UseVisualStyleBackColor = true;
-            // 
+            //
             // txtUniqueKey
-            // 
+            //
             txtUniqueKey.Location = new Point(100, 58);
             txtUniqueKey.Name = "txtUniqueKey";
             txtUniqueKey.ReadOnly = true;
             txtUniqueKey.Size = new Size(270, 23);
             txtUniqueKey.TabIndex = 13;
-            // 
+            //
             // label8
-            // 
+            //
             label8.AutoSize = true;
             label8.Location = new Point(7, 63);
             label8.Name = "label8";
             label8.Size = new Size(67, 15);
             label8.TabIndex = 12;
             label8.Text = "Unique Key";
-            // 
+            //
             // txtPartitionKey
-            // 
+            //
             txtPartitionKey.Location = new Point(100, 33);
             txtPartitionKey.Name = "txtPartitionKey";
             txtPartitionKey.ReadOnly = true;
             txtPartitionKey.Size = new Size(270, 23);
             txtPartitionKey.TabIndex = 11;
-            // 
+            //
             // label7
-            // 
+            //
             label7.AutoSize = true;
             label7.Location = new Point(7, 37);
             label7.Name = "label7";
             label7.Size = new Size(74, 15);
             label7.TabIndex = 10;
             label7.Text = "Partition Key";
-            // 
+            //
             // label6
-            // 
+            //
             label6.AutoSize = true;
             label6.Location = new Point(319, 11);
             label6.Name = "label6";
@@ -358,9 +444,9 @@
             label6.TabIndex = 5;
             label6.Text = "Seconds";
             label6.Visible = false;
-            // 
+            //
             // nupTimeToLiveSeconds
-            // 
+            //
             nupTimeToLiveSeconds.Enabled = false;
             nupTimeToLiveSeconds.Location = new Point(193, 6);
             nupTimeToLiveSeconds.Maximum = new decimal(new int[] { -559939585, 902409669, 54, 0 });
@@ -370,9 +456,9 @@
             nupTimeToLiveSeconds.Size = new Size(120, 23);
             nupTimeToLiveSeconds.TabIndex = 4;
             nupTimeToLiveSeconds.Visible = false;
-            // 
+            //
             // radioTimeToLiveOn
-            // 
+            //
             radioTimeToLiveOn.AutoSize = true;
             radioTimeToLiveOn.Enabled = false;
             radioTimeToLiveOn.Location = new Point(146, 9);
@@ -382,9 +468,9 @@
             radioTimeToLiveOn.TabStop = true;
             radioTimeToLiveOn.Text = "On";
             radioTimeToLiveOn.UseVisualStyleBackColor = true;
-            // 
+            //
             // radioTimeToLiveOff
-            // 
+            //
             radioTimeToLiveOff.AutoSize = true;
             radioTimeToLiveOff.Enabled = false;
             radioTimeToLiveOff.Location = new Point(103, 9);
@@ -394,18 +480,18 @@
             radioTimeToLiveOff.TabStop = true;
             radioTimeToLiveOff.Text = "Off";
             radioTimeToLiveOff.UseVisualStyleBackColor = true;
-            // 
+            //
             // label5
-            // 
+            //
             label5.AutoSize = true;
             label5.Location = new Point(7, 11);
             label5.Name = "label5";
             label5.Size = new Size(70, 15);
             label5.TabIndex = 0;
             label5.Text = "Time to Live";
-            // 
+            //
             // tabPage2
-            // 
+            //
             tabPage2.Controls.Add(txtIndexingPolicy);
             tabPage2.Location = new Point(4, 24);
             tabPage2.Name = "tabPage2";
@@ -414,9 +500,9 @@
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Indexing Policy";
             tabPage2.UseVisualStyleBackColor = true;
-            // 
+            //
             // txtIndexingPolicy
-            // 
+            //
             txtIndexingPolicy.Dock = DockStyle.Fill;
             txtIndexingPolicy.Location = new Point(3, 3);
             txtIndexingPolicy.Name = "txtIndexingPolicy";
@@ -424,59 +510,59 @@
             txtIndexingPolicy.Size = new Size(372, 81);
             txtIndexingPolicy.TabIndex = 0;
             txtIndexingPolicy.Text = "";
-            // 
+            //
             // groupBox2
-            // 
+            //
             groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             groupBox2.Controls.Add(tabControl1);
-            groupBox2.Location = new Point(649, 3);
+            groupBox2.Location = new Point(412, 3);
             groupBox2.Name = "groupBox2";
             groupBox2.Size = new Size(392, 137);
             groupBox2.TabIndex = 18;
             groupBox2.TabStop = false;
             groupBox2.Text = "Container Settings";
-            // 
+            //
             // panel1
-            // 
+            //
             panel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             panel1.Location = new Point(12, 12);
             panel1.Name = "panel1";
-            panel1.Size = new Size(631, 128);
+            panel1.Size = new Size(394, 128);
             panel1.TabIndex = 19;
-            // 
+            //
             // splitContainer1
-            // 
+            //
             splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             splitContainer1.Location = new Point(12, 146);
             splitContainer1.Name = "splitContainer1";
-            // 
+            //
             // splitContainer1.Panel1
-            // 
+            //
             splitContainer1.Panel1.Controls.Add(splitContainer2);
-            // 
+            //
             // splitContainer1.Panel2
-            // 
+            //
             splitContainer1.Panel2.Controls.Add(splitContainer3);
             splitContainer1.Size = new Size(1374, 510);
             splitContainer1.SplitterDistance = 1031;
             splitContainer1.TabIndex = 20;
-            // 
+            //
             // splitContainer2
-            // 
+            //
             splitContainer2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             splitContainer2.Location = new Point(0, 0);
             splitContainer2.Name = "splitContainer2";
             splitContainer2.Orientation = Orientation.Horizontal;
-            // 
+            //
             // splitContainer2.Panel2
-            // 
+            //
             splitContainer2.Panel2.Controls.Add(richTextBoxSelectedCell);
             splitContainer2.Size = new Size(1026, 510);
             splitContainer2.SplitterDistance = 478;
             splitContainer2.TabIndex = 0;
-            // 
+            //
             // richTextBoxSelectedCell
-            // 
+            //
             richTextBoxSelectedCell.BackColor = SystemColors.ButtonFace;
             richTextBoxSelectedCell.Dock = DockStyle.Fill;
             richTextBoxSelectedCell.Location = new Point(0, 0);
@@ -486,43 +572,43 @@
             richTextBoxSelectedCell.TabIndex = 18;
             richTextBoxSelectedCell.Text = "";
             richTextBoxSelectedCell.MouseUp += richTextBoxSelectedCell_MouseUp;
-            // 
+            //
             // splitContainer3
-            // 
+            //
             splitContainer3.Dock = DockStyle.Fill;
             splitContainer3.FixedPanel = FixedPanel.Panel2;
             splitContainer3.IsSplitterFixed = true;
             splitContainer3.Location = new Point(0, 0);
             splitContainer3.Name = "splitContainer3";
             splitContainer3.Orientation = Orientation.Horizontal;
-            // 
+            //
             // splitContainer3.Panel2
-            // 
+            //
             splitContainer3.Panel2.Controls.Add(splitContainer4);
             splitContainer3.Size = new Size(339, 510);
             splitContainer3.SplitterDistance = 477;
             splitContainer3.TabIndex = 0;
-            // 
+            //
             // splitContainer4
-            // 
+            //
             splitContainer4.Dock = DockStyle.Fill;
             splitContainer4.IsSplitterFixed = true;
             splitContainer4.Location = new Point(0, 0);
             splitContainer4.Name = "splitContainer4";
-            // 
+            //
             // splitContainer4.Panel1
-            // 
+            //
             splitContainer4.Panel1.Controls.Add(buttonUpdate);
-            // 
+            //
             // splitContainer4.Panel2
-            // 
+            //
             splitContainer4.Panel2.Controls.Add(buttonDelete);
             splitContainer4.Size = new Size(339, 29);
             splitContainer4.SplitterDistance = 167;
             splitContainer4.TabIndex = 0;
-            // 
+            //
             // buttonUpdate
-            // 
+            //
             buttonUpdate.Dock = DockStyle.Fill;
             buttonUpdate.Enabled = false;
             buttonUpdate.Location = new Point(0, 0);
@@ -532,9 +618,9 @@
             buttonUpdate.Text = "Update";
             buttonUpdate.UseVisualStyleBackColor = true;
             buttonUpdate.Click += buttonUpdate_Click;
-            // 
+            //
             // buttonDelete
-            // 
+            //
             buttonDelete.Dock = DockStyle.Fill;
             buttonDelete.Enabled = false;
             buttonDelete.Location = new Point(0, 0);
@@ -544,9 +630,9 @@
             buttonDelete.Text = "Delete";
             buttonDelete.UseVisualStyleBackColor = true;
             buttonDelete.Click += buttonDelete_Click;
-            // 
+            //
             // FormMain
-            // 
+            //
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1394, 681);
@@ -554,10 +640,14 @@
             Controls.Add(panel1);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
+            Controls.Add(groupBoxPagingSettings);
             Controls.Add(statusStrip1);
             Name = "FormMain";
             Text = "CosmosDB Client Tool";
             ((System.ComponentModel.ISupportInitialize)numericUpDownMaxCount).EndInit();
+            groupBoxPagingSettings.ResumeLayout(false);
+            groupBoxPagingSettings.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownPageSize).EndInit();
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();
             groupBox1.ResumeLayout(false);
@@ -572,11 +662,9 @@
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
-            splitContainer2.Panel1.ResumeLayout(false);
             splitContainer2.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
             splitContainer2.ResumeLayout(false);
-            //((System.ComponentModel.ISupportInitialize)dataGridViewResults).EndInit();
             splitContainer3.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer3).EndInit();
             splitContainer3.ResumeLayout(false);
@@ -598,6 +686,10 @@
         private TextBox textBoxDatabaseName;
         private Label label3;
         private Label label4;
+        private CheckBox checkBoxPagingMode;
+        private Button buttonPrevPage;
+        private Button buttonNextPage;
+        private Label labelPageInfo;
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel toolStripStatusLabel1;
         private ToolStripStatusLabel toolStripStatusLabel2;
@@ -637,5 +729,8 @@
         private SplitContainer splitContainer4;
         private Button buttonUpdate;
         private Button buttonDelete;
+        private GroupBox groupBoxPagingSettings;
+        private NumericUpDown numericUpDownPageSize;
+        private Label labelPageSize;
     }
 }

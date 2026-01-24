@@ -33,6 +33,21 @@ namespace CosmosDBClient
         private HashSet<(int Row, int Column)> _modifiedCells = new HashSet<(int, int)>();
         private HashSet<int> _modifiedRows = new HashSet<int>();
 
+        // ページング関連のフィールド
+        private List<DataTable> _pageCache = new List<DataTable>();
+        private List<string> _pageContinuationTokens = new List<string>();
+        private int _currentPageIndex = 0;
+        private int _totalFetchedDocuments = 0;
+        private bool _isPagingMode = false;
+
+        /// <summary>
+        /// ページサイズを取得する
+        /// </summary>
+        private int GetPageSize()
+        {
+            return (int)numericUpDownPageSize.Value;
+        }
+
         /// <summary>
         /// FormMain クラスのコンストラクタ設定を読み込み、CosmosDBServiceのインスタンスを初期化する
         /// </summary>
@@ -543,12 +558,40 @@ namespace CosmosDBClient
                 buttonDelete.Enabled = true;
                 buttonUpdate.Enabled = true;
 
+                // ページング状態をリセット
+                _pageCache.Clear();
+                _pageContinuationTokens.Clear();
+                _currentPageIndex = 0;
+                _totalFetchedDocuments = 0;
+
+                // ページングモードの状態を読み取る
+                _isPagingMode = checkBoxPagingMode.Checked;
+
                 // 大量データの場合は進捗表示を行う
                 ShowProgressUI(true, "データを読み込んでいます...");
 
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
 
-                if (_virtualModeEnabled && GetMaxItemCount() > 1000)
+                if (_isPagingMode)
+                {
+                    // ページングモードの場合
+                    var query = BuildQuery(GetCurrentQueryText(), GetMaxItemCount());
+                    var result = await _cosmosDBService.FetchDataPageAsync(query, GetPageSize());
+
+                    // 最初のページをキャッシュに追加
+                    _pageCache.Add(result.Data.Copy());
+                    _pageContinuationTokens.Add(result.ContinuationToken);
+                    _totalFetchedDocuments = result.DocumentCount;
+
+                    // データを表示
+                    UpdateGridWithPageData(result);
+
+                    // ボタンの状態を更新
+                    UpdatePagingButtons();
+
+                    UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
+                }
+                else if (_virtualModeEnabled && GetMaxItemCount() > 1000)
                 {
                     // 大量データの場合はバッファリングを使用
                     await UpdateVirtualDataGridView(BuildQuery(GetCurrentQueryText(), GetMaxItemCount()), 1000);
@@ -1700,6 +1743,246 @@ namespace CosmosDBClient
             var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
 
             var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
+        }
+
+        /// <summary>
+        /// ページングモードチェックボックス変更イベント
+        /// </summary>
+        private void checkBoxPagingMode_CheckedChanged(object sender, EventArgs e)
+        {
+            _isPagingMode = checkBoxPagingMode.Checked;
+            _pageCache.Clear();
+            _pageContinuationTokens.Clear();
+            _currentPageIndex = 0;
+            _totalFetchedDocuments = 0;
+            buttonPrevPage.Enabled = false;
+            buttonNextPage.Enabled = false;
+            labelPageInfo.Text = "0 / 0";
+        }
+
+        /// <summary>
+        /// 前のページを表示
+        /// </summary>
+        private async void buttonPrevPage_Click(object sender, EventArgs e)
+        {
+            if (_currentPageIndex <= 0)
+                return;
+
+            try
+            {
+                ShowProgressUI(true, "前のページを読み込んでいます...");
+
+                // ページインデックスを戻す
+                _currentPageIndex--;
+
+                // キャッシュからデータを取得（再クエリなし）
+                var cachedData = _pageCache[_currentPageIndex];
+
+                // 累計ドキュメント数を再計算
+                _totalFetchedDocuments = 0;
+                for (int i = 0; i <= _currentPageIndex; i++)
+                {
+                    _totalFetchedDocuments += _pageCache[i].Rows.Count;
+                }
+
+                // データを表示
+                UpdateGridWithCachedPageData(cachedData);
+
+                // ボタンの状態を更新
+                UpdatePagingButtons();
+
+                // ステータスバーを更新
+                toolStripStatusLabel2.Text = $"Documents: {cachedData.Rows.Count}";
+                toolStripStatusLabel4.Text = $"Pages: {_currentPageIndex + 1}";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+            finally
+            {
+                ShowProgressUI(false);
+            }
+        }
+
+        /// <summary>
+        /// 次のページを表示
+        /// </summary>
+        private async void buttonNextPage_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ShowProgressUI(true, "次のページを読み込んでいます...");
+
+                // 既にキャッシュがあるか確認
+                if (_currentPageIndex + 1 < _pageCache.Count)
+                {
+                    // キャッシュから取得（再クエリなし）
+                    _currentPageIndex++;
+                    var cachedData = _pageCache[_currentPageIndex];
+
+                    // 累計ドキュメント数を再計算
+                    _totalFetchedDocuments = 0;
+                    for (int i = 0; i <= _currentPageIndex; i++)
+                    {
+                        _totalFetchedDocuments += _pageCache[i].Rows.Count;
+                    }
+
+                    UpdateGridWithCachedPageData(cachedData);
+                    toolStripStatusLabel2.Text = $"Documents: {cachedData.Rows.Count}";
+                    toolStripStatusLabel4.Text = $"Pages: {_currentPageIndex + 1}";
+                }
+                else
+                {
+                    // 新しいページをCosmos DBから取得
+                    if (_currentPageIndex >= _pageContinuationTokens.Count)
+                    {
+                        MessageBox.Show("これ以上のページはありません。", "Info");
+                        return;
+                    }
+
+                    var continuationToken = _pageContinuationTokens[_currentPageIndex];
+                    if (string.IsNullOrEmpty(continuationToken))
+                    {
+                        MessageBox.Show("これ以上のページはありません。", "Info");
+                        return;
+                    }
+
+                    var query = BuildQuery(GetCurrentQueryText(), GetMaxItemCount());
+                    var result = await _cosmosDBService.FetchDataPageAsync(query, GetPageSize(), continuationToken);
+
+                    // ページをキャッシュに追加
+                    _pageCache.Add(result.Data.Copy());
+                    _pageContinuationTokens.Add(result.ContinuationToken);
+                    _currentPageIndex++;
+
+                    // 累計ドキュメント数を更新
+                    _totalFetchedDocuments += result.DocumentCount;
+
+                    // データを表示
+                    UpdateGridWithPageData(result);
+
+                    UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
+                }
+
+                // ボタンの状態を更新
+                UpdatePagingButtons();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+            finally
+            {
+                ShowProgressUI(false);
+            }
+        }
+
+        /// <summary>
+        /// ページングボタンの有効/無効を更新
+        /// </summary>
+        private void UpdatePagingButtons()
+        {
+            if (!_isPagingMode)
+            {
+                buttonPrevPage.Enabled = false;
+                buttonNextPage.Enabled = false;
+                return;
+            }
+
+            buttonPrevPage.Enabled = _currentPageIndex > 0;
+
+            // 次へボタンの有効化条件
+            bool hasMorePages = _currentPageIndex < _pageContinuationTokens.Count &&
+                                !string.IsNullOrEmpty(_pageContinuationTokens[_currentPageIndex]);
+            bool withinMaxLimit = _totalFetchedDocuments < GetMaxItemCount();
+            buttonNextPage.Enabled = hasMorePages && withinMaxLimit;
+
+            labelPageInfo.Text = $"{_totalFetchedDocuments} / {GetMaxItemCount()}";
+        }
+
+        /// <summary>
+        /// ページデータでDataGridViewを更新
+        /// </summary>
+        private void UpdateGridWithPageData(FetchDataResult result)
+        {
+            if (_virtualModeEnabled)
+            {
+                // 仮想モードの場合
+                _virtualDataTable = result.Data;
+                _originalDataTable = null;
+
+                ClearModificationMarks();
+
+                // カラム情報の設定
+                dataGridViewResults.Columns.Clear();
+                _columnNames = new List<string>();
+
+                foreach (DataColumn column in _virtualDataTable.Columns)
+                {
+                    _columnNames.Add(column.ColumnName);
+                    var col = new DataGridViewTextBoxColumn
+                    {
+                        Name = column.ColumnName,
+                        HeaderText = column.ColumnName,
+                        DataPropertyName = column.ColumnName
+                    };
+                    dataGridViewResults.Columns.Add(col);
+                }
+
+                // 行数を設定
+                dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+            }
+            else
+            {
+                // 通常モードの場合
+                dataGridViewResults.DataSource = null;
+                SetReadOnlyColumns(result.Data);
+                dataGridViewResults.DataSource = result.Data;
+
+                ClearModificationMarks();
+            }
+        }
+
+        /// <summary>
+        /// キャッシュされたページデータでDataGridViewを更新
+        /// </summary>
+        private void UpdateGridWithCachedPageData(DataTable cachedData)
+        {
+            if (_virtualModeEnabled)
+            {
+                _virtualDataTable = cachedData;
+                _originalDataTable = null;
+
+                ClearModificationMarks();
+
+                // カラム情報の設定
+                dataGridViewResults.Columns.Clear();
+                _columnNames = new List<string>();
+
+                foreach (DataColumn column in _virtualDataTable.Columns)
+                {
+                    _columnNames.Add(column.ColumnName);
+                    var col = new DataGridViewTextBoxColumn
+                    {
+                        Name = column.ColumnName,
+                        HeaderText = column.ColumnName,
+                        DataPropertyName = column.ColumnName
+                    };
+                    dataGridViewResults.Columns.Add(col);
+                }
+
+                // 行数を設定
+                dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+            }
+            else
+            {
+                dataGridViewResults.DataSource = null;
+                SetReadOnlyColumns(cachedData);
+                dataGridViewResults.DataSource = cachedData;
+
+                ClearModificationMarks();
+            }
         }
     }
 }

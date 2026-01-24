@@ -63,6 +63,11 @@ namespace CosmosDBClient.CosmosDB
         public DateTime EndTime { get; }
 
         /// <summary>
+        /// 次のページ取得用ContinuationToken
+        /// </summary>
+        public string ContinuationToken { get; }
+
+        /// <summary>
         /// すべてのプロパティを指定するコンストラクタ
         /// </summary>
         /// <param name="data">取得したデータ</param>
@@ -75,6 +80,7 @@ namespace CosmosDBClient.CosmosDB
         /// <param name="dataSizeInBytes">取得したデータの総バイト数</param>
         /// <param name="startTime">データ取得の開始時刻</param>
         /// <param name="endTime">データ取得の終了時刻</param>
+        /// <param name="continuationToken">次のページ取得用ContinuationToken</param>
         public FetchDataResult(
             DataTable data,
             double totalRequestCharge,
@@ -85,7 +91,8 @@ namespace CosmosDBClient.CosmosDB
             string executedQuery,
             long dataSizeInBytes,
             DateTime startTime,
-            DateTime endTime)
+            DateTime endTime,
+            string continuationToken = null)
         {
             Data = data ?? new DataTable();
             TotalRequestCharge = totalRequestCharge;
@@ -97,6 +104,7 @@ namespace CosmosDBClient.CosmosDB
             DataSizeInBytes = dataSizeInBytes;
             StartTime = startTime;
             EndTime = endTime;
+            ContinuationToken = continuationToken;
         }
     }
 }

@@ -228,6 +228,82 @@ namespace CosmosDBClient.CosmosDB
         }
 
         /// <summary>
+        /// CosmosDBから1ページ分のデータを取得し、ステータス情報を返す
+        /// </summary>
+        /// <param name="query">実行するクエリ文字列</param>
+        /// <param name="pageSize">1ページあたりの最大アイテム数</param>
+        /// <param name="continuationToken">前のページから取得したContinuationToken</param>
+        /// <returns>データ取得結果を表す FetchDataResult オブジェクト</returns>
+        public async Task<FetchDataResult> FetchDataPageAsync(string query, int pageSize, string continuationToken = null)
+        {
+            var dataTable = new DataTable();
+            var totalRequestCharge = 0d;
+            var documentCount = 0;
+            var pageCount = 0;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var startTime = DateTime.UtcNow;
+
+            string errorMessage = null;
+            string nextContinuationToken = null;
+
+            try
+            {
+                // クエリの定義と実行
+                var queryDefinition = new QueryDefinition(query);
+                var requestOptions = CreateQueryRequestOptions();
+                requestOptions.MaxItemCount = pageSize;
+                var queryResultSetIterator = _cosmosContainer.GetItemQueryIterator<dynamic>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions);
+
+                // 1ページ分のみ取得
+                if (queryResultSetIterator.HasMoreResults)
+                {
+                    var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    pageCount = 1;
+                    totalRequestCharge = currentResultSet.RequestCharge;
+                    documentCount = currentResultSet.Count;
+                    nextContinuationToken = currentResultSet.ContinuationToken;
+
+                    // データテーブルに結果を追加
+                    foreach (var item in currentResultSet)
+                    {
+                        var jsonObject = JObject.Parse(item.ToString());
+                        AddRowToDataTable(jsonObject, dataTable);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+            }
+            finally
+            {
+                stopwatch.Stop();
+            }
+
+            // カラムの並び替えを実施する
+            MoveSystemColumnsToEnd(dataTable);
+
+            var endTime = DateTime.UtcNow;
+            var dataSizeInBytes = CalculateDataSize(dataTable);
+
+            return new FetchDataResult(
+                dataTable,
+                totalRequestCharge,
+                documentCount,
+                pageCount,
+                stopwatch.ElapsedMilliseconds,
+                errorMessage,
+                query,
+                dataSizeInBytes,
+                startTime,
+                endTime,
+                nextContinuationToken);
+        }
+
+        /// <summary>
         /// DataTableのデータサイズを計算する
         /// </summary>
         /// <param name="dataTable">データテーブル</param>
