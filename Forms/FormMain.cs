@@ -568,7 +568,7 @@ namespace CosmosDBClient
                 _isPagingMode = checkBoxPagingMode.Checked;
 
                 // 大量データの場合は進捗表示を行う
-                ShowProgressUI(true, "データを読み込んでいます...");
+                ShowProgressUI(true, "Loading data...");
 
                 _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
 
@@ -1770,7 +1770,7 @@ namespace CosmosDBClient
 
             try
             {
-                ShowProgressUI(true, "前のページを読み込んでいます...");
+                ShowProgressUI(true, "Loading previous page...");
 
                 // ページインデックスを戻す
                 _currentPageIndex--;
@@ -1812,7 +1812,7 @@ namespace CosmosDBClient
         {
             try
             {
-                ShowProgressUI(true, "次のページを読み込んでいます...");
+                ShowProgressUI(true, "Loading next page...");
 
                 // 既にキャッシュがあるか確認
                 if (_currentPageIndex + 1 < _pageCache.Count)
@@ -1837,14 +1837,14 @@ namespace CosmosDBClient
                     // 新しいページをCosmos DBから取得
                     if (_currentPageIndex >= _pageContinuationTokens.Count)
                     {
-                        MessageBox.Show("これ以上のページはありません。", "Info");
+                        MessageBox.Show("No more pages available.", "Info");
                         return;
                     }
 
                     var continuationToken = _pageContinuationTokens[_currentPageIndex];
                     if (string.IsNullOrEmpty(continuationToken))
                     {
-                        MessageBox.Show("これ以上のページはありません。", "Info");
+                        MessageBox.Show("No more pages available.", "Info");
                         return;
                     }
 
