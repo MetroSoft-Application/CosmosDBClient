@@ -14,7 +14,7 @@ DBA application for managing and querying Azure Cosmos DB data.
 
 ### Data Querying
 - SQL query execution with syntax highlighting
-- Maximum item count configuration
+- Maximum item count configuration with paging feature
 
 ### Data Operations
 - **Query**: Execute SQL queries against Cosmos DB containers
@@ -38,7 +38,7 @@ Configuration in `appsettings.json`:
 
 ## Technical Stack
 
-- .NET 8.0 Windows Forms
+- .NET 10.0 Windows Forms
 - Azure Cosmos DB SDK
 - FastColoredTextBox for syntax highlighting
 - Advanced DataGridView for data display
