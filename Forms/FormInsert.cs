@@ -113,6 +113,7 @@ namespace CosmosDBClient
 
                 var message = $"Upsert successful!\n\nId:{id}\nPartitionKey:\n{partitionKeyInfo}\n\nRequest charge:{response.RequestCharge}";
                 MessageBox.Show(message, "Info");
+                this.Close();
             }
             catch (Exception ex)
             {

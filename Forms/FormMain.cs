@@ -584,7 +584,7 @@ namespace CosmosDBClient
                     _totalFetchedDocuments = result.DocumentCount;
 
                     // データを表示
-                    UpdateGridWithPageData(result);
+                    await UpdateGridWithPageData(result);
 
                     // ボタンの状態を更新
                     UpdatePagingButtons();
@@ -1000,6 +1000,8 @@ namespace CosmosDBClient
                     {
                         column.ReadOnly = true;
                         column.DefaultCellStyle = readOnlyStyle;
+                        column.HeaderCell.Style.BackColor = System.Drawing.Color.DarkGray;
+                        column.HeaderCell.Style.ForeColor = System.Drawing.Color.White;
                     }
                 }
             }
@@ -1134,6 +1136,8 @@ namespace CosmosDBClient
                     if (readOnlyColumns.Contains(column.ColumnName))
                     {
                         dataGridViewResults.Columns[column.ColumnName].ReadOnly = true;
+                        dataGridViewResults.Columns[column.ColumnName].HeaderCell.Style.BackColor = System.Drawing.Color.DarkGray;
+                        dataGridViewResults.Columns[column.ColumnName].HeaderCell.Style.ForeColor = System.Drawing.Color.White;
                     }
                 }
             }
@@ -1412,12 +1416,9 @@ namespace CosmosDBClient
         /// <param name="e">イベントデータ</param>
         private async void buttonInsert_Click(object sender, EventArgs e)
         {
-            using (var formInsert = new FormInsert(_cosmosDBService, _jsonData.Text))
-            {
-                formInsert.ShowDialog();
-            }
-
-            await UpdateDatagridView();
+            var formInsert = new FormInsert(_cosmosDBService, _jsonData.Text);
+            formInsert.FormClosed += async (s, args) => await UpdateDatagridView();
+            formInsert.Show(this);
         }
 
         /// <summary>
@@ -1786,7 +1787,7 @@ namespace CosmosDBClient
                 }
 
                 // データを表示
-                UpdateGridWithCachedPageData(cachedData);
+                await UpdateGridWithCachedPageData(cachedData);
 
                 // ボタンの状態を更新
                 UpdatePagingButtons();
@@ -1828,7 +1829,7 @@ namespace CosmosDBClient
                         _totalFetchedDocuments += _pageCache[i].Rows.Count;
                     }
 
-                    UpdateGridWithCachedPageData(cachedData);
+                    await UpdateGridWithCachedPageData(cachedData);
                     toolStripStatusLabel2.Text = $"Documents: {cachedData.Rows.Count}";
                     toolStripStatusLabel4.Text = $"Pages: {_currentPageIndex + 1}";
                 }
@@ -1860,7 +1861,7 @@ namespace CosmosDBClient
                     _totalFetchedDocuments += result.DocumentCount;
 
                     // データを表示
-                    UpdateGridWithPageData(result);
+                    await UpdateGridWithPageData(result);
 
                     UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
                 }
@@ -1904,7 +1905,7 @@ namespace CosmosDBClient
         /// <summary>
         /// ページデータでDataGridViewを更新
         /// </summary>
-        private void UpdateGridWithPageData(FetchDataResult result)
+        private async Task UpdateGridWithPageData(FetchDataResult result)
         {
             if (_virtualModeEnabled)
             {
@@ -1932,6 +1933,9 @@ namespace CosmosDBClient
 
                 // 行数を設定
                 dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+
+                // 読み取り専用列の設定
+                await SetReadOnlyColumnsForVirtualMode();
             }
             else
             {
@@ -1947,7 +1951,7 @@ namespace CosmosDBClient
         /// <summary>
         /// キャッシュされたページデータでDataGridViewを更新
         /// </summary>
-        private void UpdateGridWithCachedPageData(DataTable cachedData)
+        private async Task UpdateGridWithCachedPageData(DataTable cachedData)
         {
             if (_virtualModeEnabled)
             {
@@ -1974,6 +1978,9 @@ namespace CosmosDBClient
 
                 // 行数を設定
                 dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+
+                // 読み取り専用列の設定
+                await SetReadOnlyColumnsForVirtualMode();
             }
             else
             {
