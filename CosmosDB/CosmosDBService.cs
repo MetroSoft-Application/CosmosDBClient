@@ -208,8 +208,9 @@ namespace CosmosDBClient.CosmosDB
                 stopwatch.Stop();
             }
 
-            // カラムの並び替えを実施する
-            MoveSystemColumnsToEnd(dataTable);
+            // パーティションキー情報を取得し、カラムの並び替えを実施する
+            var pkPaths = await GetPartitionKeyPathsAsync();
+            MoveSystemColumnsToEnd(dataTable, pkPaths);
 
             var endTime = DateTime.UtcNow;
             var dataSizeInBytes = CalculateDataSize(dataTable);
@@ -283,8 +284,9 @@ namespace CosmosDBClient.CosmosDB
                 stopwatch.Stop();
             }
 
-            // カラムの並び替えを実施する
-            MoveSystemColumnsToEnd(dataTable);
+            // パーティションキー情報を取得し、カラムの並び替えを実施する
+            var pkPaths = await GetPartitionKeyPathsAsync();
+            MoveSystemColumnsToEnd(dataTable, pkPaths);
 
             var endTime = DateTime.UtcNow;
             var dataSizeInBytes = CalculateDataSize(dataTable);
@@ -328,27 +330,66 @@ namespace CosmosDBClient.CosmosDB
 
         /// <summary>
         /// DataTableのカラムを並び替え、システムカラムを最後に移動する
+        /// カラム順序: id → パーティションキー → ユーザープロパティ → システムプロパティ
         /// </summary>
         /// <param name="dataTable">並び替え対象のDataTable</param>
-        private void MoveSystemColumnsToEnd(DataTable dataTable)
+        /// <param name="partitionKeyPaths">パーティションキーのパス配列（省略可）</param>
+        public void MoveSystemColumnsToEnd(DataTable dataTable, string[] partitionKeyPaths = null)
         {
-            // システムカラムをリスト化（データテーブルに存在するカラムだけを取得）
-            var systemColumnsList = systemColumns.Where(c => c != "id" && dataTable.Columns.Contains(c)).ToList();
+            if (dataTable.Columns.Count == 0)
+            {
+                return;
+            }
 
-            // システムカラム以外のカラムをリスト化
-            var nonSystemColumns = dataTable.Columns.Cast<DataColumn>()
-                .Where(col => !systemColumnsList.Contains(col.ColumnName))
-                .Select(col => col.ColumnName)
-                .ToList();
+            // アンダースコアで始まるシステムカラムを取得（DataTableに存在するもののみ）
+            var systemColumnSet = new HashSet<string>(systemColumns.Where(c => c.StartsWith("_") && dataTable.Columns.Contains(c)));
 
-            // 並び替え用のカラム順序リストを作成
-            var columnOrder = nonSystemColumns.Concat(systemColumnsList).ToList();
+            // パーティションキーのセットを作成
+            var pkSet = new HashSet<string>(partitionKeyPaths ?? Array.Empty<string>());
 
-            // 新しい順序でDataTableを構築
+            // カラムを分類
+            var idColumns = new List<string>();
+            var pkColumns = new List<string>();
+            var userColumns = new List<string>();
+            var sysColumns = new List<string>();
+
+            foreach (DataColumn col in dataTable.Columns)
+            {
+                if (col.ColumnName == "id")
+                {
+                    idColumns.Add(col.ColumnName);
+                }
+                else if (systemColumnSet.Contains(col.ColumnName))
+                {
+                    sysColumns.Add(col.ColumnName);
+                }
+                else if (pkSet.Contains(col.ColumnName))
+                {
+                    pkColumns.Add(col.ColumnName);
+                }
+                else
+                {
+                    userColumns.Add(col.ColumnName);
+                }
+            }
+
+            // id → パーティションキー → ユーザープロパティ → システムプロパティ の順に並び替え
+            var columnOrder = idColumns.Concat(pkColumns).Concat(userColumns).Concat(sysColumns).ToList();
+
             for (int i = 0; i < columnOrder.Count; i++)
             {
                 dataTable.Columns[columnOrder[i]].SetOrdinal(i);
             }
+        }
+
+        /// <summary>
+        /// コンテナのパーティションキーパスを取得する
+        /// </summary>
+        /// <returns>パーティションキーのフィールド名配列</returns>
+        public async Task<string[]> GetPartitionKeyPathsAsync()
+        {
+            var containerProperties = await GetContainerPropertiesAsync();
+            return containerProperties.PartitionKeyPaths.Select(p => p.Trim('/')).ToArray();
         }
 
         /// <summary>

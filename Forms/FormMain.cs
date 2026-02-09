@@ -707,6 +707,10 @@ namespace CosmosDBClient
                     }
                 }
 
+                // カラムの並び替えを実施する（システムカラムを末尾に移動）
+                var pkPaths = await _cosmosDBService.GetPartitionKeyPathsAsync();
+                _cosmosDBService.MoveSystemColumnsToEnd(newDataTable, pkPaths);
+
                 // 読み込み完了したデータで更新
                 _virtualDataTable = newDataTable;
 
