@@ -33,6 +33,11 @@ namespace CosmosDBClient
         private HashSet<(int Row, int Column)> _modifiedCells = new HashSet<(int, int)>();
         private HashSet<int> _modifiedRows = new HashSet<int>();
 
+        // コンテキストメニュー関連
+        private ContextMenuStrip _cellContextMenu;
+        private int _rightClickedRowIndex = -1;
+        private int _rightClickedColumnIndex = -1;
+
         // ページング関連のフィールド
         private List<DataTable> _pageCache = new List<DataTable>();
         private List<string> _pageContinuationTokens = new List<string>();
@@ -172,7 +177,59 @@ namespace CosmosDBClient
             dataGridViewResults.CellValueChanged += dataGridViewResults_CellValueChanged;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
             dataGridViewResults.KeyUp += dataGridViewResults_KeyUp;
+            dataGridViewResults.CellMouseClick += dataGridViewResults_CellMouseClick;
+
+            // セル用コンテキストメニューの設定
+            SetupCellContextMenu();
+
             splitContainer2.Panel1.Controls.Add(dataGridViewResults);
+        }
+
+        /// <summary>
+        /// セル用コンテキストメニューの設定を行う
+        /// </summary>
+        private void SetupCellContextMenu()
+        {
+            _cellContextMenu = new ContextMenuStrip();
+            _cellContextMenu.Opening += CellContextMenu_Opening;
+        }
+
+        /// <summary>
+        /// コンテキストメニューが開かれる際の処理
+        /// </summary>
+        private void CellContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            _cellContextMenu.Items.Clear();
+
+            // 右クリックされた位置が有効かチェック
+            if (_rightClickedRowIndex < 0 || _rightClickedColumnIndex < 0 ||
+                _rightClickedRowIndex >= dataGridViewResults.RowCount ||
+                _rightClickedColumnIndex >= dataGridViewResults.ColumnCount)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            // 列名と値を取得
+            string columnName = _columnNames[_rightClickedColumnIndex];
+            object cellValue = _virtualDataTable.Rows[_rightClickedRowIndex][_rightClickedColumnIndex];
+            string displayValue = cellValue?.ToString() ?? string.Empty;
+
+            // 表示用の値を短縮
+            if (displayValue.Length > 50)
+            {
+                displayValue = displayValue.Substring(0, 47) + "...";
+            }
+
+            // メニュー項目を作成
+            var equalMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} = '{displayValue}'");
+            equalMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "=");
+
+            var notEqualMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} != '{displayValue}'");
+            notEqualMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "!=");
+
+            _cellContextMenu.Items.Add(equalMenuItem);
+            _cellContextMenu.Items.Add(notEqualMenuItem);
         }
 
         /// <summary>
@@ -1084,6 +1141,180 @@ namespace CosmosDBClient
             }
 
             return jsonObject;
+        }
+
+        /// <summary>
+        /// セルのマウスクリックイベントハンドラ
+        /// 右クリック時にコンテキストメニューを表示
+        /// </summary>
+        private void dataGridViewResults_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            // 右クリックかつ有効なセル位置の場合のみ処理
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                // データがロードされているか確認
+                if (_virtualDataTable == null || _columnNames == null ||
+                    e.RowIndex >= _virtualDataTable.Rows.Count ||
+                    e.ColumnIndex >= _columnNames.Count)
+                {
+                    return;
+                }
+
+                // 右クリックされたセルの位置を記憶
+                _rightClickedRowIndex = e.RowIndex;
+                _rightClickedColumnIndex = e.ColumnIndex;
+
+                // コンテキストメニューを表示
+                _cellContextMenu.Show(dataGridViewResults, e.Location);
+            }
+        }
+
+        /// <summary>
+        /// WHERE句に条件を追加する
+        /// </summary>
+        /// <param name="columnName">列名</param>
+        /// <param name="value">値</param>
+        /// <param name="operator">演算子 (= または !=)</param>
+        private void AddWhereCondition(string columnName, string value, string @operator)
+        {
+            try
+            {
+                // 現在のクエリテキストを取得
+                var currentQuery = GetCurrentQueryText();
+                if (string.IsNullOrWhiteSpace(currentQuery))
+                {
+                    MessageBox.Show("Query is empty.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 値をエスケープ（シングルクォートを二重に）
+                string escapedValue = value.Replace("'", "''");
+
+                // FROM句からエイリアスを抽出
+                string alias = ExtractAliasFromQuery(currentQuery);
+
+                // WHERE句の条件文を作成（エイリアスがあれば付加）
+                string condition = string.IsNullOrEmpty(alias)
+                    ? $"{columnName} {@operator} '{escapedValue}'"
+                    : $"{alias}.{columnName} {@operator} '{escapedValue}'";
+
+                // WHERE句の検出と追加
+                string updatedQuery;
+                var whereMatch = System.Text.RegularExpressions.Regex.Match(
+                    currentQuery,
+                    @"\bWHERE\b",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (whereMatch.Success)
+                {
+                    // 既存のWHERE句がある場合、ANDで条件を追加
+                    // WHERE句の終わりを見つける（ORDER BY、GROUP BY、またはクエリの終わりまで）
+                    var endMatch = System.Text.RegularExpressions.Regex.Match(
+                        currentQuery.Substring(whereMatch.Index),
+                        @"\b(ORDER\s+BY|GROUP\s+BY)\b",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+
+                    int insertPosition;
+                    if (endMatch.Success)
+                    {
+                        // ORDER BYやGROUP BYがある場合、その前に挿入
+                        insertPosition = whereMatch.Index + endMatch.Index;
+                        // 前の空白を確認して適切にインデント
+                        var precedingText = currentQuery.Substring(0, insertPosition).TrimEnd();
+                        var trailingWhitespace = currentQuery.Substring(precedingText.Length, insertPosition - precedingText.Length);
+                        updatedQuery = precedingText + $"\n    AND {condition}" + trailingWhitespace + currentQuery.Substring(insertPosition);
+                    }
+                    else
+                    {
+                        // クエリの最後に追加
+                        updatedQuery = currentQuery.TrimEnd() + $"\n    AND {condition}";
+                    }
+                }
+                else
+                {
+                    // WHERE句がない場合、FROM句の後に追加
+                    // FROM句を広範にマッチ（テーブル名、エイリアス、改行を含む）
+                    var fromMatch = System.Text.RegularExpressions.Regex.Match(
+                        currentQuery,
+                        @"\bFROM\s+[\w.]+(?:\s+(?:AS\s+)?\w+)?",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+
+                    if (fromMatch.Success)
+                    {
+                        int insertPosition = fromMatch.Index + fromMatch.Length;
+
+                        // FROM句の後の空白・改行をスキップして次の句の前に挿入
+                        while (insertPosition < currentQuery.Length &&
+                               (currentQuery[insertPosition] == ' ' ||
+                                currentQuery[insertPosition] == '\t' ||
+                                currentQuery[insertPosition] == '\r' ||
+                                currentQuery[insertPosition] == '\n'))
+                        {
+                            insertPosition++;
+                        }
+
+                        // 適切な改行とインデントでWHERE句を挿入
+                        updatedQuery = currentQuery.Substring(0, insertPosition) +
+                                     $"WHERE\n    {condition}\n" +
+                                     currentQuery.Substring(insertPosition);
+                    }
+                    else
+                    {
+                        // FROMが見つからない場合はクエリの最後に追加
+                        updatedQuery = currentQuery.TrimEnd() + $"\nWHERE\n    {condition}";
+                    }
+                }
+
+                // 現在のタブのテキストボックスを更新
+                var selectedTab = _queryTabControl.SelectedTab;
+                if (selectedTab?.Controls[0] is FastColoredTextBox textBox)
+                {
+                    textBox.Text = updatedQuery;
+                    textBox.SelectionStart = textBox.Text.Length;
+                    textBox.DoSelectionVisible();
+                    textBox.Focus();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error adding WHERE condition: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// クエリからFROM句のエイリアスを抽出
+        /// </summary>
+        /// <param name="query">SQLクエリ文字列</param>
+        /// <returns>エイリアス（存在しない場合は空文字列）</returns>
+        private string ExtractAliasFromQuery(string query)
+        {
+            // パターン1: FROM table_name [AS] alias (2つの識別子、かつエイリアスがSQLキーワードでない)
+            var matchWithAlias = System.Text.RegularExpressions.Regex.Match(
+                query,
+                @"\bFROM\s+([\w.]+)\s+(?:AS\s+)?(?!(?:WHERE|ORDER|GROUP|HAVING|LIMIT|OFFSET|UNION|INTERSECT|EXCEPT)\b)(\w+)",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+                System.Text.RegularExpressions.RegexOptions.Singleline);
+
+            if (matchWithAlias.Success && matchWithAlias.Groups.Count > 2)
+            {
+                // 2番目のグループがエイリアス
+                return matchWithAlias.Groups[2].Value;
+            }
+
+            // パターン2: FROM identifier のみ (1つの識別子のみの場合)
+            var matchSingle = System.Text.RegularExpressions.Regex.Match(
+                query,
+                @"\bFROM\s+(\w+)\s*(?:\r|\n|$)",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+                System.Text.RegularExpressions.RegexOptions.Singleline);
+
+            if (matchSingle.Success && matchSingle.Groups.Count > 1)
+            {
+                return matchSingle.Groups[1].Value;
+            }
+
+            return string.Empty;
         }
 
         /// <summary>
