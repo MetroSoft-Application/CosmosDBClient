@@ -228,8 +228,16 @@ namespace CosmosDBClient
             var notEqualMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} != '{displayValue}'");
             notEqualMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "!=");
 
+            var likeMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} LIKE '%{displayValue}%'");
+            likeMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "LIKE");
+
+            var notLikeMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} NOT LIKE '%{displayValue}%'");
+            notLikeMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "NOT LIKE");
+
             _cellContextMenu.Items.Add(equalMenuItem);
             _cellContextMenu.Items.Add(notEqualMenuItem);
+            _cellContextMenu.Items.Add(likeMenuItem);
+            _cellContextMenu.Items.Add(notLikeMenuItem);
         }
 
         /// <summary>
@@ -1160,12 +1168,22 @@ namespace CosmosDBClient
                     return;
                 }
 
+                // セルを選択状態にする
+                dataGridViewResults.CurrentCell = dataGridViewResults[e.ColumnIndex, e.RowIndex];
+
                 // 右クリックされたセルの位置を記憶
                 _rightClickedRowIndex = e.RowIndex;
                 _rightClickedColumnIndex = e.ColumnIndex;
 
+                // セルの実際の位置を計算してコンテキストメニューを表示
+                var cellBounds = dataGridViewResults.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
+                var menuPosition = new Point(cellBounds.Right, cellBounds.Bottom);
+
+                // DataGridView内での位置をスクリーン座標に変換
+                menuPosition = dataGridViewResults.PointToScreen(menuPosition);
+
                 // コンテキストメニューを表示
-                _cellContextMenu.Show(dataGridViewResults, e.Location);
+                _cellContextMenu.Show(menuPosition);
             }
         }
 
@@ -1174,7 +1192,7 @@ namespace CosmosDBClient
         /// </summary>
         /// <param name="columnName">列名</param>
         /// <param name="value">値</param>
-        /// <param name="operator">演算子 (= または !=)</param>
+        /// <param name="operator">演算子 (=, !=, LIKE, または NOT LIKE)</param>
         private void AddWhereCondition(string columnName, string value, string @operator)
         {
             try
@@ -1194,9 +1212,27 @@ namespace CosmosDBClient
                 string alias = ExtractAliasFromQuery(currentQuery);
 
                 // WHERE句の条件文を作成（エイリアスがあれば付加）
-                string condition = string.IsNullOrEmpty(alias)
-                    ? $"{columnName} {@operator} '{escapedValue}'"
-                    : $"{alias}.{columnName} {@operator} '{escapedValue}'";
+                string condition;
+                if (string.Equals(@operator, "LIKE", StringComparison.OrdinalIgnoreCase))
+                {
+                    // LIKE演算子の場合、ワイルドカードで囲む
+                    condition = string.IsNullOrEmpty(alias)
+                        ? $"{columnName} LIKE '%{escapedValue}%'"
+                        : $"{alias}.{columnName} LIKE '%{escapedValue}%'";
+                }
+                else if (string.Equals(@operator, "NOT LIKE", StringComparison.OrdinalIgnoreCase))
+                {
+                    // NOT LIKE演算子の場合、ワイルドカードで囲む
+                    condition = string.IsNullOrEmpty(alias)
+                        ? $"{columnName} NOT LIKE '%{escapedValue}%'"
+                        : $"{alias}.{columnName} NOT LIKE '%{escapedValue}%'";
+                }
+                else
+                {
+                    condition = string.IsNullOrEmpty(alias)
+                        ? $"{columnName} {@operator} '{escapedValue}'"
+                        : $"{alias}.{columnName} {@operator} '{escapedValue}'";
+                }
 
                 // WHERE句の検出と追加
                 string updatedQuery;
