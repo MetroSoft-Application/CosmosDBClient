@@ -211,9 +211,9 @@ namespace CosmosDBClient
             }
 
             // 列名と値を取得
-            string columnName = _columnNames[_rightClickedColumnIndex];
-            object cellValue = _virtualDataTable.Rows[_rightClickedRowIndex][_rightClickedColumnIndex];
-            string displayValue = cellValue?.ToString() ?? string.Empty;
+            var columnName = _columnNames[_rightClickedColumnIndex];
+            var cellValue = _virtualDataTable.Rows[_rightClickedRowIndex][_rightClickedColumnIndex];
+            var displayValue = cellValue?.ToString() ?? string.Empty;
 
             // 表示用の値を短縮
             if (displayValue.Length > 50)
@@ -221,23 +221,68 @@ namespace CosmosDBClient
                 displayValue = displayValue.Substring(0, 47) + "...";
             }
 
+            // 列のデータ型を確認
+            var columnType = _virtualDataTable.Columns[_rightClickedColumnIndex].DataType;
+            var isNumericType = IsNumericValue(cellValue);
+
             // メニュー項目を作成
-            var equalMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} = '{displayValue}'");
-            equalMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "=");
+            var equalDisplayText = isNumericType
+                ? $"Add to WHERE: {columnName} = {displayValue}"
+                : $"Add to WHERE: {columnName} = '{displayValue}'";
+            var equalMenuItem = new ToolStripMenuItem(equalDisplayText);
+            equalMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "=", isNumericType);
 
-            var notEqualMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} != '{displayValue}'");
-            notEqualMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "!=");
-
-            var likeMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} LIKE '%{displayValue}%'");
-            likeMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "LIKE");
-
-            var notLikeMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} NOT LIKE '%{displayValue}%'");
-            notLikeMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "NOT LIKE");
+            var notEqualDisplayText = isNumericType
+                ? $"Add to WHERE: {columnName} != {displayValue}"
+                : $"Add to WHERE: {columnName} != '{displayValue}'";
+            var notEqualMenuItem = new ToolStripMenuItem(notEqualDisplayText);
+            notEqualMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "!=", isNumericType);
 
             _cellContextMenu.Items.Add(equalMenuItem);
             _cellContextMenu.Items.Add(notEqualMenuItem);
-            _cellContextMenu.Items.Add(likeMenuItem);
-            _cellContextMenu.Items.Add(notLikeMenuItem);
+
+            // 数値型以外の場合のみLIKE条件を追加
+            if (!isNumericType)
+            {
+                var likeMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} LIKE '%{displayValue}%'");
+                likeMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "LIKE", false);
+
+                var notLikeMenuItem = new ToolStripMenuItem($"Add to WHERE: {columnName} NOT LIKE '%{displayValue}%'");
+                notLikeMenuItem.Click += (s, args) => AddWhereCondition(columnName, cellValue?.ToString() ?? string.Empty, "NOT LIKE", false);
+
+                _cellContextMenu.Items.Add(likeMenuItem);
+                _cellContextMenu.Items.Add(notLikeMenuItem);
+            }
+        }
+
+        /// <summary>
+        /// データ型が数値型かどうかを判定する
+        /// </summary>
+        /// <param name="dataType">データ型</param>
+        /// <returns>数値型の場合true</returns>
+        private bool IsNumericType(Type dataType)
+        {
+            return dataType == typeof(int) || dataType == typeof(long) || dataType == typeof(short) ||
+                   dataType == typeof(decimal) || dataType == typeof(double) || dataType == typeof(float) ||
+                   dataType == typeof(byte) || dataType == typeof(sbyte) || dataType == typeof(uint) ||
+                   dataType == typeof(ulong) || dataType == typeof(ushort);
+        }
+
+        /// <summary>
+        /// 値の内容が数値かどうかを判定する
+        /// </summary>
+        /// <param name="value">値</param>
+        /// <returns>数値の場合true</returns>
+        private bool IsNumericValue(object value)
+        {
+            if (value == null) return false;
+
+            // データ型が数値型の場合
+            if (IsNumericType(value.GetType())) return true;
+
+            // 文字列の場合、内容が数値かどうかを判定
+            var stringValue = value.ToString();
+            return double.TryParse(stringValue, out _);
         }
 
         /// <summary>
@@ -1193,7 +1238,8 @@ namespace CosmosDBClient
         /// <param name="columnName">列名</param>
         /// <param name="value">値</param>
         /// <param name="operator">演算子 (=, !=, LIKE, または NOT LIKE)</param>
-        private void AddWhereCondition(string columnName, string value, string @operator)
+        /// <param name="isNumeric">数値型かどうか（省略時はfalse）</param>
+        private void AddWhereCondition(string columnName, string value, string @operator, bool isNumeric = false)
         {
             try
             {
@@ -1205,37 +1251,48 @@ namespace CosmosDBClient
                     return;
                 }
 
-                // 値をエスケープ（シングルクォートを二重に）
-                string escapedValue = value.Replace("'", "''");
-
                 // FROM句からエイリアスを抽出
-                string alias = ExtractAliasFromQuery(currentQuery);
+                var alias = ExtractAliasFromQuery(currentQuery);
 
                 // WHERE句の条件文を作成（エイリアスがあれば付加）
-                string condition;
+                var condition = string.Empty;
                 if (string.Equals(@operator, "LIKE", StringComparison.OrdinalIgnoreCase))
                 {
-                    // LIKE演算子の場合、ワイルドカードで囲む
+                    // LIKE演算子の場合、ワイルドカードで囲む（値をエスケープ）
+                    var escapedValue = value.Replace("'", "''");
                     condition = string.IsNullOrEmpty(alias)
                         ? $"{columnName} LIKE '%{escapedValue}%'"
                         : $"{alias}.{columnName} LIKE '%{escapedValue}%'";
                 }
                 else if (string.Equals(@operator, "NOT LIKE", StringComparison.OrdinalIgnoreCase))
                 {
-                    // NOT LIKE演算子の場合、ワイルドカードで囲む
+                    // NOT LIKE演算子の場合、ワイルドカードで囲む（値をエスケープ）
+                    var escapedValue = value.Replace("'", "''");
                     condition = string.IsNullOrEmpty(alias)
                         ? $"{columnName} NOT LIKE '%{escapedValue}%'"
                         : $"{alias}.{columnName} NOT LIKE '%{escapedValue}%'";
                 }
                 else
                 {
-                    condition = string.IsNullOrEmpty(alias)
-                        ? $"{columnName} {@operator} '{escapedValue}'"
-                        : $"{alias}.{columnName} {@operator} '{escapedValue}'";
+                    if (isNumeric)
+                    {
+                        // 数値型の場合はクォートで囲まない
+                        condition = string.IsNullOrEmpty(alias)
+                            ? $"{columnName} {@operator} {value}"
+                            : $"{alias}.{columnName} {@operator} {value}";
+                    }
+                    else
+                    {
+                        // 文字列型の場合はクォートで囲む（値をエスケープ）
+                        var escapedValue = value.Replace("'", "''");
+                        condition = string.IsNullOrEmpty(alias)
+                            ? $"{columnName} {@operator} '{escapedValue}'"
+                            : $"{alias}.{columnName} {@operator} '{escapedValue}'";
+                    }
                 }
 
                 // WHERE句の検出と追加
-                string updatedQuery;
+                var updatedQuery = string.Empty;
                 var whereMatch = System.Text.RegularExpressions.Regex.Match(
                     currentQuery,
                     @"\bWHERE\b",
@@ -1250,7 +1307,7 @@ namespace CosmosDBClient
                         @"\b(ORDER\s+BY|GROUP\s+BY)\b",
                         System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
 
-                    int insertPosition;
+                    var insertPosition = 0;
                     if (endMatch.Success)
                     {
                         // ORDER BYやGROUP BYがある場合、その前に挿入
@@ -1277,7 +1334,7 @@ namespace CosmosDBClient
 
                     if (fromMatch.Success)
                     {
-                        int insertPosition = fromMatch.Index + fromMatch.Length;
+                        var insertPosition = fromMatch.Index + fromMatch.Length;
 
                         // FROM句の後の空白・改行をスキップして次の句の前に挿入
                         while (insertPosition < currentQuery.Length &&
@@ -1313,8 +1370,7 @@ namespace CosmosDBClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error adding WHERE condition: {ex.Message}", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error adding WHERE condition: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
