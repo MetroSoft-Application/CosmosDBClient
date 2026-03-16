@@ -577,49 +577,57 @@ namespace CosmosDBClient
         /// <summary>
         /// AdvancedDataGridViewのフィルタリングイベントハンドラ
         /// </summary>
+        /// <summary>
+        /// 現在のフィルタ文字列とソート文字列を _originalDataTable に適用して _virtualDataTable を更新する
+        /// </summary>
+        private void ApplySortAndFilter()
+        {
+            if (_originalDataTable == null) return;
+
+            try
+            {
+                var filterString = dataGridViewResults.FilterString;
+                var sortString = dataGridViewResults.SortString;
+
+                // フィルタを適用
+                DataTable baseTable;
+                if (string.IsNullOrEmpty(filterString))
+                {
+                    baseTable = _originalDataTable;
+                }
+                else
+                {
+                    var filteredRows = _originalDataTable.Select(filterString);
+                    baseTable = _originalDataTable.Clone();
+                    foreach (var row in filteredRows)
+                        baseTable.ImportRow(row);
+                }
+
+                // ソートを適用
+                if (string.IsNullOrEmpty(sortString))
+                {
+                    _virtualDataTable = baseTable;
+                }
+                else
+                {
+                    baseTable.DefaultView.Sort = sortString;
+                    _virtualDataTable = baseTable.DefaultView.ToTable();
+                }
+
+                dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
+                dataGridViewResults.Invalidate();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ApplySortAndFilter error: {ex.Message}");
+            }
+        }
+
         private void dataGridViewResults_FilterStringChanged(object sender, AdvancedDataGridView.FilterEventArgs e)
         {
-            if (_virtualModeEnabled && _virtualDataTable != null)
+            if (_virtualModeEnabled && _originalDataTable != null)
             {
-                try
-                {
-                    // フィルタ適用前にオリジナルのデータテーブルをバックアップ（初回のみ）
-                    if (_originalDataTable == null)
-                    {
-                        _originalDataTable = _virtualDataTable;
-                    }
-
-                    // フィルタ文字列を取得
-                    var filterString = dataGridViewResults.FilterString;
-
-                    if (string.IsNullOrEmpty(filterString))
-                    {
-                        // フィルタなしの場合、元のデータに戻す
-                        if (_originalDataTable != null)
-                        {
-                            _virtualDataTable = _originalDataTable;
-                            _originalDataTable = null;
-                        }
-                    }
-                    else
-                    {
-                        // DataViewを使用してフィルタを適用（DataTable.Copy()を回避）
-                        var filteredRows = _originalDataTable.Select(filterString);
-                        _virtualDataTable = _originalDataTable.Clone();
-
-                        foreach (var row in filteredRows)
-                        {
-                            _virtualDataTable.ImportRow(row);
-                        }
-                    }
-
-                    // RowCount設定で自動的に再描画されるため、明示的なInvalidateは不要
-                    dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Filter error: {ex.Message}");
-                }
+                ApplySortAndFilter();
             }
         }
 
@@ -628,32 +636,9 @@ namespace CosmosDBClient
         /// </summary>
         private void dataGridViewResults_SortStringChanged(object sender, AdvancedDataGridView.SortEventArgs e)
         {
-            if (_virtualModeEnabled && _virtualDataTable != null)
+            if (_virtualModeEnabled && _originalDataTable != null)
             {
-                try
-                {
-                    // 並べ替え文字列を取得
-                    var sortString = dataGridViewResults.SortString;
-
-                    // 並べ替えなしの場合は処理しない
-                    if (string.IsNullOrEmpty(sortString))
-                    {
-                        return;
-                    }
-
-                    // データテーブルに並べ替えを適用
-                    _virtualDataTable.DefaultView.Sort = sortString;
-
-                    // 並べ替えられたビューから新しいDataTableを生成
-                    _virtualDataTable = _virtualDataTable.DefaultView.ToTable();
-
-                    // RowCount設定で自動的に再描画されるため、明示的なInvalidateは不要
-                    dataGridViewResults.RowCount = _virtualDataTable.Rows.Count;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Sort error: {ex.Message}");
-                }
+                ApplySortAndFilter();
             }
         }
 
@@ -839,8 +824,10 @@ namespace CosmosDBClient
                 // カラムの並び替えを実施する（システムカラムを末尾に移動）
                 var pkPaths = await _cosmosDBService.GetPartitionKeyPathsAsync();
                 _cosmosDBService.MoveSystemColumnsToEnd(newDataTable, pkPaths);
+                newDataTable = _cosmosDBService.ConvertNumericColumns(newDataTable);
 
                 // 読み込み完了したデータで更新
+                _originalDataTable = newDataTable;
                 _virtualDataTable = newDataTable;
 
                 ClearModificationMarks();
@@ -956,8 +943,8 @@ namespace CosmosDBClient
                 if (_virtualModeEnabled)
                 {
                     // 仮想モードの場合、DataTableを内部に保持して手動で管理
+                    _originalDataTable = result.Data;
                     _virtualDataTable = result.Data;
-                    _originalDataTable = null;
 
                     ClearModificationMarks();
 
@@ -2270,8 +2257,8 @@ namespace CosmosDBClient
                 if (_virtualModeEnabled)
                 {
                     // 仮想モードの場合
+                    _originalDataTable = result.Data;
                     _virtualDataTable = result.Data;
-                    _originalDataTable = null;
 
                     ClearModificationMarks();
 
@@ -2323,8 +2310,8 @@ namespace CosmosDBClient
             {
                 if (_virtualModeEnabled)
                 {
+                    _originalDataTable = cachedData;
                     _virtualDataTable = cachedData;
-                    _originalDataTable = null;
 
                     ClearModificationMarks();
 

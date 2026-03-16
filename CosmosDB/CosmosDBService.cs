@@ -274,6 +274,7 @@ namespace CosmosDBClient.CosmosDB
             // パーティションキー情報を取得し、カラムの並び替えを実施する
             var pkPaths = await GetPartitionKeyPathsAsync();
             MoveSystemColumnsToEnd(dataTable, pkPaths);
+            dataTable = ConvertNumericColumns(dataTable);
 
             var endTime = DateTime.UtcNow;
             var dataSizeInBytes = CalculateDataSize(dataTable);
@@ -350,6 +351,7 @@ namespace CosmosDBClient.CosmosDB
             // パーティションキー情報を取得し、カラムの並び替えを実施する
             var pkPaths = await GetPartitionKeyPathsAsync();
             MoveSystemColumnsToEnd(dataTable, pkPaths);
+            dataTable = ConvertNumericColumns(dataTable);
 
             var endTime = DateTime.UtcNow;
             var dataSizeInBytes = CalculateDataSize(dataTable);
@@ -614,6 +616,127 @@ namespace CosmosDBClient.CosmosDB
                 var key = jsonObject.SelectToken(path.Trim('/'))?.ToString();
                 return $"{path.Trim('/')}: {key}";
             }));
+        }
+
+        /// <summary>
+        /// 型判定でサンプリングする最大行数
+        /// </summary>
+        private const int TypeDetectionSampleSize = 200;
+
+        /// <summary>
+        /// DataTable の列値を先頭 <see cref="TypeDetectionSampleSize"/> 行のサンプリングで検査し、
+        /// 数値列を long または double 型に変換した新しい DataTable を返す
+        /// </summary>
+        /// <param name="source">変換元の DataTable</param>
+        /// <returns>数値列を適切な型に変換した DataTable</returns>
+        public DataTable ConvertNumericColumns(DataTable source)
+        {
+            if (source.Rows.Count == 0)
+            {
+                return source;
+            }
+
+            // 各列の型を判定
+            var columnTypes = new Type[source.Columns.Count];
+            for (int i = 0; i < source.Columns.Count; i++)
+            {
+                columnTypes[i] = DetectColumnType(source, i);
+            }
+
+            // 変換が不要な場合はそのまま返す
+            if (columnTypes.All(t => t == typeof(string)))
+            {
+                return source;
+            }
+
+            // 新しい DataTable を構築
+            var result = new DataTable();
+            for (int i = 0; i < source.Columns.Count; i++)
+            {
+                result.Columns.Add(source.Columns[i].ColumnName, columnTypes[i]);
+            }
+
+            foreach (DataRow row in source.Rows)
+            {
+                var newRow = result.NewRow();
+                for (int i = 0; i < source.Columns.Count; i++)
+                {
+                    var val = row[i]?.ToString();
+                    if (string.IsNullOrEmpty(val))
+                    {
+                        newRow[i] = DBNull.Value;
+                    }
+                    else if (columnTypes[i] == typeof(long))
+                    {
+                        newRow[i] = long.TryParse(val, out var l) ? (object)l : DBNull.Value;
+                    }
+                    else if (columnTypes[i] == typeof(double))
+                    {
+                        newRow[i] = double.TryParse(val, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out var d)
+                            ? (object)d : DBNull.Value;
+                    }
+                    else
+                    {
+                        newRow[i] = val;
+                    }
+                }
+                result.Rows.Add(newRow);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// DataTable の指定列を先頭 <see cref="TypeDetectionSampleSize"/> 行のサンプリングで判定し、適切な型を返す
+        /// </summary>
+        private static Type DetectColumnType(DataTable table, int columnIndex)
+        {
+            bool allLong = true;
+            bool allDouble = true;
+            bool hasValue = false;
+            int checked_ = 0;
+
+            foreach (DataRow row in table.Rows)
+            {
+                if (checked_ >= TypeDetectionSampleSize)
+                {
+                    break;
+                }
+
+                var val = row[columnIndex]?.ToString();
+                if (string.IsNullOrEmpty(val))
+                {
+                    continue;
+                }
+
+                hasValue = true;
+                checked_++;
+
+                if (allLong && !long.TryParse(val, out _))
+                {
+                    allLong = false;
+                }
+
+                if (!double.TryParse(val, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out _))
+                {
+                    allDouble = false;
+                    break;
+                }
+            }
+
+            if (!hasValue || !allDouble)
+            {
+                return typeof(string);
+            }
+
+            if (allLong)
+            {
+                return typeof(long);
+            }
+
+            return typeof(double);
         }
     }
 }
