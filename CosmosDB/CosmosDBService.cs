@@ -474,8 +474,11 @@ namespace CosmosDBClient.CosmosDB
                     dataTable.Columns.Add(property.Name, typeof(string));
                 }
 
-                // 日付項目をJSTに変換してフォーマット
-                if (DateTime.TryParse(property.Value?.ToString(), out var dateValue))
+                // 日付項目をJSTに変換してフォーマット（年月日を含む文字列のみ対象）
+                var strValue = property.Value?.ToString();
+                if (strValue != null &&
+                    System.Text.RegularExpressions.Regex.IsMatch(strValue, @"\d{4}-\d{2}-\d{2}") &&
+                    DateTime.TryParse(strValue, out var dateValue))
                 {
                     var jstDate = TimeZoneInfo.ConvertTimeFromUtc(dateValue.ToUniversalTime(), jstTimeZone);
                     row[property.Name] = jstDate.ToString("yyyy-MM-ddTHH:mm:ss"); // タイムゾーン情報なし
