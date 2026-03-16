@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Net.Http;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 
@@ -15,6 +16,7 @@ namespace CosmosDBClient.CosmosDB
         public readonly string[] systemColumns = { "id", "_etag", "_rid", "_self", "_attachments", "_ts" };
 
         private static CosmosClient _cosmosClient;
+        private static bool _bypassProxy = false;
         private Database _cosmosDatabase;
         private Container _cosmosContainer;
         private RequestOptions _requestOptions;
@@ -90,15 +92,24 @@ namespace CosmosDBClient.CosmosDB
             // 初回のみ CosmosClient を作成
             if (_cosmosClient == null)
             {
-                var cosmosClientOptions = new CosmosClientOptions
-                {
-                    ConnectionMode = ConnectionMode.Gateway
-                };
-                _cosmosClient = new CosmosClient(connectionString, cosmosClientOptions);
+                _cosmosClient = CreateCosmosClient(connectionString);
             }
 
-            // データベースの作成または取得
-            var databaseResponse = _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName).Result;
+            // データベースの作成または取得（プロキシ認証エラー時はプロキシなしでリトライ）
+            DatabaseResponse databaseResponse;
+            try
+            {
+                databaseResponse = _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName).Result;
+            }
+            catch (Exception ex) when (!_bypassProxy && IsProxyAuthenticationError(ex))
+            {
+                // プロキシ認証エラー: プロキシなしでクライアントを再作成してリトライ
+                _bypassProxy = true;
+                _cosmosClient.Dispose();
+                _cosmosClient = CreateCosmosClient(connectionString);
+                databaseResponse = _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName).Result;
+            }
+
             _cosmosDatabase = databaseResponse.Database;
 
             // データベースとコンテナの取得
@@ -107,6 +118,58 @@ namespace CosmosDBClient.CosmosDB
             // デフォルトのリクエストオプションを初期化
             _requestOptions = new RequestOptions();
             _requestOptions.PriorityLevel = PriorityLevel.Low;
+        }
+
+        /// <summary>
+        /// CosmosClientを生成する（_bypassProxyフラグに応じてプロキシ設定を切り替える）
+        /// </summary>
+        /// <param name="connectionString">CosmosDBへの接続文字列</param>
+        /// <returns>CosmosClientオブジェクト</returns>
+        private static CosmosClient CreateCosmosClient(string connectionString)
+        {
+            CosmosClientOptions cosmosClientOptions;
+            if (_bypassProxy)
+            {
+                cosmosClientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new HttpClient(new HttpClientHandler { UseProxy = false })
+                };
+            }
+            else
+            {
+                cosmosClientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway
+                };
+            }
+            return new CosmosClient(connectionString, cosmosClientOptions);
+        }
+
+        /// <summary>
+        /// プロキシ認証エラー（HTTP 407）かどうかを判定する
+        /// </summary>
+        /// <param name="ex">検査する例外</param>
+        /// <returns>プロキシ認証エラーの場合はtrue</returns>
+        private static bool IsProxyAuthenticationError(Exception ex)
+        {
+            if (ex is AggregateException aggregate)
+            {
+                return aggregate.InnerExceptions.Any(IsProxyAuthenticationError);
+            }
+            if (ex.InnerException != null && IsProxyAuthenticationError(ex.InnerException))
+            {
+                return true;
+            }
+            if (ex is HttpRequestException httpEx &&
+                (httpEx.StatusCode == System.Net.HttpStatusCode.ProxyAuthenticationRequired ||
+                 httpEx.StatusCode == System.Net.HttpStatusCode.Forbidden))
+            {
+                return true;
+            }
+            var message = ex.Message ?? string.Empty;
+            return message.Contains("407") || message.Contains("Proxy Authentication Required") ||
+                   message.Contains("403") || message.Contains("Forbidden");
         }
 
         /// <summary>
