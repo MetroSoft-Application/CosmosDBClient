@@ -54,6 +54,45 @@ namespace CosmosDBClient
         private const int MaxPageCacheSize = 10;
 
         /// <summary>
+        /// 新しく作成するタブで使用する既定のクエリ文字列
+        /// </summary>
+        private const string DefaultQueryText = "SELECT\n    *\nFROM\n    c\nWHERE\n    1 = 1";
+
+        /// <summary>
+        /// 初期化時に作成する既定のクエリタブ一覧
+        /// </summary>
+        private static readonly (string TabName, string Query)[] DefaultQueryTabs =
+        {
+            ("Basic: Select All", "SELECT\n    *\nFROM\n    c"),
+            ("Basic: Count", "SELECT\n    COUNT(1)\nFROM\n    c"),
+            ("Filter: Equal", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.status = 'active'"),
+            ("Filter: Range", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.price BETWEEN 100 AND 500"),
+            ("Filter: IN List", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.category IN ('A', 'B', 'C')"),
+            ("Filter: STARTSWITH", "SELECT\n    *\nFROM\n    c\nWHERE\n    STARTSWITH(c.name, 'foo')"),
+            ("Filter: ENDSWITH", "SELECT\n    *\nFROM\n    c\nWHERE\n    ENDSWITH(c.name, 'bar')"),
+            ("Filter: StringEquals (CI)", "SELECT\n    *\nFROM\n    c\nWHERE\n    STRINGEQUALS(c.name, 'foo', true)"),
+            ("Filter: LIKE", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.name LIKE '%bar%'"),
+            ("Filter: NOT LIKE", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.name NOT LIKE '%bar%'"),
+            ("Filter: CONTAINS", "SELECT\n    *\nFROM\n    c\nWHERE\n    CONTAINS(c.name, 'bar')"),
+            ("Filter: Null or Undefined", "SELECT\n    *\nFROM\n    c\nWHERE\n    IS_NULL(c.deletedAt)\n    OR NOT IS_DEFINED(c.deletedAt)"),
+            ("Filter: Compound", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.type = 'video'\n    AND (c.size > 1000 OR c.priority = 1)"),
+            ("Filter: _ts", "SELECT\n    *\nFROM\n    c\nWHERE\n    c._ts >= 1700000000"),
+            ("Aggregate: SUM", "SELECT\n    VALUE SUM(c.size)\nFROM\n    c"),
+            ("Aggregate: AVG MIN MAX", "SELECT\n    AVG(c.score) AS avg,\n    MIN(c.score) AS min,\n    MAX(c.score) AS max\nFROM\n    c"),
+            ("Aggregate: GROUP BY", "SELECT\n    c.category,\n    COUNT(1) AS cnt\nFROM\n    c\nGROUP BY\n    c.category"),
+            ("Aggregate: GROUP BY SUM", "SELECT\n    c.type,\n    SUM(c.size) AS total\nFROM\n    c\nGROUP BY\n    c.type"),
+            ("Array/Object: ARRAY_CONTAINS", "SELECT\n    *\nFROM\n    c\nWHERE\n    ARRAY_CONTAINS(c.tags, 'urgent')"),
+            ("Array/Object: JOIN", "SELECT\n    c.id,\n    t AS tag\nFROM\n    c\nJOIN\n    t IN c.tags"),
+            ("Array/Object: JOIN Filter", "SELECT\n    c.id,\n    t\nFROM\n    c\nJOIN\n    t IN c.items\nWHERE\n    t.qty > 0"),
+            ("Array/Object: Nested Field", "SELECT\n    c.id,\n    c.address.city\nFROM\n    c\nWHERE\n    IS_DEFINED(c.address)"),
+            ("Array/Object: ARRAY_LENGTH", "SELECT\n    *\nFROM\n    c\nWHERE\n    ARRAY_LENGTH(c.tags) > 2"),
+            ("Order By: Asc", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c._ts ASC"),
+            ("Order By: Desc", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c.score DESC"),
+            ("Order By: Offset Limit", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c.id\nOFFSET 0 LIMIT 20"),
+            ("Order By: Multi Sort", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c.category ASC,\n    c.score DESC")
+        };
+
+        /// <summary>
         /// ReadOnly列のインデックスキャッシュ（CellFormatting高速化用）
         /// </summary>
         private HashSet<int> _readOnlyColumnIndices = new HashSet<int>();
@@ -349,8 +388,25 @@ namespace CosmosDBClient
 
             panel1.Controls.Add(_queryTabControl);
 
-            // 初期タブを作成
-            AddNewQueryTab("Query 1", "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1");
+            InitializeDefaultQueryTabs();
+        }
+
+        /// <summary>
+        /// 既定のクエリタブを再作成する
+        /// </summary>
+        private void InitializeDefaultQueryTabs()
+        {
+            _queryTabControl.TabPages.Clear();
+
+            foreach (var defaultQueryTab in DefaultQueryTabs)
+            {
+                AddNewQueryTab(defaultQueryTab.TabName, defaultQueryTab.Query);
+            }
+
+            if (_queryTabControl.TabPages.Count > 0)
+            {
+                _queryTabControl.SelectedIndex = 0;
+            }
         }
 
         /// <summary>
@@ -462,7 +518,7 @@ namespace CosmosDBClient
 
             if (initialQuery == null)
             {
-                initialQuery = "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1";
+                initialQuery = DefaultQueryText;
             }
 
             var tabPage = new TabPage(tabName);
@@ -476,6 +532,7 @@ namespace CosmosDBClient
             textBoxQuery.TabLength = 4;
             textBoxQuery.WordWrap = false;
             textBoxQuery.ShowLineNumbers = true;
+            textBoxQuery.Font = new Font("Yu Gothic UI", 9);
 
             tabPage.Controls.Add(textBoxQuery);
             _queryTabControl.TabPages.Add(tabPage);
@@ -505,8 +562,7 @@ namespace CosmosDBClient
         /// </summary>
         private void CloseAllTabs()
         {
-            _queryTabControl.TabPages.Clear();
-            AddNewQueryTab("Query 1", "SELECT\n    * \nFROM\n    c \nWHERE\n    1 = 1");
+            InitializeDefaultQueryTabs();
         }
 
         /// <summary>
@@ -810,7 +866,9 @@ namespace CosmosDBClient
                     // バッチごとのデータをDataTableに追加
                     foreach (var item in currentResultSet)
                     {
-                        var jsonObject = JObject.Parse(item.ToString());
+                        var token = JToken.Parse(item.ToString());
+                        var jsonObject = token as JObject
+                            ?? new JObject(new JProperty("$1", token));
                         AddRowToDataTable(jsonObject, newDataTable);
                     }
 
@@ -936,6 +994,16 @@ namespace CosmosDBClient
         {
             var query = BuildQuery(GetCurrentQueryText(), GetMaxItemCount());
             var result = await _cosmosDBService.FetchDataWithStatusAsync(query, GetMaxItemCount());
+
+            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
+            {
+                MessageBox.Show(
+                    $"Query execution failed.\n\nQuery:\n{result.ExecutedQuery}\n\nError:\n{result.ErrorMessage}",
+                    "Query Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
 
             dataGridViewResults.SuspendLayout();
             try
@@ -1273,8 +1341,8 @@ namespace CosmosDBClient
         {
             try
             {
-                // 現在のクエリテキストを取得
-                var currentQuery = GetCurrentQueryText();
+                // 現在のクエリテキストを取得し、改行コードを \n に統一
+                var currentQuery = GetCurrentQueryText().Replace("\r\n", "\n").Replace("\r", "\n");
                 if (string.IsNullOrWhiteSpace(currentQuery))
                 {
                     MessageBox.Show("Query is empty.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1356,30 +1424,24 @@ namespace CosmosDBClient
                 else
                 {
                     // WHERE句がない場合、FROM句の後に追加
-                    // FROM句を広範にマッチ（テーブル名、エイリアス、改行を含む）
+                    // FROM句をマッチ（コレクション名のみ、JOIN/ORDER/GROUPを誤捕捉しないよう簡略化）
                     var fromMatch = System.Text.RegularExpressions.Regex.Match(
                         currentQuery,
-                        @"\bFROM\s+[\w.]+(?:\s+(?:AS\s+)?\w+)?",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+                        @"\bFROM[ \t\n\r]+[\w.]+",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
                     if (fromMatch.Success)
                     {
                         var insertPosition = fromMatch.Index + fromMatch.Length;
 
-                        // FROM句の後の空白・改行をスキップして次の句の前に挿入
-                        while (insertPosition < currentQuery.Length &&
-                               (currentQuery[insertPosition] == ' ' ||
-                                currentQuery[insertPosition] == '\t' ||
-                                currentQuery[insertPosition] == '\r' ||
-                                currentQuery[insertPosition] == '\n'))
-                        {
-                            insertPosition++;
-                        }
+                        // FROM句直後の空白・改行を除去して改行を正規化してWHERE句を挿入
+                        var beforeInsert = currentQuery.Substring(0, insertPosition).TrimEnd();
+                        var afterInsert = currentQuery.Substring(insertPosition).TrimStart();
 
                         // 適切な改行とインデントでWHERE句を挿入
-                        updatedQuery = currentQuery.Substring(0, insertPosition) +
-                                     $"WHERE\n    {condition}\n" +
-                                     currentQuery.Substring(insertPosition);
+                        updatedQuery = string.IsNullOrEmpty(afterInsert)
+                            ? beforeInsert + $"\nWHERE\n    {condition}"
+                            : beforeInsert + $"\nWHERE\n    {condition}\n" + afterInsert;
                     }
                     else
                     {
@@ -2251,6 +2313,16 @@ namespace CosmosDBClient
         /// </summary>
         private async Task UpdateGridWithPageData(FetchDataResult result)
         {
+            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
+            {
+                MessageBox.Show(
+                    $"Query execution failed.\n\nQuery:\n{result.ExecutedQuery}\n\nError:\n{result.ErrorMessage}",
+                    "Query Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
             dataGridViewResults.SuspendLayout();
             try
             {

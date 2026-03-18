@@ -4,6 +4,10 @@
     {
         private System.ComponentModel.IContainer components = null;
 
+        /// <summary>
+        /// フォームで使用しているリソースを解放する
+        /// </summary>
+        /// <param name="disposing">マネージドリソースを破棄する場合は true</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))

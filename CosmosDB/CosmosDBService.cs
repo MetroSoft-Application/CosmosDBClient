@@ -257,7 +257,9 @@ namespace CosmosDBClient.CosmosDB
                     // データテーブルに結果を追加
                     foreach (var item in currentResultSet)
                     {
-                        var jsonObject = JObject.Parse(item.ToString());
+                        var token = JToken.Parse(item.ToString());
+                        var jsonObject = token as JObject
+                            ?? new JObject(new JProperty("$1", token));
                         AddRowToDataTable(jsonObject, dataTable);
                     }
                 }
@@ -334,7 +336,9 @@ namespace CosmosDBClient.CosmosDB
                     // データテーブルに結果を追加
                     foreach (var item in currentResultSet)
                     {
-                        var jsonObject = JObject.Parse(item.ToString());
+                        var token = JToken.Parse(item.ToString());
+                        var jsonObject = token as JObject
+                            ?? new JObject(new JProperty("$1", token));
                         AddRowToDataTable(jsonObject, dataTable);
                     }
                 }
