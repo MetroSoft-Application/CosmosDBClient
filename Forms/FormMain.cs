@@ -79,8 +79,8 @@ namespace CosmosDBClient
             ("Filter: _ts", "SELECT\n    *\nFROM\n    c\nWHERE\n    c._ts >= 1700000000"),
             ("Aggregate: SUM", "SELECT\n    VALUE SUM(c.size)\nFROM\n    c"),
             ("Aggregate: AVG MIN MAX", "SELECT\n    AVG(c.score) AS avg,\n    MIN(c.score) AS min,\n    MAX(c.score) AS max\nFROM\n    c"),
-            ("Aggregate: GROUP BY", "SELECT\n    c.category,\n    COUNT(1) AS cnt\nFROM\n    c\nGROUP BY\n    c.category"),
-            ("Aggregate: GROUP BY SUM", "SELECT\n    c.type,\n    SUM(c.size) AS total\nFROM\n    c\nGROUP BY\n    c.type"),
+            // ("Aggregate: GROUP BY", "SELECT\n    c.category,\n    COUNT(1) AS cnt\nFROM\n    c\nGROUP BY\n    c.category"),
+            // ("Aggregate: GROUP BY SUM", "SELECT\n    c.type,\n    SUM(c.size) AS total\nFROM\n    c\nGROUP BY\n    c.type"),
             ("Array/Object: ARRAY_CONTAINS", "SELECT\n    *\nFROM\n    c\nWHERE\n    ARRAY_CONTAINS(c.tags, 'urgent')"),
             ("Array/Object: JOIN", "SELECT\n    c.id,\n    t AS tag\nFROM\n    c\nJOIN\n    t IN c.tags"),
             ("Array/Object: JOIN Filter", "SELECT\n    c.id,\n    t\nFROM\n    c\nJOIN\n    t IN c.items\nWHERE\n    t.qty > 0"),
@@ -91,6 +91,20 @@ namespace CosmosDBClient
             ("Order By: Offset Limit", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c.id\nOFFSET 0 LIMIT 20"),
             ("Order By: Multi Sort", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c.category ASC,\n    c.score DESC")
         };
+
+        /// <summary>
+        /// TOP句の自動挿入を除外する句の一覧
+        /// </summary>
+        private static readonly string[] TopClauseInsertionExclusionClauses =
+        {
+            // 追加時は除外したい句を 1 行足すだけでよい。
+            "OFFSET LIMIT",
+            "GROUP BY",
+            "DISTINCT"
+        };
+
+        private const string SelectClause = "SELECT";
+        private const string SelectTopClause = "SELECT TOP";
 
         /// <summary>
         /// ReadOnly列のインデックスキャッシュ（CellFormatting高速化用）
@@ -1503,29 +1517,93 @@ namespace CosmosDBClient
 
         /// <summary>
         /// クエリ文字列を構築
-        /// 指定された最大件数に基づいて、TOP句を挿入
+        /// 指定された最大件数に基づいて、必要な場合のみTOP句を挿入
         /// </summary>
         /// <param name="queryText">クエリ文字列</param>
         /// <param name="maxCount">取得する最大アイテム数</param>
         /// <returns>構築されたクエリ文字列</returns>
         private string BuildQuery(string queryText, int maxCount)
         {
-            var query = $"SELECT TOP {maxCount} * FROM c";
-
-            if (!string.IsNullOrWhiteSpace(queryText))
+            if (string.IsNullOrWhiteSpace(queryText))
             {
-                query = queryText;
-                if (!System.Text.RegularExpressions.Regex.IsMatch(query, @"\bSELECT\s+TOP\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                return $"SELECT TOP {maxCount} * FROM c";
+            }
+
+            var normalizedQuery = NormalizeQueryForComparison(queryText);
+
+            if (HasTopClause(normalizedQuery) || ContainsTopClauseExclusion(normalizedQuery))
+            {
+                return queryText;
+            }
+
+            var selectIndex = FindSelectClauseIndex(queryText);
+            if (selectIndex == -1)
+            {
+                return queryText;
+            }
+
+            // SELECT の直後にだけ差し込むことで、列指定や VALUE 句はそのまま維持する。
+            return queryText.Insert(selectIndex + SelectClause.Length, $" TOP {maxCount}");
+        }
+
+        /// <summary>
+        /// 既にTOP句を含むクエリかどうかを判定する
+        /// </summary>
+        private bool HasTopClause(string normalizedQuery)
+        {
+            return normalizedQuery.Contains(SelectTopClause);
+        }
+
+        /// <summary>
+        /// TOP句を自動挿入してはいけない句を含むかどうかを判定する
+        /// </summary>
+        private bool ContainsTopClauseExclusion(string normalizedQuery)
+        {
+            foreach (var clause in TopClauseInsertionExclusionClauses)
+            {
+                if (normalizedQuery.Contains(clause))
                 {
-                    var selectIndex = System.Text.RegularExpressions.Regex.Match(query, @"\bSELECT\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Index;
-                    if (selectIndex != -1)
-                    {
-                        query = query.Insert(selectIndex + 6, $" TOP {maxCount}");
-                    }
+                    return true;
                 }
             }
 
-            return query;
+            return false;
+        }
+
+        /// <summary>
+        /// 元のクエリ文字列からSELECT句の開始位置を取得する
+        /// </summary>
+        private int FindSelectClauseIndex(string query)
+        {
+            return query.ToUpperInvariant().IndexOf(SelectClause);
+        }
+
+        /// <summary>
+        /// クエリ比較用に空白を揃え、キーワード比較を大文字へ統一する
+        /// </summary>
+        private string NormalizeQueryForComparison(string query)
+        {
+            var builder = new System.Text.StringBuilder(query.Length);
+            var previousWasWhitespace = false;
+
+            foreach (var character in query)
+            {
+                if (char.IsWhiteSpace(character))
+                {
+                    if (!previousWasWhitespace)
+                    {
+                        builder.Append(' ');
+                        previousWasWhitespace = true;
+                    }
+
+                    continue;
+                }
+
+                builder.Append(char.ToUpperInvariant(character));
+                previousWasWhitespace = false;
+            }
+
+            return builder.ToString().Trim();
         }
 
         /// <summary>
