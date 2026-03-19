@@ -1,8 +1,8 @@
-# CosmosDB Client
+﻿# CosmosDB Client
 
 DBA application for managing and querying Azure Cosmos DB data.
 
-![image](./Resources/image.png)
+![image](./Resources/image-v1.0.2.png)
 
 ## Features
 
