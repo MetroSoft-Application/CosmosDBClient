@@ -114,6 +114,7 @@ namespace CosmosDBClient
         /// <summary>
         /// ページサイズを取得する
         /// </summary>
+        /// <returns>現在設定されているページサイズ</returns>
         private int GetPageSize()
         {
             return (int)numericUpDownPageSize.Value;
@@ -267,6 +268,8 @@ namespace CosmosDBClient
         /// <summary>
         /// コンテキストメニューが開かれる際の処理
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
         private void CellContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
             _cellContextMenu.Items.Clear();
@@ -352,7 +355,30 @@ namespace CosmosDBClient
 
             // 文字列の場合、内容が数値かどうかを判定
             var stringValue = value.ToString();
+            if (HasSignificantLeadingZeros(stringValue)) return false;
+
             return double.TryParse(stringValue, out _);
+        }
+
+        /// <summary>
+        /// 先頭ゼロを持つ数値風文字列は識別子として扱い、数値変換しない
+        /// </summary>
+        /// <param name="value">判定対象の文字列</param>
+        /// <returns>先頭ゼロを保持すべき文字列の場合は true</returns>
+        private bool HasSignificantLeadingZeros(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var startIndex = value[0] == '-' || value[0] == '+' ? 1 : 0;
+            if (value.Length - startIndex <= 1)
+            {
+                return false;
+            }
+
+            return value[startIndex] == '0' && char.IsDigit(value[startIndex + 1]);
         }
 
         /// <summary>
@@ -426,6 +452,8 @@ namespace CosmosDBClient
         /// <summary>
         /// クエリタブコントロールのキーボードイベントを処理
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">キーイベントデータ</param>
         private void QueryTabControl_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Control && e.KeyCode == Keys.T)
@@ -451,6 +479,8 @@ namespace CosmosDBClient
         /// <summary>
         /// タブのカスタム描画処理（アクティブなタブを強調表示）
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">描画イベントデータ</param>
         private void QueryTabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
             var tabControl = sender as TabControl;
@@ -693,6 +723,11 @@ namespace CosmosDBClient
             }
         }
 
+        /// <summary>
+        /// AdvancedDataGridViewのフィルタ変更イベントハンドラ
+        /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">フィルタ変更イベントデータ</param>
         private void dataGridViewResults_FilterStringChanged(object sender, AdvancedDataGridView.FilterEventArgs e)
         {
             if (_virtualModeEnabled && _originalDataTable != null)
@@ -704,6 +739,8 @@ namespace CosmosDBClient
         /// <summary>
         /// AdvancedDataGridViewの並べ替えイベントハンドラ
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">並べ替えイベントデータ</param>
         private void dataGridViewResults_SortStringChanged(object sender, AdvancedDataGridView.SortEventArgs e)
         {
             if (_virtualModeEnabled && _originalDataTable != null)
@@ -810,6 +847,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 進捗表示用UIの表示/非表示を切り替える
         /// </summary>
+        /// <param name="show">進捗表示を有効にする場合は true</param>
+        /// <param name="message">表示するメッセージ</param>
         private void ShowProgressUI(bool show, string message = "")
         {
             // ステータスバーに進捗を表示
@@ -828,6 +867,7 @@ namespace CosmosDBClient
         /// <summary>
         /// 進捗状況を更新する
         /// </summary>
+        /// <param name="message">表示する進捗メッセージ</param>
         private void UpdateProgressUI(string message)
         {
             toolStripStatusLabel1.Text = message;
@@ -849,6 +889,9 @@ namespace CosmosDBClient
         /// <summary>
         /// バッファリングを活用した仮想モードの更新処理
         /// </summary>
+        /// <param name="query">実行するクエリ文字列</param>
+        /// <param name="batchSize">1 回の取得で読み込む件数</param>
+        /// <returns>グリッド更新処理の完了を表す Task</returns>
         private async Task UpdateVirtualDataGridView(string query, int batchSize = 1000)
         {
             var stopwatch = new Stopwatch();
@@ -1073,6 +1116,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 仮想モード時のセル値取得イベントハンドラ
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">セル値要求イベントデータ</param>
         private void dataGridViewResults_CellValueNeeded(object sender, DataGridViewCellValueEventArgs e)
         {
             var dt = _virtualDataTable;
@@ -1091,6 +1136,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 仮想モード時のセル値変更イベントハンドラ
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">セル値変更イベントデータ</param>
         private void dataGridViewResults_CellValuePushed(object sender, DataGridViewCellValueEventArgs e)
         {
             if (_virtualDataTable != null && e.RowIndex < _virtualDataTable.Rows.Count && e.ColumnIndex < _columnNames.Count)
@@ -1151,6 +1198,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 指定された列名がパーティションキーの列かどうかをチェック
         /// </summary>
+        /// <param name="columnName">判定対象の列名</param>
+        /// <returns>パーティションキー列の場合は true</returns>
         private bool IsPartitionKeyColumn(string columnName)
         {
             try
@@ -1177,6 +1226,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 通常モード時のセル値変更イベントハンドラ
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">セル値変更イベントデータ</param>
         private void dataGridViewResults_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && !_virtualModeEnabled)
@@ -1192,6 +1243,7 @@ namespace CosmosDBClient
         /// <summary>
         /// 仮想モード時の読み取り専用列設定
         /// </summary>
+        /// <returns>読み取り専用列設定処理の完了を表す Task</returns>
         private async Task SetReadOnlyColumnsForVirtualMode()
         {
             try
@@ -1240,6 +1292,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 仮想モード時のDataGridViewのセルがクリックされた際の処理
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">セルクリックイベントデータ</param>
         private void dataGridViewResults_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0)
@@ -1312,6 +1366,8 @@ namespace CosmosDBClient
         /// セルのマウスクリックイベントハンドラ
         /// 右クリック時にコンテキストメニューを表示
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">セルのマウスイベントデータ</param>
         private void dataGridViewResults_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             // 右クリックかつ有効なセル位置の場合のみ処理
@@ -1549,6 +1605,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 既にTOP句を含むクエリかどうかを判定する
         /// </summary>
+        /// <param name="normalizedQuery">比較用に正規化済みのクエリ文字列</param>
+        /// <returns>TOP 句を含む場合は true</returns>
         private bool HasTopClause(string normalizedQuery)
         {
             return normalizedQuery.Contains(SelectTopClause);
@@ -1557,6 +1615,8 @@ namespace CosmosDBClient
         /// <summary>
         /// TOP句を自動挿入してはいけない句を含むかどうかを判定する
         /// </summary>
+        /// <param name="normalizedQuery">比較用に正規化済みのクエリ文字列</param>
+        /// <returns>自動挿入除外句を含む場合は true</returns>
         private bool ContainsTopClauseExclusion(string normalizedQuery)
         {
             foreach (var clause in TopClauseInsertionExclusionClauses)
@@ -1573,6 +1633,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 元のクエリ文字列からSELECT句の開始位置を取得する
         /// </summary>
+        /// <param name="query">検索対象のクエリ文字列</param>
+        /// <returns>SELECT 句の開始位置。見つからない場合は -1</returns>
         private int FindSelectClauseIndex(string query)
         {
             return query.ToUpperInvariant().IndexOf(SelectClause);
@@ -1581,6 +1643,8 @@ namespace CosmosDBClient
         /// <summary>
         /// クエリ比較用に空白を揃え、キーワード比較を大文字へ統一する
         /// </summary>
+        /// <param name="query">正規化対象のクエリ文字列</param>
+        /// <returns>比較用に正規化したクエリ文字列</returns>
         private string NormalizeQueryForComparison(string query)
         {
             var builder = new System.Text.StringBuilder(query.Length);
@@ -1853,9 +1917,9 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// レコードを削除する
+        /// 現在選択中の JSON データに対応するレコードを削除する
         /// </summary>
-        /// <returns>Task</returns>
+        /// <returns>削除処理の完了を表す Task</returns>
         private async Task Delete()
         {
             DialogResult result = MessageBox.Show(
@@ -1960,16 +2024,21 @@ namespace CosmosDBClient
 
         /// <summary>
         /// JSON文字列を再帰的にパースし、JTokenオブジェクトに変換する
-        /// Cosmos DB で扱える型を考慮し、整数と浮動小数点数を区別
+        /// Cosmos DB で扱える型を考慮しつつ、先頭ゼロを持つ識別子風文字列は文字列のまま保持する
         /// </summary>
         /// <param name="item">Json項目</param>
-        /// <returns>JToken</returns>
+        /// <returns>変換後の JToken</returns>
         private JToken TryParseJson(string item)
         {
             // Null値の判定
             if (string.IsNullOrEmpty(item) || item.Equals("null", StringComparison.OrdinalIgnoreCase))
             {
                 return JValue.CreateNull();
+            }
+
+            if (HasSignificantLeadingZeros(item))
+            {
+                return JToken.FromObject(item);
             }
 
             // 真偽値の判定
@@ -2091,10 +2160,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// 行削除処理
+        /// 選択された行に対応するレコードを並列に削除する
         /// </summary>
         /// <param name="selectedRows">選択行</param>
-        /// <returns>task</returns>
+        /// <returns>削除処理の完了を表す Task</returns>
         private async Task DeleteSelectedRows(DataGridViewSelectedRowCollection selectedRows)
         {
             // 削除確認ダイアログを表示
@@ -2208,10 +2277,10 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// 行削除
+        /// 指定した JSON オブジェクトに対応する 1 行分のレコードを削除する
         /// </summary>
-        /// <param name="jsonObject"></param>
-        /// <returns>task</returns>
+        /// <param name="jsonObject">削除対象レコードを表す JSON オブジェクト</param>
+        /// <returns>削除処理の完了を表す Task</returns>
         private async Task DeleteRow(JObject jsonObject)
         {
             // JSONオブジェクトからidを取得
@@ -2227,6 +2296,8 @@ namespace CosmosDBClient
         /// <summary>
         /// ページングモードチェックボックス変更イベント
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
         private void checkBoxPagingMode_CheckedChanged(object sender, EventArgs e)
         {
             _isPagingMode = checkBoxPagingMode.Checked;
@@ -2242,6 +2313,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 前のページを表示
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
         private async void buttonPrevPage_Click(object sender, EventArgs e)
         {
             if (_currentPageIndex <= 0)
@@ -2289,6 +2362,8 @@ namespace CosmosDBClient
         /// <summary>
         /// 次のページを表示
         /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
         private async void buttonNextPage_Click(object sender, EventArgs e)
         {
             try
@@ -2389,6 +2464,8 @@ namespace CosmosDBClient
         /// <summary>
         /// ページデータでDataGridViewを更新
         /// </summary>
+        /// <param name="result">表示対象のページデータと実行結果情報</param>
+        /// <returns>グリッド更新処理の完了を表す Task</returns>
         private async Task UpdateGridWithPageData(FetchDataResult result)
         {
             if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
@@ -2453,6 +2530,8 @@ namespace CosmosDBClient
         /// <summary>
         /// キャッシュされたページデータでDataGridViewを更新
         /// </summary>
+        /// <param name="cachedData">表示対象のキャッシュ済みデータ</param>
+        /// <returns>グリッド更新処理の完了を表す Task</returns>
         private async Task UpdateGridWithCachedPageData(DataTable cachedData)
         {
             dataGridViewResults.SuspendLayout();

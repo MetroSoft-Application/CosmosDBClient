@@ -125,7 +125,7 @@ namespace CosmosDBClient.CosmosDB
         /// </summary>
         /// <param name="connectionString">CosmosDBへの接続文字列</param>
         /// <returns>CosmosClientオブジェクト</returns>
-        private static CosmosClient CreateCosmosClient(string connectionString)
+        private CosmosClient CreateCosmosClient(string connectionString)
         {
             CosmosClientOptions cosmosClientOptions;
             if (_bypassProxy)
@@ -151,7 +151,7 @@ namespace CosmosDBClient.CosmosDB
         /// </summary>
         /// <param name="ex">検査する例外</param>
         /// <returns>プロキシ認証エラーの場合はtrue</returns>
-        private static bool IsProxyAuthenticationError(Exception ex)
+        private bool IsProxyAuthenticationError(Exception ex)
         {
             if (ex is AggregateException aggregate)
             {
@@ -628,6 +628,27 @@ namespace CosmosDBClient.CosmosDB
         private const int TypeDetectionSampleSize = 200;
 
         /// <summary>
+        /// 先頭ゼロを含む文字列は識別子である可能性が高いため、数値列へ変換しない
+        /// </summary>
+        /// <param name="value">判定対象の文字列</param>
+        /// <returns>先頭ゼロを保持すべき文字列の場合は true</returns>
+        private bool HasSignificantLeadingZeros(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var startIndex = value[0] == '-' || value[0] == '+' ? 1 : 0;
+            if (value.Length - startIndex <= 1)
+            {
+                return false;
+            }
+
+            return value[startIndex] == '0' && char.IsDigit(value[startIndex + 1]);
+        }
+
+        /// <summary>
         /// DataTable の列値を先頭 <see cref="TypeDetectionSampleSize"/> 行のサンプリングで検査し、
         /// 数値列を long または double 型に変換した新しい DataTable を返す
         /// </summary>
@@ -694,7 +715,10 @@ namespace CosmosDBClient.CosmosDB
         /// <summary>
         /// DataTable の指定列を先頭 <see cref="TypeDetectionSampleSize"/> 行のサンプリングで判定し、適切な型を返す
         /// </summary>
-        private static Type DetectColumnType(DataTable table, int columnIndex)
+        /// <param name="table">判定対象の DataTable</param>
+        /// <param name="columnIndex">判定対象の列インデックス</param>
+        /// <returns>列に適用すべき型</returns>
+        private Type DetectColumnType(DataTable table, int columnIndex)
         {
             bool allLong = true;
             bool allDouble = true;
@@ -712,6 +736,11 @@ namespace CosmosDBClient.CosmosDB
                 if (string.IsNullOrEmpty(val))
                 {
                     continue;
+                }
+
+                if (HasSignificantLeadingZeros(val))
+                {
+                    return typeof(string);
                 }
 
                 hasValue = true;

@@ -19,6 +19,9 @@
 
         #region Windows Form Designer generated code
 
+        /// <summary>
+        /// デザイナーで定義されたコントロールを初期化する
+        /// </summary>
         private void InitializeComponent()
         {
             buttonLoadData = new Button();
