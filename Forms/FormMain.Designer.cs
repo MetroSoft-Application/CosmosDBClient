@@ -265,9 +265,10 @@
             // statusStrip1
             //
             statusStrip1.ImageScalingSize = new Size(20, 20);
-            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2, toolStripStatusLabel3, toolStripStatusLabel4 });
+            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2, toolStripStatusLabel3, toolStripStatusLabel4, toolStripStatusLabel5, toolStripStatusLabel6, toolStripStatusLabel7, toolStripStatusLabel8, toolStripStatusLabel9, toolStripStatusLabel10, toolStripStatusLabel11, toolStripStatusLabel12 });
             statusStrip1.Location = new Point(0, 659);
             statusStrip1.Name = "statusStrip1";
+            statusStrip1.ShowItemToolTips = true;
             statusStrip1.Size = new Size(1394, 22);
             statusStrip1.TabIndex = 13;
             statusStrip1.Text = "statusStrip1";
@@ -276,61 +277,85 @@
             //
             toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             toolStripStatusLabel1.Size = new Size(0, 17);
+            toolStripStatusLabel1.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel1.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel2
             //
             toolStripStatusLabel2.Name = "toolStripStatusLabel2";
             toolStripStatusLabel2.Size = new Size(0, 17);
+            toolStripStatusLabel2.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel2.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel3
             //
             toolStripStatusLabel3.Name = "toolStripStatusLabel3";
             toolStripStatusLabel3.Size = new Size(0, 17);
+            toolStripStatusLabel3.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel3.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel4
             //
             toolStripStatusLabel4.Name = "toolStripStatusLabel4";
             toolStripStatusLabel4.Size = new Size(0, 17);
+            toolStripStatusLabel4.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel4.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel5
             //
             toolStripStatusLabel5.Name = "toolStripStatusLabel5";
             toolStripStatusLabel5.Size = new Size(23, 23);
+            toolStripStatusLabel5.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel5.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel6
             //
             toolStripStatusLabel6.Name = "toolStripStatusLabel6";
             toolStripStatusLabel6.Size = new Size(23, 23);
+            toolStripStatusLabel6.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel6.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel7
             //
             toolStripStatusLabel7.Name = "toolStripStatusLabel7";
             toolStripStatusLabel7.Size = new Size(23, 23);
+            toolStripStatusLabel7.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel7.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel8
             //
             toolStripStatusLabel8.Name = "toolStripStatusLabel8";
             toolStripStatusLabel8.Size = new Size(23, 23);
+            toolStripStatusLabel8.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel8.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel9
             //
             toolStripStatusLabel9.Name = "toolStripStatusLabel9";
             toolStripStatusLabel9.Size = new Size(23, 23);
+            toolStripStatusLabel9.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel9.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel10
             //
             toolStripStatusLabel10.Name = "toolStripStatusLabel10";
             toolStripStatusLabel10.Size = new Size(23, 23);
+            toolStripStatusLabel10.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel10.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel11
             //
             toolStripStatusLabel11.Name = "toolStripStatusLabel11";
             toolStripStatusLabel11.Size = new Size(23, 23);
+            toolStripStatusLabel11.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel11.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel12
             //
             toolStripStatusLabel12.Name = "toolStripStatusLabel12";
             toolStripStatusLabel12.Size = new Size(23, 23);
+            toolStripStatusLabel12.ToolTipText = "Click to copy all metrics";
+            toolStripStatusLabel12.Click += StatusLabel_Click;
             //
             // toolStripStatusLabel13
             //

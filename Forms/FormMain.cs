@@ -2,7 +2,9 @@
 using System.Data;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
+using System.Globalization;
 using System.Reflection;
+using System.Text;
 using System.Windows.Forms;
 using CosmosDBClient.CosmosDB;
 using FastColoredTextBoxNS;
@@ -44,9 +46,12 @@ namespace CosmosDBClient
         private List<string> _pageContinuationTokens = new List<string>();
         private List<double> _pageRequestCharges = new List<double>();
         private List<long> _pageElapsedTimes = new List<long>();
+        private List<long> _pageCosmosLatencies = new List<long>();
+        private List<IReadOnlyList<QueryMetricsPerPartitionRecord>> _pageQueryMetrics = new List<IReadOnlyList<QueryMetricsPerPartitionRecord>>();
         private int _currentPageIndex = 0;
         private int _totalFetchedDocuments = 0;
         private bool _isPagingMode = false;
+        private IReadOnlyList<QueryMetricsPerPartitionRecord> _currentQueryMetrics = Array.Empty<QueryMetricsPerPartitionRecord>();
 
         /// <summary>
         /// ページキャッシュの最大保持数
@@ -103,7 +108,14 @@ namespace CosmosDBClient
             "DISTINCT"
         };
 
+        /// <summary>
+        /// SELECT 句を判定するための基本キーワード
+        /// </summary>
         private const string SelectClause = "SELECT";
+
+        /// <summary>
+        /// TOP 句付き SELECT を判定するためのキーワード
+        /// </summary>
         private const string SelectTopClause = "SELECT TOP";
 
         /// <summary>
@@ -781,6 +793,8 @@ namespace CosmosDBClient
                 _pageContinuationTokens.Clear();
                 _pageRequestCharges.Clear();
                 _pageElapsedTimes.Clear();
+                _pageCosmosLatencies.Clear();
+                _pageQueryMetrics.Clear();
                 _currentPageIndex = 0;
                 _totalFetchedDocuments = 0;
 
@@ -796,13 +810,15 @@ namespace CosmosDBClient
                 {
                     // ページングモードの場合
                     var query = BuildQuery(GetCurrentQueryText(), GetMaxItemCount());
-                    var result = await _cosmosDBService.FetchDataPageAsync(query, GetPageSize());
+                    var result = await _cosmosDBService.FetchDataPageAsync(query, GetPageSize(), currentPageNumber: 1);
 
                     // 最初のページをキャッシュに追加（サイズ制限付き）
                     AddToPageCache(result.Data.Copy());
                     _pageContinuationTokens.Add(result.ContinuationToken);
                     _pageRequestCharges.Add(result.TotalRequestCharge);
                     _pageElapsedTimes.Add(result.ElapsedMilliseconds);
+                    _pageCosmosLatencies.Add(result.CosmosLatencyMilliseconds);
+                    _pageQueryMetrics.Add(result.QueryMetricsPerPartition);
                     _totalFetchedDocuments = result.DocumentCount;
 
                     // データを表示
@@ -811,7 +827,7 @@ namespace CosmosDBClient
                     // ボタンの状態を更新
                     UpdatePagingButtons();
 
-                    UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
+                    UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds, result.CosmosLatencyMilliseconds);
                 }
                 else if (_virtualModeEnabled && GetMaxItemCount() > 1000)
                 {
@@ -825,7 +841,7 @@ namespace CosmosDBClient
                 }
 
                 DisplayContainerSettings();
-                _jsonData.Text = string.Empty;
+                UpdateDetailsPane();
 
                 ResizeRowHeader();
 
@@ -904,6 +920,7 @@ namespace CosmosDBClient
                 var totalItems = 0;
                 var totalRequestCharge = 0.0;
                 var batchCount = 0;
+                var queryMetricsPerPartition = new List<QueryMetricsPerPartitionRecord>();
 
                 // バッチ処理によるデータ取得
                 var queryDefinition = new QueryDefinition(query);
@@ -916,6 +933,7 @@ namespace CosmosDBClient
                     batchCount++;
                     totalRequestCharge += currentResultSet.RequestCharge;
                     totalItems += currentResultSet.Count;
+                    queryMetricsPerPartition.AddRange(_cosmosDBService.GetQueryMetricsPerPartitionRecords(currentResultSet.Diagnostics));
 
                     // 進捗状況の更新
                     UpdateProgressUI($"Loading batch {batchCount}, items: {totalItems}...");
@@ -980,7 +998,9 @@ namespace CosmosDBClient
 
                 // ステータス更新
                 stopwatch.Stop();
+                _currentQueryMetrics = queryMetricsPerPartition;
                 UpdateStatusStrip(totalRequestCharge, totalItems, batchCount, stopwatch.ElapsedMilliseconds);
+                UpdateDetailsPane();
             }
             catch (Exception ex)
             {
@@ -1051,6 +1071,7 @@ namespace CosmosDBClient
         {
             var query = BuildQuery(GetCurrentQueryText(), GetMaxItemCount());
             var result = await _cosmosDBService.FetchDataWithStatusAsync(query, GetMaxItemCount());
+            _currentQueryMetrics = result.QueryMetricsPerPartition;
 
             if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
             {
@@ -1110,7 +1131,8 @@ namespace CosmosDBClient
                 dataGridViewResults.ResumeLayout(true);
             }
 
-            UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
+            UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds, result.CosmosLatencyMilliseconds);
+            UpdateDetailsPane();
         }
 
         /// <summary>
@@ -1302,10 +1324,7 @@ namespace CosmosDBClient
             }
 
             var jsonObject = BuildJsonObjectFromRow(e.RowIndex);
-
-            // JSON文字列を整形し、改行とインデントを処理
-            var formattedJson = JsonConvert.SerializeObject(jsonObject, Formatting.Indented);
-            _jsonData.Text = formattedJson;
+            UpdateDetailsPane(jsonObject);
 
             if (e.ColumnIndex > -1)
             {
@@ -1808,13 +1827,16 @@ namespace CosmosDBClient
         /// <param name="totalRequestCharge">総リクエストチャージ (RU)</param>
         /// <param name="documentCount">取得したドキュメント数</param>
         /// <param name="pageCount">ページ数</param>
-        /// <param name="elapsedMilliseconds">経過時間（ミリ秒）</param>
-        private void UpdateStatusStrip(double totalRequestCharge, int documentCount, int pageCount, long elapsedMilliseconds)
+        /// <param name="elapsedMilliseconds">アプリケーション全体の経過時間（ミリ秒）</param>
+        /// <param name="cosmosLatencyMilliseconds">Cosmos DB 応答遅延（ミリ秒）</param>
+        private void UpdateStatusStrip(double totalRequestCharge, int documentCount, int pageCount, long elapsedMilliseconds, long cosmosLatencyMilliseconds = 0)
         {
             toolStripStatusLabel1.Text = $"Total RU: {totalRequestCharge:F2}";
             toolStripStatusLabel2.Text = $"Documents: {documentCount}";
             toolStripStatusLabel3.Text = $"Pages: {pageCount}";
-            toolStripStatusLabel4.Text = $"Elapsed Time: {elapsedMilliseconds} ms";
+            toolStripStatusLabel4.Text = cosmosLatencyMilliseconds > 0
+                ? $"Elapsed/Cosmos: {elapsedMilliseconds} / {cosmosLatencyMilliseconds} ms"
+                : $"Elapsed Time: {elapsedMilliseconds} ms";
         }
 
         /// <summary>
@@ -2303,11 +2325,17 @@ namespace CosmosDBClient
             _isPagingMode = checkBoxPagingMode.Checked;
             _pageCache.Clear();
             _pageContinuationTokens.Clear();
+            _pageRequestCharges.Clear();
+            _pageElapsedTimes.Clear();
+            _pageCosmosLatencies.Clear();
+            _pageQueryMetrics.Clear();
             _currentPageIndex = 0;
             _totalFetchedDocuments = 0;
+            _currentQueryMetrics = Array.Empty<QueryMetricsPerPartitionRecord>();
             buttonPrevPage.Enabled = false;
             buttonNextPage.Enabled = false;
             labelPageInfo.Text = "0 / 0";
+            UpdateDetailsPane();
         }
 
         /// <summary>
@@ -2337,6 +2365,8 @@ namespace CosmosDBClient
                     _totalFetchedDocuments += _pageCache[i].Rows.Count;
                 }
 
+                _currentQueryMetrics = _pageQueryMetrics[_currentPageIndex];
+
                 // データを表示
                 await UpdateGridWithCachedPageData(cachedData);
 
@@ -2344,10 +2374,12 @@ namespace CosmosDBClient
                 UpdatePagingButtons();
 
                 // ステータスバーを更新（取得時のRU情報を表示）
-                toolStripStatusLabel1.Text = $"Total RU: {_pageRequestCharges[_currentPageIndex]:F2}";
-                toolStripStatusLabel2.Text = $"Documents: {cachedData.Rows.Count}";
-                toolStripStatusLabel3.Text = $"Pages: 1";
-                toolStripStatusLabel4.Text = $"Elapsed Time: {_pageElapsedTimes[_currentPageIndex]} ms";
+                UpdateStatusStrip(
+                    _pageRequestCharges[_currentPageIndex],
+                    cachedData.Rows.Count,
+                    _currentPageIndex + 1,
+                    _pageElapsedTimes[_currentPageIndex],
+                    _pageCosmosLatencies[_currentPageIndex]);
             }
             catch (Exception ex)
             {
@@ -2384,11 +2416,15 @@ namespace CosmosDBClient
                         _totalFetchedDocuments += _pageCache[i].Rows.Count;
                     }
 
+                    _currentQueryMetrics = _pageQueryMetrics[_currentPageIndex];
+
                     await UpdateGridWithCachedPageData(cachedData);
-                    toolStripStatusLabel1.Text = $"Total RU: {_pageRequestCharges[_currentPageIndex]:F2}";
-                    toolStripStatusLabel2.Text = $"Documents: {cachedData.Rows.Count}";
-                    toolStripStatusLabel3.Text = $"Pages: 1";
-                    toolStripStatusLabel4.Text = $"Elapsed Time: {_pageElapsedTimes[_currentPageIndex]} ms";
+                    UpdateStatusStrip(
+                        _pageRequestCharges[_currentPageIndex],
+                        cachedData.Rows.Count,
+                        _currentPageIndex + 1,
+                        _pageElapsedTimes[_currentPageIndex],
+                        _pageCosmosLatencies[_currentPageIndex]);
                 }
                 else
                 {
@@ -2407,13 +2443,15 @@ namespace CosmosDBClient
                     }
 
                     var query = BuildQuery(GetCurrentQueryText(), GetMaxItemCount());
-                    var result = await _cosmosDBService.FetchDataPageAsync(query, GetPageSize(), continuationToken);
+                    var result = await _cosmosDBService.FetchDataPageAsync(query, GetPageSize(), continuationToken, _currentPageIndex + 2);
 
                     // ページをキャッシュに追加（サイズ制限付き）
                     AddToPageCache(result.Data.Copy());
                     _pageContinuationTokens.Add(result.ContinuationToken);
                     _pageRequestCharges.Add(result.TotalRequestCharge);
                     _pageElapsedTimes.Add(result.ElapsedMilliseconds);
+                    _pageCosmosLatencies.Add(result.CosmosLatencyMilliseconds);
+                    _pageQueryMetrics.Add(result.QueryMetricsPerPartition);
                     _currentPageIndex++;
 
                     // 累計ドキュメント数を更新
@@ -2422,7 +2460,7 @@ namespace CosmosDBClient
                     // データを表示
                     await UpdateGridWithPageData(result);
 
-                    UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds);
+                    UpdateStatusStrip(result.TotalRequestCharge, result.DocumentCount, result.PageCount, result.ElapsedMilliseconds, result.CosmosLatencyMilliseconds);
                 }
 
                 // ボタンの状態を更新
@@ -2468,6 +2506,8 @@ namespace CosmosDBClient
         /// <returns>グリッド更新処理の完了を表す Task</returns>
         private async Task UpdateGridWithPageData(FetchDataResult result)
         {
+            _currentQueryMetrics = result.QueryMetricsPerPartition;
+
             if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
             {
                 MessageBox.Show(
@@ -2525,6 +2565,8 @@ namespace CosmosDBClient
             {
                 dataGridViewResults.ResumeLayout(true);
             }
+
+            UpdateDetailsPane();
         }
 
         /// <summary>
@@ -2579,6 +2621,151 @@ namespace CosmosDBClient
             {
                 dataGridViewResults.ResumeLayout(true);
             }
+
+            UpdateDetailsPane();
+        }
+
+        /// <summary>
+        /// Query Metrics をステータスバーに反映し、右ペインには選択行の JSON のみを表示する
+        /// </summary>
+        /// <param name="jsonObject">選択中行の JSON オブジェクト</param>
+        private void UpdateDetailsPane(JObject jsonObject = null)
+        {
+            UpdateQueryMetricsStatusBar(_currentQueryMetrics);
+
+            if (jsonObject == null)
+            {
+                _jsonData.Text = string.Empty;
+                return;
+            }
+
+            _jsonData.Text = JsonConvert.SerializeObject(jsonObject, Formatting.Indented);
+        }
+
+        /// <summary>
+        /// Query Metrics の集計値をステータスバーに表示する
+        /// </summary>
+        /// <param name="metrics">パーティション単位の Query Metrics</param>
+        private void UpdateQueryMetricsStatusBar(IReadOnlyList<QueryMetricsPerPartitionRecord> metrics)
+        {
+            if (metrics == null || metrics.Count == 0)
+            {
+                toolStripStatusLabel5.Text = string.Empty;
+                toolStripStatusLabel6.Text = string.Empty;
+                toolStripStatusLabel7.Text = string.Empty;
+                toolStripStatusLabel8.Text = string.Empty;
+                toolStripStatusLabel9.Text = string.Empty;
+                toolStripStatusLabel10.Text = string.Empty;
+                toolStripStatusLabel11.Text = string.Empty;
+                toolStripStatusLabel12.Text = string.Empty;
+                return;
+            }
+
+            long retrievedDocs = 0;
+            long retrievedBytes = 0;
+            long outputDocs = 0;
+            long outputBytes = 0;
+            long indexHits = 0;
+            double indexLookup = 0;
+            double docLoad = 0;
+            double queryExec = 0;
+            foreach (var m in metrics)
+            {
+                retrievedDocs += m.RetrievedDocumentCount;
+                retrievedBytes += m.RetrievedDocumentSizeInBytes;
+                outputDocs += m.OutputDocumentCount;
+                outputBytes += m.OutputDocumentSizeInBytes;
+                indexHits += m.IndexHitDocumentCount;
+                indexLookup += m.IndexLookupTimeMilliseconds;
+                docLoad += m.DocumentLoadTimeMilliseconds;
+                queryExec += m.QueryEngineExecutionTimeMilliseconds;
+            }
+
+            toolStripStatusLabel5.Text = $"Retrieved: {retrievedDocs}";
+            toolStripStatusLabel6.Text = $"Output: {outputDocs}";
+            toolStripStatusLabel7.Text = $"Index hits: {indexHits}";
+            toolStripStatusLabel8.Text = $"Index lookup: {indexLookup:F2} ms";
+            toolStripStatusLabel9.Text = $"Doc load: {docLoad:F2} ms";
+            toolStripStatusLabel10.Text = $"Query exec: {queryExec:F2} ms";
+            toolStripStatusLabel11.Text = $"Retrieved size: {FormatBytes(retrievedBytes)}";
+            toolStripStatusLabel12.Text = $"Output size: {FormatBytes(outputBytes)}";
+        }
+
+        /// <summary>
+        /// バイト数を表示用のサイズ文字列に変換する
+        /// </summary>
+        /// <param name="bytes">変換対象のバイト数</param>
+        /// <returns>KB または MB を含む表示用文字列</returns>
+        private string FormatBytes(long bytes)
+        {
+            if (bytes >= 1024 * 1024)
+                return $"{bytes / (1024.0 * 1024):F2} MB";
+            if (bytes >= 1024)
+                return $"{bytes / 1024.0:F1} KB";
+            return $"{bytes} B";
+        }
+
+        /// <summary>
+        /// ステータスバー上の全メトリクス文字列をタブ区切りでクリップボードへコピーする
+        /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
+        private void StatusLabel_Click(object sender, EventArgs e)
+        {
+            var texts = statusStrip1.Items
+                .OfType<ToolStripStatusLabel>()
+                .Select(l => l.Text)
+                .Where(t => !string.IsNullOrEmpty(t));
+            var all = string.Join("\t", texts);
+            if (!string.IsNullOrEmpty(all))
+            {
+                Clipboard.SetText(all);
+            }
+        }
+
+        /// <summary>
+        /// Query Metrics を CSV 形式の文字列に整形する
+        /// </summary>
+        /// <param name="metrics">パーティション単位の Query Metrics</param>
+        /// <returns>CSV 形式の文字列</returns>
+        private string BuildQueryMetricsCsv(IReadOnlyList<QueryMetricsPerPartitionRecord> metrics)
+        {
+            if (metrics == null || metrics.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var builder = new StringBuilder();
+            builder.AppendLine("Partition key range id,Retrieved document count,Retrieved document size (in bytes),Output document count,Output document size (in bytes),Index hit document count,Index lookup time (ms),Document load time (ms),Query engine execution time (ms),System function execution time (ms),User defined function execution time (ms),Document write time (ms)");
+
+            foreach (var metric in metrics)
+            {
+                builder.Append(metric.PartitionKeyRangeId);
+                builder.Append(',');
+                builder.Append(metric.RetrievedDocumentCount.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.RetrievedDocumentSizeInBytes.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.OutputDocumentCount.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.OutputDocumentSizeInBytes.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.IndexHitDocumentCount.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.IndexLookupTimeMilliseconds.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.DocumentLoadTimeMilliseconds.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.QueryEngineExecutionTimeMilliseconds.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.SystemFunctionExecutionTimeMilliseconds.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.Append(metric.UserDefinedFunctionExecutionTimeMilliseconds.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                builder.AppendLine(metric.DocumentWriteTimeMilliseconds.ToString(CultureInfo.InvariantCulture));
+            }
+
+            return builder.ToString().TrimEnd();
         }
 
         /// <summary>

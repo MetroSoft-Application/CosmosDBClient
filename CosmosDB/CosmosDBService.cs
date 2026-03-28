@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Net.Http;
+using System.Reflection;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 
@@ -230,6 +231,8 @@ namespace CosmosDBClient.CosmosDB
             var totalRequestCharge = 0d;
             var documentCount = 0;
             var pageCount = 0;
+            var cosmosLatencyMilliseconds = 0L;
+            var queryMetricsPerPartition = new List<QueryMetricsPerPartitionRecord>();
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var startTime = DateTime.UtcNow;
 
@@ -250,6 +253,9 @@ namespace CosmosDBClient.CosmosDB
                 while (queryResultSetIterator.HasMoreResults)
                 {
                     var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+
+                    cosmosLatencyMilliseconds += GetCosmosDiagnosticsElapsedMilliseconds(currentResultSet.Diagnostics);
+                    queryMetricsPerPartition.AddRange(GetQueryMetricsPerPartitionRecords(currentResultSet.Diagnostics));
                     pageCount++;
                     totalRequestCharge += currentResultSet.RequestCharge;
                     documentCount += currentResultSet.Count;
@@ -287,11 +293,13 @@ namespace CosmosDBClient.CosmosDB
                 documentCount,
                 pageCount,
                 stopwatch.ElapsedMilliseconds,
+                cosmosLatencyMilliseconds,
                 errorMessage,
                 query,
                 dataSizeInBytes,
                 startTime,
-                endTime);
+                endTime,
+                queryMetricsPerPartition: queryMetricsPerPartition);
         }
 
         /// <summary>
@@ -300,13 +308,16 @@ namespace CosmosDBClient.CosmosDB
         /// <param name="query">実行するクエリ文字列</param>
         /// <param name="pageSize">1ページあたりの最大アイテム数</param>
         /// <param name="continuationToken">前のページから取得したContinuationToken</param>
+        /// <param name="currentPageNumber">現在取得するページ番号</param>
         /// <returns>データ取得結果を表す FetchDataResult オブジェクト</returns>
-        public async Task<FetchDataResult> FetchDataPageAsync(string query, int pageSize, string continuationToken = null)
+        public async Task<FetchDataResult> FetchDataPageAsync(string query, int pageSize, string continuationToken = null, int currentPageNumber = 1)
         {
             var dataTable = new DataTable();
             var totalRequestCharge = 0d;
             var documentCount = 0;
             var pageCount = 0;
+            var cosmosLatencyMilliseconds = 0L;
+            var queryMetricsPerPartition = new List<QueryMetricsPerPartitionRecord>();
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var startTime = DateTime.UtcNow;
 
@@ -328,7 +339,10 @@ namespace CosmosDBClient.CosmosDB
                 if (queryResultSetIterator.HasMoreResults)
                 {
                     var currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                    pageCount = 1;
+
+                    cosmosLatencyMilliseconds = GetCosmosDiagnosticsElapsedMilliseconds(currentResultSet.Diagnostics);
+                    queryMetricsPerPartition.AddRange(GetQueryMetricsPerPartitionRecords(currentResultSet.Diagnostics));
+                    pageCount = currentPageNumber;
                     totalRequestCharge = currentResultSet.RequestCharge;
                     documentCount = currentResultSet.Count;
                     nextContinuationToken = currentResultSet.ContinuationToken;
@@ -366,12 +380,132 @@ namespace CosmosDBClient.CosmosDB
                 documentCount,
                 pageCount,
                 stopwatch.ElapsedMilliseconds,
+                cosmosLatencyMilliseconds,
                 errorMessage,
                 query,
                 dataSizeInBytes,
                 startTime,
                 endTime,
-                nextContinuationToken);
+                nextContinuationToken,
+                queryMetricsPerPartition);
+        }
+
+        /// <summary>
+        /// Cosmos SDK の Diagnostics からクライアント観測の経過時間を取得する
+        /// </summary>
+        /// <param name="diagnostics">Cosmos SDK の診断情報</param>
+        /// <returns>経過時間（ミリ秒）</returns>
+        private long GetCosmosDiagnosticsElapsedMilliseconds(CosmosDiagnostics diagnostics)
+        {
+            if (diagnostics == null)
+            {
+                return 0;
+            }
+
+            return (long)diagnostics.GetClientElapsedTime().TotalMilliseconds;
+        }
+
+        /// <summary>
+        /// Cosmos SDK の Diagnostics からパーティション単位の Query Metrics 生データを取得する
+        /// </summary>
+        /// <param name="diagnostics">Cosmos SDK の診断情報</param>
+        /// <returns>パーティション単位の Query Metrics 一覧</returns>
+        public  IReadOnlyList<QueryMetricsPerPartitionRecord> GetQueryMetricsPerPartitionRecords(CosmosDiagnostics diagnostics)
+        {
+            if (diagnostics == null)
+            {
+                return Array.Empty<QueryMetricsPerPartitionRecord>();
+            }
+
+            var queryMetrics = diagnostics.GetQueryMetrics();
+            if (queryMetrics?.PartitionedMetrics == null || queryMetrics.PartitionedMetrics.Count == 0)
+            {
+                return Array.Empty<QueryMetricsPerPartitionRecord>();
+            }
+
+            var records = new List<QueryMetricsPerPartitionRecord>(queryMetrics.PartitionedMetrics.Count);
+            foreach (var partitionedMetric in queryMetrics.PartitionedMetrics)
+            {
+                var serverSideMetrics = partitionedMetric.ServerSideMetrics;
+                var runtimeExecutionTimes = GetMemberValue(serverSideMetrics, "RuntimeExecutionTimes");
+
+                var retrievedDocumentCount = serverSideMetrics.RetrievedDocumentCount;
+                records.Add(new QueryMetricsPerPartitionRecord(
+                    partitionedMetric.PartitionKeyRangeId?.ToString() ?? partitionedMetric.FeedRange ?? string.Empty,
+                    retrievedDocumentCount,
+                    serverSideMetrics.RetrievedDocumentSize,
+                    serverSideMetrics.OutputDocumentCount,
+                    serverSideMetrics.OutputDocumentSize,
+                    CalculateIndexHitDocumentCount(retrievedDocumentCount, serverSideMetrics.IndexHitRatio),
+                    serverSideMetrics.IndexLookupTime.TotalMilliseconds,
+                    serverSideMetrics.DocumentLoadTime.TotalMilliseconds,
+                    GetTimeSpanMemberValue(runtimeExecutionTimes, "QueryEngineExecutionTime").TotalMilliseconds,
+                    GetTimeSpanMemberValue(runtimeExecutionTimes, "SystemFunctionExecutionTime").TotalMilliseconds,
+                    GetTimeSpanMemberValue(runtimeExecutionTimes, "UserDefinedFunctionExecutionTime").TotalMilliseconds,
+                    serverSideMetrics.DocumentWriteTime.TotalMilliseconds));
+            }
+
+            return records;
+        }
+
+        /// <summary>
+        /// 指定オブジェクトからプロパティまたはフィールドの値を取得する
+        /// </summary>
+        /// <param name="target">対象オブジェクト</param>
+        /// <param name="memberName">メンバー名</param>
+        /// <returns>取得した値</returns>
+        private  object GetMemberValue(object target, string memberName)
+        {
+            if (target == null || string.IsNullOrWhiteSpace(memberName))
+            {
+                return null;
+            }
+
+            var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            var targetType = target.GetType();
+
+            var property = targetType.GetProperty(memberName, bindingFlags);
+            if (property != null)
+            {
+                return property.GetValue(target);
+            }
+
+            var field = targetType.GetField(memberName, bindingFlags);
+            if (field != null)
+            {
+                return field.GetValue(target);
+            }
+
+            var backingField = targetType.GetField($"<{memberName}>k__BackingField", bindingFlags);
+            return backingField?.GetValue(target);
+        }
+
+        /// <summary>
+        /// 指定オブジェクトから TimeSpan 値を取得する
+        /// </summary>
+        /// <param name="target">対象オブジェクト</param>
+        /// <param name="memberName">メンバー名</param>
+        /// <returns>TimeSpan 値</returns>
+        private  TimeSpan GetTimeSpanMemberValue(object target, string memberName)
+        {
+            var value = GetMemberValue(target, memberName);
+            return value is TimeSpan timeSpan ? timeSpan : TimeSpan.Zero;
+        }
+
+        /// <summary>
+        /// IndexHitRatio から Index hit document count を算出する
+        /// </summary>
+        /// <param name="retrievedDocumentCount">取得ドキュメント数</param>
+        /// <param name="indexHitRatio">インデックスヒット率</param>
+        /// <returns>推定インデックスヒット件数</returns>
+        private  long CalculateIndexHitDocumentCount(long retrievedDocumentCount, double indexHitRatio)
+        {
+            if (retrievedDocumentCount <= 0 || indexHitRatio <= 0)
+            {
+                return 0;
+            }
+
+            return (long)Math.Round(retrievedDocumentCount * indexHitRatio, MidpointRounding.AwayFromZero);
         }
 
         /// <summary>
