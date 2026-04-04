@@ -29,7 +29,7 @@
             textBoxConnectionString = new TextBox();
             label1 = new Label();
             label2 = new Label();
-            textBoxDatabaseName = new TextBox();
+            cmbBoxDatabaseName = new ComboBox();
             label3 = new Label();
             label4 = new Label();
             checkBoxPagingMode = new CheckBox();
@@ -154,13 +154,15 @@
             label2.TabIndex = 8;
             label2.Text = "Database";
             //
-            // textBoxDatabaseName
+            // cmbBoxDatabaseName
             //
-            textBoxDatabaseName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            textBoxDatabaseName.Location = new Point(119, 48);
-            textBoxDatabaseName.Name = "textBoxDatabaseName";
-            textBoxDatabaseName.Size = new Size(148, 23);
-            textBoxDatabaseName.TabIndex = 9;
+            cmbBoxDatabaseName.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            cmbBoxDatabaseName.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbBoxDatabaseName.FormattingEnabled = true;
+            cmbBoxDatabaseName.Location = new Point(119, 48);
+            cmbBoxDatabaseName.Name = "cmbBoxDatabaseName";
+            cmbBoxDatabaseName.Size = new Size(148, 23);
+            cmbBoxDatabaseName.TabIndex = 9;
             //
             // label3
             //
@@ -395,7 +397,7 @@
             groupBox1.Controls.Add(label4);
             groupBox1.Controls.Add(label1);
             groupBox1.Controls.Add(label3);
-            groupBox1.Controls.Add(textBoxDatabaseName);
+            groupBox1.Controls.Add(cmbBoxDatabaseName);
             groupBox1.Location = new Point(1047, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Size = new Size(339, 137);
@@ -715,7 +717,7 @@
         private TextBox textBoxConnectionString;
         private Label label1;
         private Label label2;
-        private TextBox textBoxDatabaseName;
+        private ComboBox cmbBoxDatabaseName;
         private Label label3;
         private Label label4;
         private CheckBox checkBoxPagingMode;

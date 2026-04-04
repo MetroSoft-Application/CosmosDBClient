@@ -17,6 +17,7 @@ namespace CosmosDBClient.CosmosDB
         public readonly string[] systemColumns = { "id", "_etag", "_rid", "_self", "_attachments", "_ts" };
 
         private static CosmosClient _cosmosClient;
+        private static string _currentConnectionString;
         private static bool _bypassProxy = false;
         private Database _cosmosDatabase;
         private Container _cosmosContainer;
@@ -84,16 +85,30 @@ namespace CosmosDBClient.CosmosDB
 
         /// <summary>
         /// CosmosDBService クラスのコンストラクタ
+        /// 接続のみを初期化し、Database や Container は選択しない
+        /// </summary>
+        /// <param name="connectionString">CosmosDBへの接続文字列</param>
+        public CosmosDBService(string connectionString)
+        {
+            EnsureCosmosClient(connectionString);
+
+            // デフォルトのリクエストオプションを初期化
+            _requestOptions = new RequestOptions();
+            _requestOptions.PriorityLevel = PriorityLevel.Low;
+        }
+
+        /// <summary>
+        /// CosmosDBService クラスのコンストラクタ
         /// </summary>
         /// <param name="connectionString">CosmosDBへの接続文字列</param>
         /// <param name="databaseName">データベース名</param>
         /// <param name="containerName">コンテナ名</param>
         public CosmosDBService(string connectionString, string databaseName, string containerName)
+            : this(connectionString)
         {
-            // 初回のみ CosmosClient を作成
-            if (_cosmosClient == null)
+            if (string.IsNullOrWhiteSpace(databaseName))
             {
-                _cosmosClient = CreateCosmosClient(connectionString);
+                return;
             }
 
             // データベースの作成または取得（プロキシ認証エラー時はプロキシなしでリトライ）
@@ -104,21 +119,34 @@ namespace CosmosDBClient.CosmosDB
             }
             catch (Exception ex) when (!_bypassProxy && IsProxyAuthenticationError(ex))
             {
-                // プロキシ認証エラー: プロキシなしでクライアントを再作成してリトライ
                 _bypassProxy = true;
-                _cosmosClient.Dispose();
+                _cosmosClient?.Dispose();
+                _currentConnectionString = connectionString;
                 _cosmosClient = CreateCosmosClient(connectionString);
                 databaseResponse = _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName).Result;
             }
 
             _cosmosDatabase = databaseResponse.Database;
 
-            // データベースとコンテナの取得
-            _cosmosContainer = _cosmosClient.GetContainer(databaseName, containerName);
+            if (!string.IsNullOrWhiteSpace(containerName))
+            {
+                SetContainerByName(containerName);
+            }
+        }
 
-            // デフォルトのリクエストオプションを初期化
-            _requestOptions = new RequestOptions();
-            _requestOptions.PriorityLevel = PriorityLevel.Low;
+        /// <summary>
+        /// CosmosClient の初期化を保証する
+        /// </summary>
+        /// <param name="connectionString">CosmosDBへの接続文字列</param>
+        private void EnsureCosmosClient(string connectionString)
+        {
+            // 接続文字列が変わった場合は CosmosClient を作り直す
+            if (_cosmosClient == null || !string.Equals(_currentConnectionString, connectionString, StringComparison.Ordinal))
+            {
+                _cosmosClient?.Dispose();
+                _currentConnectionString = connectionString;
+                _cosmosClient = CreateCosmosClient(connectionString);
+            }
         }
 
         /// <summary>
@@ -184,6 +212,11 @@ namespace CosmosDBClient.CosmosDB
                 throw new ArgumentException("Container name cannot be null or empty.", nameof(containerName));
             }
 
+            if (_cosmosDatabase == null)
+            {
+                throw new InvalidOperationException("Database is not selected.");
+            }
+
             // コンテナの存在を確認
             var containerExists = DoesContainerExistAsync(containerName).GetAwaiter().GetResult();
             if (!containerExists)
@@ -191,7 +224,7 @@ namespace CosmosDBClient.CosmosDB
                 throw new InvalidOperationException($"The container '{containerName}' does not exist in the database '{_cosmosDatabase.Id}'.");
             }
 
-            // 指定されたコンテナ名でコンテナを取得
+            // 指定されたコンテナ名でコンテナ参照を取得する
             _cosmosContainer = _cosmosDatabase.GetContainer(containerName);
         }
 
@@ -207,7 +240,7 @@ namespace CosmosDBClient.CosmosDB
             {
                 while (iterator.HasMoreResults)
                 {
-                    foreach (var container in await iterator.ReadNextAsync())
+                    foreach (var container in await iterator.ReadNextAsync().ConfigureAwait(false))
                     {
                         if (container.Id == containerName)
                         {
@@ -410,7 +443,7 @@ namespace CosmosDBClient.CosmosDB
         /// </summary>
         /// <param name="diagnostics">Cosmos SDK の診断情報</param>
         /// <returns>パーティション単位の Query Metrics 一覧</returns>
-        public  IReadOnlyList<QueryMetricsPerPartitionRecord> GetQueryMetricsPerPartitionRecords(CosmosDiagnostics diagnostics)
+        public IReadOnlyList<QueryMetricsPerPartitionRecord> GetQueryMetricsPerPartitionRecords(CosmosDiagnostics diagnostics)
         {
             if (diagnostics == null)
             {
@@ -454,7 +487,7 @@ namespace CosmosDBClient.CosmosDB
         /// <param name="target">対象オブジェクト</param>
         /// <param name="memberName">メンバー名</param>
         /// <returns>取得した値</returns>
-        private  object GetMemberValue(object target, string memberName)
+        private object GetMemberValue(object target, string memberName)
         {
             if (target == null || string.IsNullOrWhiteSpace(memberName))
             {
@@ -486,7 +519,7 @@ namespace CosmosDBClient.CosmosDB
         /// <param name="target">対象オブジェクト</param>
         /// <param name="memberName">メンバー名</param>
         /// <returns>TimeSpan 値</returns>
-        private  TimeSpan GetTimeSpanMemberValue(object target, string memberName)
+        private TimeSpan GetTimeSpanMemberValue(object target, string memberName)
         {
             var value = GetMemberValue(target, memberName);
             return value is TimeSpan timeSpan ? timeSpan : TimeSpan.Zero;
@@ -498,7 +531,7 @@ namespace CosmosDBClient.CosmosDB
         /// <param name="retrievedDocumentCount">取得ドキュメント数</param>
         /// <param name="indexHitRatio">インデックスヒット率</param>
         /// <returns>推定インデックスヒット件数</returns>
-        private  long CalculateIndexHitDocumentCount(long retrievedDocumentCount, double indexHitRatio)
+        private long CalculateIndexHitDocumentCount(long retrievedDocumentCount, double indexHitRatio)
         {
             if (retrievedDocumentCount <= 0 || indexHitRatio <= 0)
             {
@@ -676,6 +709,25 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>データベース名のリスト</returns>
         public async Task<List<string>> GetDatabaseNamesAsync()
         {
+            try
+            {
+                return await GetDatabaseNamesCoreAsync();
+            }
+            catch (Exception ex) when (!_bypassProxy && IsProxyAuthenticationError(ex))
+            {
+                _bypassProxy = true;
+                _cosmosClient?.Dispose();
+                _cosmosClient = CreateCosmosClient(_currentConnectionString);
+                return await GetDatabaseNamesCoreAsync();
+            }
+        }
+
+        /// <summary>
+        /// CosmosDBアカウント内のデータベース一覧を取得する本体処理
+        /// </summary>
+        /// <returns>データベース名のリスト</returns>
+        private async Task<List<string>> GetDatabaseNamesCoreAsync()
+        {
             var databases = new List<string>();
             var requestOptions = CreateQueryRequestOptions();
             using (var iterator = _cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(requestOptions: requestOptions))
@@ -688,6 +740,7 @@ namespace CosmosDBClient.CosmosDB
                     }
                 }
             }
+
             return databases;
         }
 
@@ -698,7 +751,19 @@ namespace CosmosDBClient.CosmosDB
         public async Task<List<string>> GetContainerNamesAsync()
         {
             var containers = new List<string>();
-            var database = _cosmosClient.GetDatabase(_cosmosContainer.Database.Id);
+            var database = _cosmosDatabase;
+            if (database == null)
+            {
+                if (_cosmosContainer != null)
+                {
+                    database = _cosmosClient.GetDatabase(_cosmosContainer.Database.Id);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Database is not selected.");
+                }
+            }
+
             var requestOptions = CreateQueryRequestOptions();
             using (var iterator = database.GetContainerQueryIterator<ContainerProperties>(requestOptions: requestOptions))
             {
@@ -745,8 +810,18 @@ namespace CosmosDBClient.CosmosDB
         /// <returns>PartitionKeyに対応するフィールド名と値を改行で連結した文字列</returns>
         public string GetPartitionKeyValues(JObject jsonObject)
         {
+            return GetPartitionKeyValuesAsync(jsonObject).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// PartitionKeyに対応するフィールド名と値を取得し、改行して表示するための文字列を構築する
+        /// </summary>
+        /// <param name="jsonObject">パースされたJSONオブジェクト</param>
+        /// <returns>PartitionKeyに対応するフィールド名と値を改行で連結した文字列</returns>
+        public async Task<string> GetPartitionKeyValuesAsync(JObject jsonObject)
+        {
             var requestOptions = CreateContainerRequestOptions();
-            var containerProperties = _cosmosContainer.ReadContainerAsync(requestOptions).Result;
+            var containerProperties = await _cosmosContainer.ReadContainerAsync(requestOptions);
             var partitionKeyPaths = containerProperties.Resource.PartitionKeyPaths;
 
             return string.Join("\n", partitionKeyPaths.Select(path =>

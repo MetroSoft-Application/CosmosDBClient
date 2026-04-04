@@ -106,7 +106,7 @@ namespace CosmosDBClient
                 var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
 
                 // PartitionKeyに対応するキー項目を取得
-                var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
+                var partitionKeyInfo = await _cosmosDBService.GetPartitionKeyValuesAsync(jsonObject);
 
                 // Cosmos DBにUpsert処理を実行
                 var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);

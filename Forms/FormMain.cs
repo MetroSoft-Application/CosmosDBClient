@@ -29,6 +29,7 @@ namespace CosmosDBClient
         private FastColoredTextBox _jsonData;
         private AdvancedDataGridView dataGridViewResults;
         private TextStyle jsonStringStyle = new TextStyle(Brushes.Black, null, FontStyle.Regular);
+        private bool _suppressMetadataSelectionEvents;
         private DataTable _virtualDataTable;
         private DataTable _originalDataTable;
         private List<string> _columnNames;
@@ -124,6 +125,11 @@ namespace CosmosDBClient
         private HashSet<int> _readOnlyColumnIndices = new HashSet<int>();
 
         /// <summary>
+        /// 現在選択中コンテナのパーティションキー列名キャッシュ
+        /// </summary>
+        private HashSet<string> _partitionKeyColumnNames = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>
         /// ページサイズを取得する
         /// </summary>
         /// <returns>現在設定されているページサイズ</returns>
@@ -142,6 +148,7 @@ namespace CosmosDBClient
 
             SetupDatagridview();
             SetupQueryTabs();
+            HookMetadataSelectionEvents();
 
             _jsonData = new FastColoredTextBox();
             _jsonData.Language = Language.JSON;
@@ -174,7 +181,7 @@ namespace CosmosDBClient
             var containerName = configuration.GetValue<string>("AppSettings:ContainerName");
 
             textBoxConnectionString.Text = connectionString;
-            textBoxDatabaseName.Text = databaseName;
+            cmbBoxDatabaseName.Text = databaseName;
             cmbBoxContainerName.Text = containerName;
             numericUpDownMaxCount.Value = _maxItemCount;
 
@@ -185,16 +192,104 @@ namespace CosmosDBClient
 
             try
             {
-                _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
-                if (!string.IsNullOrWhiteSpace(databaseName))
-                {
-                    LoadContainersIntoComboBox(databaseName);
-                    DisplayContainerSettings();
-                }
+                InitializeDatabaseAndContainerSelections(databaseName, containerName);
             }
             catch (Exception)
             {
             }
+        }
+
+        /// <summary>
+        /// Database / Container 選択に関するイベントを登録する
+        /// </summary>
+        private void HookMetadataSelectionEvents()
+        {
+            cmbBoxDatabaseName.SelectionChangeCommitted += cmbBoxDatabaseName_SelectionChangeCommitted;
+            cmbBoxDatabaseName.Leave += cmbBoxDatabaseName_Leave;
+            cmbBoxContainerName.SelectionChangeCommitted += cmbBoxContainerName_SelectionChangeCommitted;
+            cmbBoxContainerName.Leave += cmbBoxContainerName_Leave;
+            textBoxConnectionString.Leave += textBoxConnectionString_Leave;
+        }
+
+        /// <summary>
+        /// 起動時の Database / Container 選択状態を初期化する
+        /// </summary>
+        /// <param name="databaseName">初期 Database 名</param>
+        /// <param name="containerName">初期 Container 名</param>
+        private async void InitializeDatabaseAndContainerSelections(string databaseName, string containerName)
+        {
+            try
+            {
+                await LoadDatabasesIntoComboBoxAsync(databaseName, containerName);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// ConnectionString 変更後に Database 一覧を再読み込みする
+        /// </summary>
+        private async void textBoxConnectionString_Leave(object sender, EventArgs e)
+        {
+            if (_suppressMetadataSelectionEvents)
+            {
+                return;
+            }
+
+            await LoadDatabasesIntoComboBoxAsync(cmbBoxDatabaseName.Text, cmbBoxContainerName.Text);
+        }
+
+        /// <summary>
+        /// Database 選択変更時に Container 一覧を再読み込みする
+        /// </summary>
+        private async void cmbBoxDatabaseName_SelectionChangeCommitted(object sender, EventArgs e)
+        {
+            if (_suppressMetadataSelectionEvents)
+            {
+                return;
+            }
+
+            await LoadContainersIntoComboBoxAsync(cmbBoxDatabaseName.Text);
+        }
+
+        /// <summary>
+        /// Database を手入力した際に Container 一覧を再読み込みする
+        /// </summary>
+        private async void cmbBoxDatabaseName_Leave(object sender, EventArgs e)
+        {
+            if (_suppressMetadataSelectionEvents)
+            {
+                return;
+            }
+
+            await LoadContainersIntoComboBoxAsync(cmbBoxDatabaseName.Text);
+        }
+
+        /// <summary>
+        /// Container 選択変更時にコンテナ設定を表示する
+        /// </summary>
+        private async void cmbBoxContainerName_SelectionChangeCommitted(object sender, EventArgs e)
+        {
+            if (_suppressMetadataSelectionEvents)
+            {
+                return;
+            }
+
+            await ApplySelectedContainerAsync();
+        }
+
+        /// <summary>
+        /// Container を手入力した際にコンテナ設定を表示する
+        /// </summary>
+        private async void cmbBoxContainerName_Leave(object sender, EventArgs e)
+        {
+            if (_suppressMetadataSelectionEvents)
+            {
+                return;
+            }
+
+            await ApplySelectedContainerAsync();
         }
 
         /// <summary>
@@ -804,7 +899,7 @@ namespace CosmosDBClient
                 // 大量データの場合は進捗表示を行う
                 ShowProgressUI(true, "Loading data...");
 
-                _cosmosDBService = new CosmosDBService(textBoxConnectionString.Text, textBoxDatabaseName.Text, cmbBoxContainerName.Text);
+                _cosmosDBService = await Task.Run(() => new CosmosDBService(textBoxConnectionString.Text, cmbBoxDatabaseName.Text, cmbBoxContainerName.Text));
 
                 if (_isPagingMode)
                 {
@@ -840,7 +935,7 @@ namespace CosmosDBClient
                     await UpdateDatagridView();
                 }
 
-                DisplayContainerSettings();
+                await DisplayContainerSettingsAsync();
                 UpdateDetailsPane();
 
                 ResizeRowHeader();
@@ -1224,16 +1319,7 @@ namespace CosmosDBClient
         /// <returns>パーティションキー列の場合は true</returns>
         private bool IsPartitionKeyColumn(string columnName)
         {
-            try
-            {
-                var containerProperties = _cosmosDBService.GetContainerPropertiesAsync().Result;
-                var partitionKeyPaths = containerProperties.PartitionKeyPaths.Select(p => p.Trim('/')).ToArray();
-                return partitionKeyPaths.Contains(columnName);
-            }
-            catch
-            {
-                return false;
-            }
+            return _partitionKeyColumnNames.Contains(columnName);
         }
 
         /// <summary>
@@ -1272,6 +1358,7 @@ namespace CosmosDBClient
             {
                 var containerProperties = await _cosmosDBService.GetContainerPropertiesAsync();
                 var partitionKeyPaths = containerProperties.PartitionKeyPaths.Select(p => p.Trim('/')).ToArray();
+                _partitionKeyColumnNames = new HashSet<string>(partitionKeyPaths, StringComparer.Ordinal);
                 var readOnlyColumns = _cosmosDBService.systemColumns.Concat(partitionKeyPaths).ToArray();
 
                 // 読み取り専用セルの書式用のスタイルを一度だけ作成
@@ -1709,6 +1796,7 @@ namespace CosmosDBClient
             {
                 var containerProperties = await _cosmosDBService.GetContainerPropertiesAsync();
                 var partitionKeyPaths = containerProperties.PartitionKeyPaths.Select(p => p.Trim('/')).ToArray();
+                _partitionKeyColumnNames = new HashSet<string>(partitionKeyPaths, StringComparer.Ordinal);
                 var readOnlyColumns = _cosmosDBService.systemColumns.Concat(partitionKeyPaths).ToArray();
 
                 foreach (DataColumn column in dataTable.Columns)
@@ -1728,15 +1816,48 @@ namespace CosmosDBClient
         }
 
         /// <summary>
-        /// コンボボックスにデータベースのコンテナ一覧を読み込む
+        /// Database 一覧を ComboBox に読み込む
         /// </summary>
-        /// <param name="databaseId">対象のデータベースID</param>
-        private async void LoadContainersIntoComboBox(string databaseId)
+        /// <param name="preferredDatabaseName">優先して選択する Database 名</param>
+        /// <param name="preferredContainerName">優先して選択する Container 名</param>
+        private async Task LoadDatabasesIntoComboBoxAsync(string preferredDatabaseName = null, string preferredContainerName = null)
         {
             try
             {
-                var containerNames = await _cosmosDBService.GetContainerNamesAsync();
-                cmbBoxContainerName.Items.AddRange(containerNames.ToArray());
+                if (string.IsNullOrWhiteSpace(textBoxConnectionString.Text))
+                {
+                    return;
+                }
+
+                var metadataService = new CosmosDBService(textBoxConnectionString.Text);
+                var databaseNames = await metadataService.GetDatabaseNamesAsync();
+                var selectedDatabaseName = ResolvePreferredSelection(databaseNames, preferredDatabaseName);
+
+                _suppressMetadataSelectionEvents = true;
+                try
+                {
+                    cmbBoxDatabaseName.Items.Clear();
+                    cmbBoxDatabaseName.Items.AddRange(databaseNames.ToArray());
+
+                    if (!string.IsNullOrWhiteSpace(selectedDatabaseName))
+                    {
+                        cmbBoxDatabaseName.SelectedItem = selectedDatabaseName;
+                    }
+                    else if (databaseNames.Count > 0)
+                    {
+                        cmbBoxDatabaseName.SelectedIndex = 0;
+                    }
+                    else
+                    {
+                        cmbBoxDatabaseName.Text = string.Empty;
+                    }
+                }
+                finally
+                {
+                    _suppressMetadataSelectionEvents = false;
+                }
+
+                await LoadContainersIntoComboBoxAsync(cmbBoxDatabaseName.Text, preferredContainerName);
             }
             catch (Exception ex)
             {
@@ -1745,13 +1866,156 @@ namespace CosmosDBClient
         }
 
         /// <summary>
+        /// コンボボックスにデータベースのコンテナ一覧を読み込む
+        /// </summary>
+        /// <param name="databaseId">対象のデータベースID</param>
+        /// <param name="preferredContainerName">優先して選択する Container 名</param>
+        private async Task LoadContainersIntoComboBoxAsync(string databaseId, string preferredContainerName = null)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(databaseId))
+                {
+                    _cosmosDBService = null;
+                    ClearContainerSelectionAndSettings();
+                    return;
+                }
+
+                _cosmosDBService = await Task.Run(() => new CosmosDBService(textBoxConnectionString.Text, databaseId, null));
+                var containerNames = await _cosmosDBService.GetContainerNamesAsync();
+                var selectedContainerName = ResolvePreferredSelection(containerNames, preferredContainerName);
+
+                _suppressMetadataSelectionEvents = true;
+                try
+                {
+                    cmbBoxContainerName.Items.Clear();
+                    cmbBoxContainerName.Items.AddRange(containerNames.ToArray());
+
+                    if (!string.IsNullOrWhiteSpace(selectedContainerName))
+                    {
+                        cmbBoxContainerName.SelectedItem = selectedContainerName;
+                    }
+                    else if (containerNames.Count > 0)
+                    {
+                        cmbBoxContainerName.SelectedIndex = 0;
+                    }
+                    else
+                    {
+                        cmbBoxContainerName.Text = string.Empty;
+                    }
+                }
+                finally
+                {
+                    _suppressMetadataSelectionEvents = false;
+                }
+
+                await ApplySelectedContainerAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+        }
+
+        /// <summary>
+        /// 候補一覧の中から優先選択値を解決する
+        /// </summary>
+        /// <param name="candidates">候補一覧</param>
+        /// <param name="preferredValue">優先選択値</param>
+        /// <returns>選択する値。該当しない場合は null</returns>
+        private string ResolvePreferredSelection(IReadOnlyCollection<string> candidates, string preferredValue)
+        {
+            if (!string.IsNullOrWhiteSpace(preferredValue) && candidates.Contains(preferredValue))
+            {
+                return preferredValue;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 現在選択されている Container をサービスへ反映し、設定表示を更新する
+        /// </summary>
+        private async Task ApplySelectedContainerAsync()
+        {
+            if (_cosmosDBService == null || string.IsNullOrWhiteSpace(cmbBoxContainerName.Text))
+            {
+                ClearContainerSettings();
+                return;
+            }
+
+            try
+            {
+                await Task.Run(() => _cosmosDBService.SetContainerByName(cmbBoxContainerName.Text));
+                await DisplayContainerSettingsAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
+        }
+
+        /// <summary>
+        /// Container 選択と関連表示をクリアする
+        /// </summary>
+        private void ClearContainerSelectionAndSettings()
+        {
+            _suppressMetadataSelectionEvents = true;
+            try
+            {
+                cmbBoxContainerName.Items.Clear();
+                cmbBoxContainerName.Text = string.Empty;
+            }
+            finally
+            {
+                _suppressMetadataSelectionEvents = false;
+            }
+
+            ClearContainerSettings();
+        }
+
+        /// <summary>
+        /// 表示中のコンテナ設定をクリアする
+        /// </summary>
+        private void ClearContainerSettings()
+        {
+            _partitionKeyColumnNames.Clear();
+
+            foreach (TabPage tab in tabControl1.TabPages)
+            {
+                foreach (Control control in tab.Controls)
+                {
+                    switch (control.Name)
+                    {
+                        case "txtPartitionKey":
+                        case "txtUniqueKey":
+                        case "txtIndexingPolicy":
+                            control.Text = string.Empty;
+                            break;
+
+                        case "radioTimeToLiveOff":
+                        case "radioTimeToLiveOn":
+                            ((RadioButton)control).Checked = false;
+                            break;
+
+                        case "nupTimeToLiveSeconds":
+                            control.Text = string.Empty;
+                            control.Visible = false;
+                            break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// コンテナの設定を表示する
         /// </summary>
-        private async void DisplayContainerSettings()
+        private async Task DisplayContainerSettingsAsync()
         {
             try
             {
                 var containerProperties = await _cosmosDBService.GetContainerPropertiesAsync();
+                _partitionKeyColumnNames = new HashSet<string>(containerProperties.PartitionKeyPaths.Select(p => p.Trim('/')), StringComparer.Ordinal);
 
                 foreach (TabPage tab in tabControl1.TabPages)
                 {
@@ -1978,7 +2242,7 @@ namespace CosmosDBClient
                 var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
 
                 // PartitionKeyに対応するキー項目を取得
-                string partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
+                string partitionKeyInfo = await _cosmosDBService.GetPartitionKeyValuesAsync(jsonObject);
 
                 var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
 
@@ -2310,7 +2574,7 @@ namespace CosmosDBClient
 
             // PartitionKeyを自動的に解決して取得
             var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
-            var partitionKeyInfo = _cosmosDBService.GetPartitionKeyValues(jsonObject);
+            var partitionKeyInfo = await _cosmosDBService.GetPartitionKeyValuesAsync(jsonObject);
 
             var response = await _cosmosDBService.DeleteItemAsync<object>(id, partitionKey);
         }
