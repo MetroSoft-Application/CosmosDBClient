@@ -899,7 +899,10 @@ namespace CosmosDBClient
                 // 大量データの場合は進捗表示を行う
                 ShowProgressUI(true, "Loading data...");
 
-                _cosmosDBService = await Task.Run(() => new CosmosDBService(textBoxConnectionString.Text, cmbBoxDatabaseName.Text, cmbBoxContainerName.Text));
+                var connectionString = textBoxConnectionString.Text;
+                var databaseName = cmbBoxDatabaseName.Text;
+                var containerName = cmbBoxContainerName.Text;
+                _cosmosDBService = await Task.Run(() => new CosmosDBService(connectionString, databaseName, containerName));
 
                 if (_isPagingMode)
                 {
@@ -1881,7 +1884,17 @@ namespace CosmosDBClient
                     return;
                 }
 
-                _cosmosDBService = await Task.Run(() => new CosmosDBService(textBoxConnectionString.Text, databaseId, null));
+                var connectionString = textBoxConnectionString.Text;
+                var targetDatabaseId = databaseId;
+                var cosmosDBService = await Task.Run(() => new CosmosDBService(connectionString, targetDatabaseId, null));
+
+                if (!string.Equals(connectionString, textBoxConnectionString.Text, StringComparison.Ordinal) ||
+                    !string.Equals(targetDatabaseId, cmbBoxDatabaseName.Text, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _cosmosDBService = cosmosDBService;
                 var containerNames = await _cosmosDBService.GetContainerNamesAsync();
                 var selectedContainerName = ResolvePreferredSelection(containerNames, preferredContainerName);
 
@@ -1938,7 +1951,10 @@ namespace CosmosDBClient
         /// </summary>
         private async Task ApplySelectedContainerAsync()
         {
-            if (_cosmosDBService == null || string.IsNullOrWhiteSpace(cmbBoxContainerName.Text))
+            var cosmosDBService = _cosmosDBService;
+            var selectedContainerName = cmbBoxContainerName.Text;
+
+            if (cosmosDBService == null || string.IsNullOrWhiteSpace(selectedContainerName))
             {
                 ClearContainerSettings();
                 return;
@@ -1946,11 +1962,25 @@ namespace CosmosDBClient
 
             try
             {
-                await Task.Run(() => _cosmosDBService.SetContainerByName(cmbBoxContainerName.Text));
+                await Task.Run(() => cosmosDBService.SetContainerByName(selectedContainerName));
+
+                if (!ReferenceEquals(cosmosDBService, _cosmosDBService) ||
+                    !string.Equals(selectedContainerName, cmbBoxContainerName.Text, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
                 await DisplayContainerSettingsAsync();
             }
             catch (Exception ex)
             {
+                if (!ReferenceEquals(cosmosDBService, _cosmosDBService) ||
+                    !string.Equals(selectedContainerName, cmbBoxContainerName.Text, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                ClearContainerSettings();
                 MessageBox.Show(ex.Message, "Error");
             }
         }
