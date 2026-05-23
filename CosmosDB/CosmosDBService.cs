@@ -792,12 +792,21 @@ namespace CosmosDBClient.CosmosDB
 
             foreach (var path in partitionKeyPaths)
             {
-                var key = jsonObject.SelectToken(path.Trim('/'))?.ToString();
-                if (key == null)
+                var token = jsonObject.SelectToken(path.Trim('/'));
+                if (token == null)
                 {
-                    return PartitionKey.None;
+                    // フィールド自体が存在しない (undefined)
+                    partitionKeyBuilder.AddNoneType();
                 }
-                partitionKeyBuilder.Add(key);
+                else if (token.Type == JTokenType.Null)
+                {
+                    // フィールドは存在するが値が JSON null
+                    partitionKeyBuilder.AddNullValue();
+                }
+                else
+                {
+                    partitionKeyBuilder.Add(token.ToString());
+                }
             }
 
             return partitionKeyBuilder.Build();

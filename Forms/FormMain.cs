@@ -2143,12 +2143,73 @@ namespace CosmosDBClient
         {
             if (_modifiedRows.Count == 0)
             {
-                MessageBox.Show(
-                    "No modified records found. Please modify data before updating.",
-                    "Info",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
+                var selectedRows = dataGridViewResults.SelectedRows;
+
+                if (selectedRows.Count == 0)
+                {
+                    MessageBox.Show(
+                        "No modified records found. Please modify data before updating.",
+                        "Info",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+                    return;
+                }
+
+                var confirmResult = MessageBox.Show(
+                    "No changes detected. Do you want to update the selected record anyway?",
+                    "Confirm Update",
+                    MessageBoxButtons.OKCancel,
+                    MessageBoxIcon.Question
                 );
+
+                if (confirmResult != DialogResult.OK)
+                {
+                    return;
+                }
+
+                var noChangeSuccessCount = 0;
+                var noChangeErrorCount = 0;
+                var noChangeTotalRequestCharge = 0.0;
+                var noChangeErrorMessages = new List<string>();
+
+                try
+                {
+                    foreach (DataGridViewRow row in selectedRows)
+                    {
+                        try
+                        {
+                            var jsonObject = BuildJsonObjectFromRow(row.Index);
+                            var partitionKey = await _cosmosDBService.ResolvePartitionKeyAsync(jsonObject);
+                            var response = await _cosmosDBService.UpsertItemAsync(jsonObject, partitionKey);
+                            noChangeTotalRequestCharge += response.RequestCharge;
+                            noChangeSuccessCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            noChangeErrorCount++;
+                            noChangeErrorMessages.Add($"Row {row.Index + 1}: {ex.Message}");
+                        }
+                    }
+
+                    var noChangeMessage = $"Update completed!\n\nSuccess: {noChangeSuccessCount} records\nFailed: {noChangeErrorCount} records\nTotal request charge: {noChangeTotalRequestCharge:F2}";
+
+                    if (noChangeErrorMessages.Count > 0)
+                    {
+                        noChangeMessage += "\n\nError details:\n" + string.Join("\n", noChangeErrorMessages.Take(5));
+                        if (noChangeErrorMessages.Count > 5)
+                        {
+                            noChangeMessage += $"\n... {noChangeErrorMessages.Count - 5} more errors";
+                        }
+                    }
+
+                    MessageBox.Show(noChangeMessage, "Update Result");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error occurred during update process: {ex.Message}", "Error");
+                }
+
                 return;
             }
 
