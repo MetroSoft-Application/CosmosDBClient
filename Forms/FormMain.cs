@@ -53,6 +53,7 @@ namespace CosmosDBClient
         private int _totalFetchedDocuments = 0;
         private bool _isPagingMode = false;
         private IReadOnlyList<QueryMetricsPerPartitionRecord> _currentQueryMetrics = Array.Empty<QueryMetricsPerPartitionRecord>();
+        private IConfigurationRoot _configuration;
 
         /// <summary>
         /// ページキャッシュの最大保持数
@@ -64,39 +65,7 @@ namespace CosmosDBClient
         /// </summary>
         private const string DefaultQueryText = "SELECT\n    *\nFROM\n    c\nWHERE\n    1 = 1";
 
-        /// <summary>
-        /// 初期化時に作成する既定のクエリタブ一覧
-        /// </summary>
-        private static readonly (string TabName, string Query)[] DefaultQueryTabs =
-        {
-            ("Basic: Select All", "SELECT\n    *\nFROM\n    c"),
-            ("Basic: Count", "SELECT\n    COUNT(1)\nFROM\n    c"),
-            ("Filter: Equal", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.status = 'active'"),
-            ("Filter: Range", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.price BETWEEN 100 AND 500"),
-            ("Filter: IN List", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.category IN ('A', 'B', 'C')"),
-            ("Filter: STARTSWITH", "SELECT\n    *\nFROM\n    c\nWHERE\n    STARTSWITH(c.name, 'foo')"),
-            ("Filter: ENDSWITH", "SELECT\n    *\nFROM\n    c\nWHERE\n    ENDSWITH(c.name, 'bar')"),
-            ("Filter: StringEquals (CI)", "SELECT\n    *\nFROM\n    c\nWHERE\n    STRINGEQUALS(c.name, 'foo', true)"),
-            ("Filter: LIKE", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.name LIKE '%bar%'"),
-            ("Filter: NOT LIKE", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.name NOT LIKE '%bar%'"),
-            ("Filter: CONTAINS", "SELECT\n    *\nFROM\n    c\nWHERE\n    CONTAINS(c.name, 'bar')"),
-            ("Filter: Null or Undefined", "SELECT\n    *\nFROM\n    c\nWHERE\n    IS_NULL(c.deletedAt)\n    OR NOT IS_DEFINED(c.deletedAt)"),
-            ("Filter: Compound", "SELECT\n    *\nFROM\n    c\nWHERE\n    c.type = 'video'\n    AND (c.size > 1000 OR c.priority = 1)"),
-            ("Filter: _ts", "SELECT\n    *\nFROM\n    c\nWHERE\n    c._ts >= 1700000000"),
-            ("Aggregate: SUM", "SELECT\n    VALUE SUM(c.size)\nFROM\n    c"),
-            ("Aggregate: AVG MIN MAX", "SELECT\n    AVG(c.score) AS avg,\n    MIN(c.score) AS min,\n    MAX(c.score) AS max\nFROM\n    c"),
-            // ("Aggregate: GROUP BY", "SELECT\n    c.category,\n    COUNT(1) AS cnt\nFROM\n    c\nGROUP BY\n    c.category"),
-            // ("Aggregate: GROUP BY SUM", "SELECT\n    c.type,\n    SUM(c.size) AS total\nFROM\n    c\nGROUP BY\n    c.type"),
-            ("Array/Object: ARRAY_CONTAINS", "SELECT\n    *\nFROM\n    c\nWHERE\n    ARRAY_CONTAINS(c.tags, 'urgent')"),
-            ("Array/Object: JOIN", "SELECT\n    c.id,\n    t AS tag\nFROM\n    c\nJOIN\n    t IN c.tags"),
-            ("Array/Object: JOIN Filter", "SELECT\n    c.id,\n    t\nFROM\n    c\nJOIN\n    t IN c.items\nWHERE\n    t.qty > 0"),
-            ("Array/Object: Nested Field", "SELECT\n    c.id,\n    c.address.city\nFROM\n    c\nWHERE\n    IS_DEFINED(c.address)"),
-            ("Array/Object: ARRAY_LENGTH", "SELECT\n    *\nFROM\n    c\nWHERE\n    ARRAY_LENGTH(c.tags) > 2"),
-            ("Order By: Asc", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c._ts ASC"),
-            ("Order By: Desc", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c.score DESC"),
-            ("Order By: Offset Limit", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c.id\nOFFSET 0 LIMIT 20"),
-            ("Order By: Multi Sort", "SELECT\n    *\nFROM\n    c\nORDER BY\n    c.category ASC,\n    c.score DESC")
-        };
+
 
         /// <summary>
         /// TOP句の自動挿入を除外する句の一覧
@@ -146,6 +115,13 @@ namespace CosmosDBClient
             InitializeComponent();
             AutoScaleMode = AutoScaleMode.Dpi;
 
+            var iconStream = Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("CosmosDBClient.Resources.azure-cosmos-db.ico");
+            if (iconStream != null)
+                this.Icon = new Icon(iconStream);
+
+            _configuration = LoadConfiguration();
+
             SetupDatagridview();
             SetupQueryTabs();
             HookMetadataSelectionEvents();
@@ -173,12 +149,11 @@ namespace CosmosDBClient
 
             splitContainer3.Panel1.Controls.Add(_jsonData);
 
-            var configuration = LoadConfiguration();
-            _useHyperlinkHandler = configuration.GetValue<bool>("AppSettings:EnableHyperlinkHandler");
-            _maxItemCount = configuration.GetValue<int>("AppSettings:MaxItemCount");
-            var connectionString = configuration.GetValue<string>("AppSettings:ConnectionString");
-            var databaseName = configuration.GetValue<string>("AppSettings:DatabaseName");
-            var containerName = configuration.GetValue<string>("AppSettings:ContainerName");
+            _useHyperlinkHandler = _configuration.GetValue<bool>("AppSettings:EnableHyperlinkHandler");
+            _maxItemCount = _configuration.GetValue<int>("AppSettings:MaxItemCount");
+            var connectionString = _configuration.GetValue<string>("AppSettings:ConnectionString");
+            var databaseName = _configuration.GetValue<string>("AppSettings:DatabaseName");
+            var containerName = _configuration.GetValue<string>("AppSettings:ContainerName");
 
             textBoxConnectionString.Text = connectionString;
             cmbBoxDatabaseName.Text = databaseName;
@@ -545,9 +520,13 @@ namespace CosmosDBClient
         {
             _queryTabControl.TabPages.Clear();
 
-            foreach (var defaultQueryTab in DefaultQueryTabs)
+            var tabs = _configuration.GetSection("QueryTabs").GetChildren();
+            foreach (var tab in tabs)
             {
-                AddNewQueryTab(defaultQueryTab.TabName, defaultQueryTab.Query);
+                var tabName = tab["TabName"] ?? string.Empty;
+                var query = tab["Query"] ?? string.Empty;
+                if (!string.IsNullOrEmpty(tabName))
+                    AddNewQueryTab(tabName, query);
             }
 
             if (_queryTabControl.TabPages.Count > 0)
