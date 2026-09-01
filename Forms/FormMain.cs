@@ -322,6 +322,8 @@ namespace CosmosDBClient
             }
 
             dataGridViewResults.CellClick += dataGridViewResults_CellClick;
+            dataGridViewResults.CurrentCellChanged += dataGridViewResults_CurrentCellChanged;
+            dataGridViewResults.ColumnHeaderMouseDoubleClick += dataGridViewResults_ColumnHeaderMouseDoubleClick;
             dataGridViewResults.CellFormatting += dataGridViewResults_CellFormatting;
             dataGridViewResults.CellValueChanged += dataGridViewResults_CellValueChanged;
             dataGridViewResults.RowPostPaint += dataGridViewResults_RowPostPaint;
@@ -872,8 +874,9 @@ namespace CosmosDBClient
                 _currentPageIndex = 0;
                 _totalFetchedDocuments = 0;
 
-                // ページングモードの状態を読み取る
-                _isPagingMode = checkBoxPagingMode.Checked;
+                // 最大行数が1ページの行数を超える場合のみ、ページングを使用する
+                _isPagingMode = checkBoxPagingMode.Checked && GetMaxItemCount() > GetPageSize();
+                UpdatePagingButtons();
 
                 // 大量データの場合は進捗表示を行う
                 ShowProgressUI(true, "Loading data...");
@@ -1392,22 +1395,90 @@ namespace CosmosDBClient
                 return;
             }
 
-            var jsonObject = BuildJsonObjectFromRow(e.RowIndex);
-            UpdateDetailsPane(jsonObject);
+            UpdateFocusedCellDetails(e.RowIndex, e.ColumnIndex);
+        }
 
-            if (e.ColumnIndex > -1)
+        /// <summary>
+        /// 列ヘッダーをダブルクリックした列だけ、ヘッダーまたはセル値に合わせて自動調整する
+        /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">列ヘッダーのマウスイベントデータ</param>
+        private void dataGridViewResults_ColumnHeaderMouseDoubleClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.ColumnIndex >= 0 && e.ColumnIndex < dataGridViewResults.ColumnCount)
             {
-                var cellValue = dataGridViewResults.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString() ?? string.Empty;
+                dataGridViewResults.AutoResizeColumn(e.ColumnIndex, DataGridViewAutoSizeColumnMode.AllCells);
+            }
+        }
+
+        /// <summary>
+        /// DataGridView のフォーカスセル変更時に、選択行のJSONとフッターのセル値を更新する
+        /// </summary>
+        /// <param name="sender">イベントの送信元オブジェクト</param>
+        /// <param name="e">イベントデータ</param>
+        private void dataGridViewResults_CurrentCellChanged(object sender, EventArgs e)
+        {
+            var currentCell = dataGridViewResults.CurrentCell;
+            if (currentCell == null)
+            {
+                ClearFocusedCellDetails();
+                return;
+            }
+
+            UpdateFocusedCellDetails(currentCell.RowIndex, currentCell.ColumnIndex);
+        }
+
+        /// <summary>
+        /// フォーカス中のセルに対応するJSONとセル値を表示する
+        /// </summary>
+        /// <param name="rowIndex">フォーカス中の行インデックス</param>
+        /// <param name="columnIndex">フォーカス中の列インデックス</param>
+        private void UpdateFocusedCellDetails(int rowIndex, int columnIndex)
+        {
+            if (_jsonData == null || rowIndex < 0 || rowIndex >= dataGridViewResults.RowCount)
+            {
+                return;
+            }
+
+            if (_virtualModeEnabled && (_virtualDataTable == null || _columnNames == null ||
+                rowIndex >= _virtualDataTable.Rows.Count))
+            {
+                ClearFocusedCellDetails();
+                return;
+            }
+
+            UpdateDetailsPane(BuildJsonObjectFromRow(rowIndex));
+
+            if (columnIndex > -1 && columnIndex < dataGridViewResults.ColumnCount)
+            {
+                var cellValue = dataGridViewResults.Rows[rowIndex].Cells[columnIndex].Value?.ToString() ?? string.Empty;
                 richTextBoxSelectedCell.Text = cellValue;
 
                 if (_useHyperlinkHandler && (
-                    dataGridViewResults.Columns[e.ColumnIndex].HeaderText == "folderName" ||
-                    dataGridViewResults.Columns[e.ColumnIndex].HeaderText == "fullPath"
+                    dataGridViewResults.Columns[columnIndex].HeaderText == "folderName" ||
+                    dataGridViewResults.Columns[columnIndex].HeaderText == "fullPath"
                     ))
                 {
                     _hyperlinkHandler.MarkLinkTextFromText(richTextBoxSelectedCell);
                 }
             }
+            else
+            {
+                richTextBoxSelectedCell.Text = string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// フォーカスセルに対応する表示をクリアする
+        /// </summary>
+        private void ClearFocusedCellDetails()
+        {
+            if (_jsonData != null)
+            {
+                UpdateDetailsPane();
+            }
+
+            richTextBoxSelectedCell.Text = string.Empty;
         }
 
         /// <summary>
@@ -2656,7 +2727,7 @@ namespace CosmosDBClient
         /// <param name="e">イベントデータ</param>
         private void checkBoxPagingMode_CheckedChanged(object sender, EventArgs e)
         {
-            _isPagingMode = checkBoxPagingMode.Checked;
+            _isPagingMode = checkBoxPagingMode.Checked && GetMaxItemCount() > GetPageSize();
             _pageCache.Clear();
             _pageContinuationTokens.Clear();
             _pageRequestCharges.Clear();
@@ -2819,13 +2890,17 @@ namespace CosmosDBClient
             {
                 buttonPrevPage.Enabled = false;
                 buttonNextPage.Enabled = false;
+                labelPageInfo.Text = "0 / 0";
                 return;
             }
 
             buttonPrevPage.Enabled = _currentPageIndex > 0;
 
             // 次へボタンの有効化条件
-            bool hasMorePages = _currentPageIndex < _pageContinuationTokens.Count &&
+            bool currentPageCanHaveNextPage = _pageCache.Count <= _currentPageIndex ||
+                _pageCache[_currentPageIndex].Rows.Count >= GetPageSize();
+            bool hasMorePages = currentPageCanHaveNextPage &&
+                                _currentPageIndex < _pageContinuationTokens.Count &&
                                 !string.IsNullOrEmpty(_pageContinuationTokens[_currentPageIndex]);
             bool withinMaxLimit = _totalFetchedDocuments < GetMaxItemCount();
             buttonNextPage.Enabled = hasMorePages && withinMaxLimit;

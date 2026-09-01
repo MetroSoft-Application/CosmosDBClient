@@ -362,22 +362,24 @@ namespace CosmosDBClient.CosmosDB
                 // クエリの定義と実行
                 var queryDefinition = new QueryDefinition(query);
                 var requestOptions = CreateQueryRequestOptions();
-                requestOptions.MaxItemCount = pageSize;
+                var requestedPageSize = Math.Max(1, pageSize);
+                requestOptions.MaxItemCount = requestedPageSize;
                 var queryResultSetIterator = _cosmosContainer.GetItemQueryIterator<dynamic>(
                     queryDefinition,
                     continuationToken,
                     requestOptions);
 
-                // 1ページ分のみ取得
-                if (queryResultSetIterator.HasMoreResults)
+                // Cosmos DBは指定件数より少ない件数を1回の応答で返すことがあるため、
+                // 指定されたページ件数に達するか、結果を最後まで読み終えるまで取得する。
+                while (queryResultSetIterator.HasMoreResults && dataTable.Rows.Count < requestedPageSize)
                 {
                     var currentResultSet = await queryResultSetIterator.ReadNextAsync();
 
-                    cosmosLatencyMilliseconds = GetCosmosDiagnosticsElapsedMilliseconds(currentResultSet.Diagnostics);
+                    cosmosLatencyMilliseconds += GetCosmosDiagnosticsElapsedMilliseconds(currentResultSet.Diagnostics);
                     queryMetricsPerPartition.AddRange(GetQueryMetricsPerPartitionRecords(currentResultSet.Diagnostics));
                     pageCount = currentPageNumber;
-                    totalRequestCharge = currentResultSet.RequestCharge;
-                    documentCount = currentResultSet.Count;
+                    totalRequestCharge += currentResultSet.RequestCharge;
+                    documentCount += currentResultSet.Count;
                     nextContinuationToken = currentResultSet.ContinuationToken;
 
                     // データテーブルに結果を追加
@@ -388,6 +390,12 @@ namespace CosmosDBClient.CosmosDB
                             ?? new JObject(new JProperty("$1", token));
                         AddRowToDataTable(jsonObject, dataTable);
                     }
+                }
+
+                // すべての結果を読み終えている場合は、次ページがないことを明示する。
+                if (!queryResultSetIterator.HasMoreResults)
+                {
+                    nextContinuationToken = null;
                 }
             }
             catch (Exception ex)
